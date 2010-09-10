@@ -1,0 +1,130 @@
+program Z80_CHAR_ROM;
+
+uses Characters;
+
+var
+  data: array[0..999] of byte;
+
+(******************************************************************************)
+procedure FillScreen;
+var
+  i: word;
+  d: ^byte;
+  
+begin
+  ClearBit(PORTD, 6);
+  TRISB := 0;
+  PORTB := 0;
+  TRISD := 0;
+  PORTD := 0;
+  
+  d := @data[0];
+  asm
+    MOVFF  _fillscreen_local_d, FSR0L
+    MOVFF  _fillscreen_local_d+1, FSR0H
+  end;
+  i := 1000;
+  asm
+loop:
+    MOVLW  3
+    XORWF  PORTD, 0, 0
+    BNZ    cont
+    MOVLW  232
+    XORWF  PORTB, 0, 0
+    BNZ    cont
+    BRA    end_loop
+cont:
+    MOVFF  POSTINC0, PORTC
+    
+    MOVF   PORTB, 0, 0
+    XORLW  255
+    BTFSC  STATUS, Z, 0
+    INCF   PORTD, 1, 0
+
+    INCF   PORTB, 1, 0
+
+    BRA      loop
+end_loop:
+  end;
+
+{
+  asm
+loop:
+    MOVLW  0
+    XORWF  _fillscreen_local_i, 0, 1
+    BNZ    cont
+    XORWF  _fillscreen_local_i+1, 0, 1
+    BNZ    cont
+    BRA    end_loop
+cont:
+    MOVFF  POSTINC0, PORTC
+
+    MOVF   PORTB, 0, 0
+    XORLW  255
+    BTFSC  STATUS, Z, 0
+    INCF   PORTD, 1, 0
+
+    INCF   PORTB, 1, 0
+
+    MOVLW  1
+    SUBWF  _fillscreen_local_i, 1, 1
+    MOVLW  0
+    SUBWFB _fillscreen_local_i+1, 1, 1
+    BRA      loop
+end_loop:
+  end;
+}
+
+{  while i <> 0 do
+  begin
+    asm
+      MOVFF  POSTINC0, PORTC
+    end;
+//    PORTC := d^;
+//    inc(d);
+    if PORTB = 255 then
+      inc(PORTD);
+    inc(PORTB);
+    dec(i);
+  end;
+}
+  WREG := d; // Damit der Linker d kennt
+  WREG := i; // Damit der Linker i kennt
+  
+  SetBit(PORTD, 6);
+  TRISB := 255;
+  TRISD := %00000111;
+end;
+(******************************************************************************)
+procedure FillCharRom;
+begin
+
+
+{  while true do
+  begin
+    PORTB := char_data[PORTA][PORTB];
+  end;
+}
+
+
+end;
+(******************************************************************************)
+procedure Init;
+begin
+  INTCON := 0;
+  ADCON0 := 0;
+  TRISA := 0;
+  TRISB := 0;
+
+  INTCON2 := 0;
+  INTCON3 := 0;
+  PIE1 := 0;
+  PIE2 := 0;
+  IPR1 := 0;
+  RCON := 0;
+end;
+(******************************************************************************)
+begin
+  FillCharRom;
+  FillScreen;
+end.

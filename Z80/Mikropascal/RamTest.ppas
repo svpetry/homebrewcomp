@@ -1,0 +1,91 @@
+program RamTest;
+
+
+(*
+ * RA0: /output enable
+ * RA1: write enable
+ * RA2: /red LED
+ * RB0-RB2: A0-A2
+ * RC0-RC2: I/O0-I/O2
+ *)
+
+procedure Init;
+begin
+  ADCON0 := 0; // disable A/D Converter
+  ADCON1 := $0f;
+
+  TRISA := 0;
+  PORTA := %00000101;
+  TRISB := 0;
+  PORTB := 0;
+  TRISC := 255;
+  PORTC := 0;
+
+  OSCCON := %11110000;
+  INTCON := 0;
+  PIE1 := 0;
+  PIE2 := 0;
+  RCON := 0;
+end;
+
+var
+  i: byte;
+
+begin
+  Init;
+  
+{  while true do
+  begin
+    for i := 0 to 7 do
+    begin
+      asm
+        MOVF  _i, 0
+        MOVWF PORTB
+        MOVFF _i, PORTB
+      end;
+//      PORTB := i;
+      Delay_ms(500);
+    end;
+  end;
+}
+  Delay_ms(100);
+
+  // Daten schreiben
+  TRISC := 0;
+  PORTB := 1;
+  PORTC := 0;
+  PORTA.1 := 1;
+  for i := 0 to 7 do
+  begin
+    asm
+      MOVF  _i, 0
+      MOVWF PORTC // Daten
+      MOVWF PORTB // Adresse
+//      BTG   PORTA, 1
+    end;
+  end;
+  
+  PORTA.1 := 0;
+  TRISC := 255;
+  
+  PORTA.2 := 0; // LED an
+
+  // Daten anzeigen
+  PORTB := 0;
+  PORTA.0 := 0;
+  while true do
+  begin
+    for i := 0 to 7 do
+    begin
+      asm
+        MOVF  _i, 0
+        MOVWF PORTB
+      end;
+      PORTA.2 := 1; // Blinkende LED
+      Delay_ms(250);
+      PORTA.2 := 0;
+      Delay_ms(250);
+    end;
+  end;
+
+end.

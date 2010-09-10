@@ -1,0 +1,50 @@
+[DeviceName]
+Value=P18F4585
+[DeviceClock]
+Value=50
+[MainUnit]
+Value=Z80_VGA_Timer.ppas
+[DeviceFlags]
+Count=14
+Value0=_OSC_ECIO_1H = $00F5
+Value1=_FCMENB_OFF_1H = $00BF
+Value2=_IESOB_OFF_1H = $007F
+Value3=_PWRT_ON_2L = $00FE
+Value4=_BOR_OFF_2L = $00F9
+Value5=_WDT_OFF_2H = $00FE
+Value6=_MCLRE_OFF_3H = $007F
+Value7=_LPT1OSC_OFF_3H = $00FB
+Value8=_PBADEN_OFF_3H = $00FD
+Value9=_DEBUG_OFF_4L = $00FF
+Value10=_XINST_OFF_4L = $00BF
+Value11=_LVP_OFF_4L = $00FB
+Value12=_STVREN_OFF_4L = $00FE
+Value13=_EBTRB_OFF_7H = $00FF
+[BuildSimDebug]
+Build=0
+SimDebug=0
+[ProjectFiles]
+Count=0
+[OtherFiles]
+Count=3
+Value0=X:\Sven\Elektronik\mikroPascal\Z80\Z80_VGA_Timer.ppas
+Value1=X:\Sven\Elektronik\mikroPascal\Z80\MainBios.ppas
+Value2=X:\Sven\Elektronik\mikroPascal\Z80\Memory.ppas
+[TabIndex]
+Value=1
+[SearchPath]
+Count=3
+Value0=X:\PortableApps\mikroPascal8\Defs\
+Value1=X:\PortableApps\mikroPascal8\Uses\p18\
+Value2=X:\Sven\Elektronik\mikroPascal\Z80\
+Value3=C:\Program Files\mikroPascal8\Defs\
+Value4=C:\Program Files\mikroPascal8\Uses\p18\
+Value5=D:\Elektronik\mikroPascal\Z80\
+Value6=V:\PortableApps\mikroPascal8\Defs\
+Value7=V:\PortableApps\mikroPascal8\Uses\p18\
+Value8=V:\Elektronik\mikroPascal\Z80\
+Value9=E:\PortableApps\mikroPascal8\Defs\
+Value10=E:\PortableApps\mikroPascal8\Uses\p18\
+Value11=E:\Elektronik\mikroPascal\Z80\
+[EEPROMinfo]
+isused=0

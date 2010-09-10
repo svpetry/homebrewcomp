@@ -1,0 +1,72 @@
+program Test;
+
+(******************************************************************************)
+procedure Init;
+begin
+  OSCCON := %01110000;
+
+  ADCON0 := 0; // disable A/D Converter
+  ADCON1 := $ff;
+
+  INTCON := 0;
+  PIE1 := 0;
+  PIE2 := 0;
+  RCON := 0;
+  CCP1CON := 0;
+  ECCP1CON := 0;
+  SSPCON1 := 0;
+  SSPCON2 := 0;
+
+  TRISA := 0;
+  PORTA := 0;
+  TRISB := 0;
+  PORTB := 0;
+  TRISC := 255;
+  PORTC := 0;
+  TRISD := 0;
+  PORTD := 0;
+  TRISE := 0;
+  PORTE := 0;
+
+  Lcd_Init(PORTB);
+  Lcd_Cmd(LCD_CURSOR_OFF);
+
+  // Init PS/2
+//  Ps2_Config(PORTD, 2, 3);
+  Ps2_Init(PORTC);
+  Delay_ms(100);
+
+  // Init MMC Reader
+//  Spi_Init_Advanced(Master_OSC_div64, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
+
+  // Init RS232
+//  Usart_Init(19200);
+
+end;
+(******************************************************************************)
+var
+  text: string[32];
+  value, special, pressed: byte;
+
+begin
+  Init;
+
+  text := 'Mia & Marie';
+  Lcd_Out(1, 1, text);
+
+  text[1] := 0;
+  while true do
+  begin
+    if Ps2_Key_Read(value, special, pressed) = 1 then
+    begin
+      PORTA := 255;
+      Delay_ms(20);
+      PORTA := 0;
+      if (pressed = 1) and (special = 0) then
+      begin
+        text[0] := value;
+        Lcd_Out(2, 1, text);
+      end;
+    end;
+  end;
+end.
