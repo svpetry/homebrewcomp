@@ -1,0 +1,225 @@
+unit Memory;
+
+var
+   bios_str: string[20];
+
+const
+  BIOS_STR_ADDR_LO = $60;
+  BIOS_STR_ADDR_HI = $00;
+  BIOS_PARAM1_ADDR_LO = $51;
+  BIOS_PARAM2_ADDR_LO = $53;
+  BIOS_OUTPARAM_ADDR_LO = $55;
+
+(******************************************************************************)
+procedure WriteBiosOutparam(value: word);
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+  TRISB := 0; // data bus = output
+
+  LATA.1 := 1;
+  PORTD := 0; // high address byte
+  LATA.1 := 0;
+
+  LATD := BIOS_OUTPARAM_ADDR_LO; // low address byte
+
+  // write low byte
+  PORTB := Lo(value);
+  LATE.1 := 0;
+  LATE.1 := 1;
+
+  // write high byte
+  inc(LATD);
+  PORTB := Hi(value);
+  LATE.1 := 0;
+  LATE.1 := 1;
+
+  TRISD := 255;
+  TRISB := 255;
+  LATA.0 := 1;
+
+  LATA.2 := 1; // release bus
+end;
+(******************************************************************************)
+procedure WriteBiosParamDWord(value: dword);
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+  TRISB := 0; // data bus = output
+
+  LATA.1 := 1;
+  PORTD := 0; // high address byte
+  LATA.1 := 0;
+
+  // write low byte
+  LATD := BIOS_PARAM1_ADDR_LO;
+  PORTB := Lo(value);
+  LATE.1 := 0;
+  LATE.1 := 1;
+
+  // write high byte
+  inc(LATD);
+  PORTB := Hi(value);
+  LATE.1 := 0;
+  LATE.1 := 1;
+
+  // write higher byte
+  inc(LATD);
+  PORTB := Higher(value);
+  LATE.1 := 0;
+  LATE.1 := 1;
+
+  // write highest byte
+  inc(LATD);
+  PORTB := Highest(value);
+  LATE.1 := 0;
+  LATE.1 := 1;
+
+  TRISD := 255;
+  TRISB := 255;
+  LATA.0 := 1;
+
+  LATA.2 := 1; // release bus
+end;
+(******************************************************************************)
+procedure MemWrite(addr: word; value: byte);
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+  TRISB := 0; // data bus = output
+
+  PORTB := value;
+
+  LATA.1 := 1;
+  PORTD := Hi(addr);
+  LATA.1 := 0;
+  PORTD := Lo(addr);
+
+  LATE.1 := 0;
+  LATE.1 := 1;
+
+  TRISD := 255;
+  TRISB := 255;
+  LATA.0 := 1;
+
+  LATA.2 := 1; // release bus
+end;
+(******************************************************************************)
+function MemRead(addr: word): byte;
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+
+  LATA.1 := 1;
+  PORTD := Hi(addr);
+  LATA.1 := 0;
+  PORTD := Lo(addr);
+
+  LATE.0 := 0;
+  Result := PORTB;
+  LATE.0 := 1;
+
+  TRISD := 255; // address bus = input
+  LATA.0 := 1; // read from address bus
+
+  LATA.2 := 1; // release bus
+end;
+(******************************************************************************)
+procedure WriteBiosStr;
+var
+  i: byte;
+  pdata: ^byte;
+  addr_lo: byte;
+
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+  TRISB := 0; // data bus = output
+
+  LATA.1 := 1;
+  PORTD := BIOS_STR_ADDR_HI;
+  LATA.1 := 0;
+  addr_lo := BIOS_STR_ADDR_LO;
+
+  pdata := @bios_str;
+
+  for i := 0 to 19 do
+  begin
+    PORTD := addr_lo;
+    inc(addr_lo);
+    
+    PORTB := pdata^;
+    inc(pdata);
+
+    LATE.1 := 0;
+    LATE.1 := 1;
+  end;
+
+  TRISD := 255; // address bus = input
+  TRISB := 255; // data bus = input
+  LATA.0 := 1; // read from address bus
+
+  LATA.2 := 1; // release bus
+end;
+(******************************************************************************)
+procedure ReadBiosStr;
+var
+  i: byte;
+  pdata: ^byte;
+  addr_lo: byte;
+
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+
+  LATA.1 := 1;
+  PORTD := BIOS_STR_ADDR_HI;
+  LATA.1 := 0;
+  addr_lo := BIOS_STR_ADDR_LO;
+
+  pdata := @bios_str;
+
+  for i := 0 to 19 do
+  begin
+    PORTD := addr_lo;
+    inc(addr_lo);
+
+    LATE.0 := 0;
+    pdata^ := PORTB;
+    LATE.0 := 1;
+    
+    inc(pdata);
+  end;
+
+  TRISD := 255; // address bus = input
+  LATA.0 := 1; // read from address bus
+
+  LATA.2 := 1; // release bus
+end;
+(******************************************************************************)
+
+end.

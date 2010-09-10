@@ -1,0 +1,79 @@
+unit Boot;
+
+uses
+  Fat16Dir;
+
+(******************************************************************************)
+procedure Boot;
+var
+  ok: byte;
+  fname: string[13];
+  fsize: longint;
+  addr_lo: byte;
+  addr_hi: byte;
+  dir_info: TFat16DirItem;
+  data: byte;
+
+begin
+  fname := 'bios.bin';
+
+  Usart_Write_Text('Booting...'+#13+#10);
+
+  ok := 0;
+  repeat
+    if Mmc_Init(PORTC, 2) = 0 then
+    begin
+      Usart_Write_Text(#10+#13+'Mmc_Init ok.'+#13+#10);
+      if Fat16Dir_Init = 1 then
+      begin
+        Usart_Write_Text('Fat16Dir_Init ok.'+#13+#10);
+        if Mmc_Fat_Assign(fname, 0) = 1 then
+          ok := 1;
+      end;
+    end;
+    if ok = 0 then
+      Delay_ms(500);
+  until ok = 1;
+
+  Spi_Init_Advanced(Master_OSC_div4, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
+
+  Usart_Write_Text('Loading bios.bin...'+#10+#13);
+  Mmc_Fat_Reset(fsize);
+  addr_lo := 0;
+  addr_hi := 0;
+
+  TRISD := 0; // address bus = output
+  TRISB := 0; // data bus = output
+  LATA.0 := 0; // write to address bus
+
+  while fsize > 0 do
+  begin
+    Mmc_Fat_Read(data);
+    PORTB := data;
+
+    if addr_lo = 0 then
+    begin
+      LATA.1 := 1;
+      PORTD := addr_hi;
+      LATA.1 := 0;
+    end;
+    PORTD := addr_lo;
+
+    LATE.1 := 0;
+    LATE.1 := 1;
+
+    inc(addr_lo);
+    if addr_lo = 0 then
+      inc(addr_hi);
+
+    dec(fsize);
+  end;
+  
+  TRISD := 255; // address bus = input
+  TRISB := 255; // data bus = input
+  LATA.0 := 1; // read from address bus
+
+  LATA.6 := 1; // release cpu reset line
+end;
+(******************************************************************************)
+end.

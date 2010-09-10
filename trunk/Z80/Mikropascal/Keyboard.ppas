@@ -1,0 +1,263 @@
+unit Keyboard;
+
+(*
+ * RC0: KEYB_DATA (input)
+ * RC1: KEYB_CLOCK (input/output)
+ *)
+ 
+ var
+   keyb_shift: byte;
+   keyb_altgr: byte;
+   spec_key: byte;
+ 
+(******************************************************************************)
+procedure Usart_Write_Num(num: byte);
+var
+  str: string[4];
+begin
+  ByteToStr(num, str);
+  Usart_Write_Text(str);
+  Usart_Write(10);
+  Usart_Write(13);
+end;
+(******************************************************************************)
+function KeybGetScancode(var value: byte): byte;
+var
+  i: word;
+  
+begin
+  TRISC.1 := 1; // release clock line
+  Delay_us(50);
+
+  value := 0;
+
+  // read start bit
+  i := 0;
+  while (PORTC.1 = 1) and (i < 400) do
+  begin
+    Delay_10us;
+    inc(i);
+  end;
+
+  if PORTC.1 = 0 then
+  begin
+    while PORTC.1 = 0 do
+      nop;
+
+    // read data bits
+    for i := 0 to 7 do
+    begin
+      while PORTC.1 = 1 do
+        nop;
+      value := value shr 1;
+      value.7 := PORTC.0;
+      while PORTC.1 = 0 do
+        nop;
+    end;
+
+    // read parity bit
+    while PORTC.1 = 1 do
+      nop;
+    while PORTC.1 = 0 do
+      nop;
+
+    // read stop bit
+    while PORTC.1 = 1 do
+      nop;
+    while PORTC.1 = 0 do
+      nop;
+
+    Result := 1;
+  end // if PORTC.1 = 0 then
+  else
+    Result := 0;
+
+  TRISC.1 := 0; // clock line = output
+  LATC.1 := 0; // pull clock line to 0
+end;
+(******************************************************************************)
+// result: 0 = no key pressed, 1 = key pressed
+// value: 255 = no key
+function KeybGetChar(var value: byte): byte;
+var
+  scode: byte;
+  
+begin
+  if spec_key > 0 then
+  begin
+    value := spec_key;
+    spec_key := 0;
+    result := 1;
+    exit;
+  end; // if spec_key > 0 then
+
+  value := 255;
+  repeat
+    result := KeybGetScancode(scode);
+    if result = 1 then
+    begin
+      if keyb_shift = 0 then
+      begin
+        case scode of
+          $1C: value := 'a';
+          $32: value := 'b';
+          $21: value := 'c';
+          $23: value := 'd';
+          $24: value := 'e';
+          $2B: value := 'f';
+          $34: value := 'g';
+          $33: value := 'h';
+          $43: value := 'i';
+          $3B: value := 'j';
+          $42: value := 'k';
+          $4B: value := 'l';
+          $3A: value := 'm';
+          $31: value := 'n';
+          $44: value := 'o';
+          $4D: value := 'p';
+          $15: value := 'q';
+          $2D: value := 'r';
+          $1B: value := 's';
+          $2C: value := 't';
+          $3C: value := 'u';
+          $2A: value := 'v';
+          $1D: value := 'w';
+          $22: value := 'x';
+          $1A: value := 'y';
+          $35: value := 'z';
+          $45: value := '0';
+          $16: value := '1';
+          $1E: value := '2';
+          $26: value := '3';
+          $25: value := '4';
+          $2E: value := '5';
+          $36: value := '6';
+          $3D: value := '7';
+          $3E: value := '8';
+          $46: value := '9';
+          //$54: value := 'ü';
+          $5B: value := '+';
+          //$4C: value := 'ö';
+          //$52: value := 'ä';
+          $5D: value := '#';
+          $41: value := ',';
+          $49: value := '.';
+          $4A: value := '-';
+          $12: keyb_shift := 1; // left shift
+          $59: keyb_shift := 1; // right shift
+          $F0: begin // break codes
+            repeat
+              result := KeybGetScancode(scode);
+            until result = 1;
+            scode := 0;
+          end; // $F0
+        end; // case scode of
+      end // if keyb_shift = 0 then
+      else begin
+        case scode of
+          $1C: value := 'A';
+          $32: value := 'B';
+          $21: value := 'C';
+          $23: value := 'D';
+          $24: value := 'E';
+          $2B: value := 'F';
+          $34: value := 'G';
+          $33: value := 'H';
+          $43: value := 'I';
+          $3B: value := 'J';
+          $42: value := 'K';
+          $4B: value := 'L';
+          $3A: value := 'M';
+          $31: value := 'N';
+          $44: value := 'O';
+          $4D: value := 'P';
+          $15: value := 'Q';
+          $2D: value := 'R';
+          $1B: value := 'S';
+          $2C: value := 'T';
+          $3C: value := 'U';
+          $2A: value := 'V';
+          $1D: value := 'W';
+          $22: value := 'X';
+          $1A: value := 'Y';
+          $35: value := 'Z';
+          $45: value := '=';
+          $16: value := '!';
+          $1E: value := '"';
+          $26: value := '§';
+          $25: value := '$';
+          $2E: value := '%';
+          $36: value := '&';
+          $3D: value := '/';
+          $3E: value := '(';
+          $46: value := ')';
+          //$54: value := 'Ü';
+          $5B: value := '*';
+          //$4C: value := 'Ö';
+          //$52: value := 'Ä';
+          $5D: value := 39; // '
+          $41: value := ';';
+          $49: value := ':';
+          $4A: value := '_';
+          $F0: begin // break codes
+            repeat
+              result := KeybGetScancode(scode);
+            until result = 1;
+            case scode of
+              $12: keyb_shift := 0; // left shift
+              $59: keyb_shift := 0; // right shift
+            end; // case scode of
+            scode := 0;
+          end; // $F0
+        end; // case scode of
+      end; // if keyb_shift = 0 then ... else
+      if value = 255 then
+      begin
+        case scode of
+          $29: value := ' '; // space
+          $0D: value := 9; // TAB
+          $5A: value := 10; // enter
+          $66: value := 8; // backspace
+          $0E: value := '^';
+          $76: value := 27; // ESC
+          $E0: begin
+            result := KeybGetScancode(scode);
+            if result = 1 then
+            begin
+              case scode of
+                $75: spec_key := 72; // up
+                $72: spec_key := 80; // down
+                $6B: spec_key := 75; // left (achtung: evtl. vertauscht!)
+                $74: spec_key := 77; // right (achtung: evtl. vertauscht!)
+//                $70: spec_key := 0; // insert
+//                $71: spec_key := 0; // del
+                $6C: spec_key := 71; // home
+                $69: spec_key := 79; // end
+                $7D: spec_key := 73; // page up
+                $7A: spec_key := 81; // page down
+                $11: keyb_altgr := 1; // alt gr
+              end; // case scode of
+            end; // if result = 1 then
+          end; // $E0
+          $05: spec_key := 59; // F1
+          $06: spec_key := 60; // F2
+          $04: spec_key := 61; // F3
+          $0C: spec_key := 62; // F4
+          $03: spec_key := 63; // F5
+          $0B: spec_key := 64; // F6
+          $83: spec_key := 65; // F7
+          $0A: spec_key := 66; // F8
+          $01: spec_key := 67; // F9
+          $09: spec_key := 68; // F10
+          $78: spec_key := 133; // F11
+          $07: spec_key := 134; // F12
+        end; // case scode of
+      end; // if value = 0 then
+      if spec_key > 0 then
+        value := 0;
+    end; // if result = 1 then
+  until (value < 255) or (result = 0);
+
+end;
+(******************************************************************************)
+end.

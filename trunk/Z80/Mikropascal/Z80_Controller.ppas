@@ -1,0 +1,168 @@
+program Z80_Controller;
+
+(*
+ * Z80 Controller
+ * Clock: 66 MHz ext. = 16.5 MHz int.
+ *
+ * pin layout:
+ * RA0: /ADDR_WR
+ * RA1: LD_HI_ADDR
+ * RA2: /BUSRQ
+ * RA3: BUSAK (input)
+ * RA4: /CLR_WAIT
+ * RA5: /INT
+ * RA6: /RESET
+ * RB0-RB7: data bus
+ * RC0: KEYB_DATA (input)
+ * RC1: KEYB_CLOCK (input/output)
+ * RC2: /SD_CS
+ * RC3: SD_SCK
+ * RC4: SD_SDI (input?)
+ * RC5: SD_SDO
+ * RC6: USART_TX
+ * RC7: USART_RX (input)
+ * RD0-RD7: address bus
+ * RE0: /MEMRD_PIC
+ * RE1: /MEMWR_PIC
+ * RE2: CTRL_WR (input)
+ * RE3: CTRL_RD (input)
+ *)
+
+uses Boot, MainBios, Initializer, Keyboard;
+
+(******************************************************************************)
+procedure Init;
+begin
+//  OSCCON := %01110000;
+
+  ADCON0 := 0; // disable A/D converter
+  ADCON1 := $0f;
+  CMCON := $07; // disable comparator
+
+  INTCON := 0;
+  PIE1 := 0;
+  PIE2 := 0;
+  RCON := 0;
+  CCP1CON := 0;
+//  ECCP1CON := 0;
+  SSPCON1 := 0;
+  SSPCON2 := 0;
+  T0CON := 0;
+
+  TRISA := %00001000;
+  PORTA := %00100111;
+  TRISB := 255;
+  PORTB := 0;
+  TRISC := %11010001;
+  PORTC := %00000100;
+  TRISD := 255;
+  PORTD := 0;
+  TRISE := %00001100;
+  PORTE := %00000011;
+
+  LATA.6 := 0; // reset CPU
+  
+  LATA.4 := 1; // enable io-port flipflops
+  
+  // Init PS/2 keyboard
+  keyb_shift := 0;
+  keyb_altgr := 0;
+  spec_key := 0;
+  
+  // Init MMC Reader
+  Spi_Init_Advanced(Master_OSC_div64, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
+
+  // Init RS232
+  Usart_Init(19200);
+  Usart_Write_Text('Init ok.'+#10+#13);
+end;
+(******************************************************************************)
+(*
+procedure Test;
+var
+  addr_lo: byte;
+  addr_hi: byte;
+  index: word;
+  dsize: word;
+  x: byte;
+  count: word;
+
+begin
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+  TRISB := 0; // data bus = output
+
+  x := 0;
+
+  while true do
+  begin
+    if x = 0 then
+      PORTB := 65
+    else if x = 1 then
+      PORTB := 66
+    else
+      PORTB := 67;
+
+    for count := 0 to 10 do
+    begin
+      addr_lo := $00;
+      addr_hi := $10;
+
+      dsize := 4096;
+      index := 0;
+
+      while dsize > 0 do
+      begin
+  //      PORTB := 65;
+
+        if addr_lo = 0 then
+        begin
+          LATD := addr_hi;
+          LATA.1 := 1;
+          LATA.1 := 0;
+        end;
+        PORTD := addr_lo;
+
+        LATE.1 := 0;
+        LATE.1 := 1;
+
+        inc(addr_lo);
+        if addr_lo = 0 then
+          inc(addr_hi);
+
+        inc(index);
+        dec(dsize);
+      end;
+    end;
+    
+    inc(x);
+    if x = 3 then
+      x := 0;
+    delay_ms(100);
+  end;
+
+  TRISD := 255;
+  TRISB := 255;
+  LATA.0 := 1;
+
+  Delay_10us;
+  LATA.6 := 1; // release CPU reset line
+  Delay_ms(500);
+  LATA.6 := 0; // reset CPU
+end;
+*)
+(******************************************************************************)
+var
+  data: byte;
+  
+begin
+  Init;
+  
+  Initializer;
+
+//  Test;
+
+  Boot;
+  MainLoop;
+
+end.

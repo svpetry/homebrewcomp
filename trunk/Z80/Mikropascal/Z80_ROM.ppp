@@ -1,0 +1,35 @@
+[DeviceName]
+Value=P18F4620
+[DeviceClock]
+Value=60
+[MainUnit]
+Value=Z80_ROM.ppas
+[DeviceFlags]
+Count=9
+Value0=_OSC_ECIO6_1H = $00F5
+Value1=_FCMEN_OFF_1H = $00BF
+Value2=_IESO_OFF_1H = $007F
+Value3=_PWRT_ON_2L = $00FE
+Value4=_BOREN_OFF_2L = $00F9
+Value5=_WDT_OFF_2H = $00FE
+Value6=_MCLRE_OFF_3H = $007F
+Value7=_XINST_ON_4L = $00FF
+Value8=_DEBUG_OFF_4L = $00FF
+[BuildSimDebug]
+Build=0
+SimDebug=0
+[ProjectFiles]
+Count=0
+[OtherFiles]
+Count=0
+Value0=X:\Sven\Elektronik\mikroPascal\Z80_ROM\Z80_ROM.ppas
+[TabIndex]
+Value=0
+[SearchPath]
+Count=4
+Value0=X:\PortableApps\mikroPascal8\Defs\
+Value1=X:\PortableApps\mikroPascal8\Uses\p18\
+Value2=X:\Sven\Elektronik\mikroPascal\Z80\
+Value3=X:\Sven\Elektronik\mikroPascal\Z80_ROM\
+[EEPROMinfo]
+isused=0

@@ -1,0 +1,386 @@
+unit Fat16Dir;
+
+// D. Rosseel
+// Original: 05-07-2009
+// Latest update: 10-10-2009
+
+{
+History
+05-07-2009: - Original version
+06-07-2009: - removed some errors in "FindFirst" and "FindNext" (could not handle directories with files deleted)
+06-07-2009: - optimised code
+15-07-2009: - added "MakeDirFileHtm"
+16-07-2009: - Optimized a little (speed of writing directoryfile to card)
+20-07-2009: - small change in html directory file
+21-07-2009: - corrected headers of the "MakeDirFile.." routines
+            - corrected the Dir.htm file content
+23-07-2009: - corrected an error in fileattributes in dir.htm and dit.txt
+            - suppressed long FileName entries in dir.txt and dir.htm
+27-07-2009: - combined "Filename" and "FileExt" in type "TFat16DirItem"
+27-07-2009: - provided this unit with its own Databuffer: no longer to be provided via the function calls
+01-08-2009: - made "SectorNo" as DWord (normally not necessary in this application)
+12-08-2009: - added "mmc_FAT_QuickFormat_Ex"
+13-08-2009: - small optimisation change to "mmc_FAT_QuickFormat_Ex"
+10-10-2009: - corrected for cards that have an Master Boot Record in sector zero in stead of a Fat Boot Record
+            - Added init routine now: "Fat16Dir_Init"
+}
+
+
+uses Keyboard;
+
+// interface
+     
+type TFat16DirItem =
+     record
+       FileName: string[12]; // format 8.3 only!
+       FileAttr: byte;
+       FileSize: DWord;
+     end;
+     
+const Fat16_Attrs : string[6] = 'RHSVDA'; // be carefull: mirrored! ("R" is bit 0 in the attributes)
+      
+var FatDataBuffer: array[512] of char;    // can also be used (be carefull) for other that "Fat" purposes
+    
+//function Fat16Dir_Init: boolean;
+// initialises the unit, reads in the basic card data (boot sector)
+// returns true if success, false on failure
+// takes also care that "mmc_FAT_Init" is done
+
+//function FindFirst(var Item: TFat16DirItem): boolean;
+// Returns true if the routine finds the first directory Entry (if any) and puts the result in "Item".
+// If no first directory Entry present then the procedure returns false.
+// To be called before "FindNext" is used.
+
+//function FindNext (var Item: TFat16DirItem): boolean;
+// Returns true if the routine finds a next directory Entry (if any) and puts the result in "Item".
+// If no next directory Entry present then the procedure returns false.
+// Not to be called without a previous call to findfirst
+
+//procedure MakeDirFile(var DirFileName: string[12]);
+// Makes a file on the MMC/SD card with name equal to "FileName" with the directory of the
+// card as content.
+
+//procedure MakeDirFileHtm(var DirFileName: string[12]);
+// Same as "Makedirfile", but the filenames are html links
+
+//function mmc_FAT_QuickFormat_Ex(var VolumeLabel: string[11]; _MaxRootDirEntries: word): byte;
+// Same as "mmc_FAT_QuickFormat", but the maximum number of directories can be changed
+
+// ---------------------------------------------------------------------------------------------------------
+// All above routines need a (common) FatDataBuffer (512 bytes) to use for directory and card writing purposes.
+// --> Important<--: the content of that buffer should not be changed before a call to FindNext!
+// ---------------------------------------------------------------------------------------------------------
+
+
+//implementation
+
+var I, Offset, Entry: word;
+    SectorNo: DWord;
+    mmc_error : byte;
+    DirectoryDone: byte;
+    
+    // root sector variables
+    OEMName: string[8];
+    BytesPerSector : word;
+    ReservedSectors: word;
+    NrOfFats : byte;
+    SectorsPerFat: word;
+    MaxRootDirEntries: word;
+    VolumeName : string[12];
+    
+    // calculated variables
+    RootDirStartSector: Dword;
+    RootDirNrOfSectors: Dword;
+    RootDirLastSector: Dword;
+    RootDirEntriesPerSector : Dword;
+    
+    // RootDirVariables
+    FileName: string[8];
+    FileExt: string[3];
+    FileSize: DWord;
+    FileAttr: byte;
+    
+var FatDirItem: TFat16DirItem;
+    FirstTimeAppend: byte;
+    Fat16Dir_Initialised: byte;
+    FBR_Sector: DWord;
+(*
+function Array2Dword(addr_ : word) : dword;
+begin
+  FSR2Ptr := addr_;
+  result := POSTINC2;
+  result := result + POSTINC2 shl 8;
+  result := result + POSTINC2 shl 16;
+  result := result + INDF2 shl 24;
+end;
+*)
+
+function Fat16Dir_Init: byte;
+var I, Offset, PartitionTypeOffset: word;
+    Tmp: byte;
+    FoundPartition, FoundFBR: byte;
+    __mmc_error: byte;
+begin
+  Result := 0;
+  Fat16Dir_Initialised := 0;
+  
+  FBR_Sector := 0;             // Fat Boot Record sector
+  
+  __mmc_error := Mmc_Read_Sector(FBR_Sector, FatDataBuffer);
+  if __mmc_error = 0 then
+    Result := 1;
+  
+  if Result = 1 then
+  begin
+    Result := 0;
+    
+    Usart_Write_Text('Mmc_Read_Sector ok.'+#10+#13);
+    
+    // check sector signature
+    if (FatDataBuffer[$1FE] <> $55) or (FatDataBuffer[$1FF] <> $AA) then
+    begin
+      Usart_Write_Text('unknown signature!.'+#10+#13);
+      Usart_Write_Num(FatDataBuffer[$1FE]);
+      Usart_Write_Text(#10+#13);
+      exit; // error
+    end;
+    
+    Usart_Write_Text('sector signature ok.'+#10+#13);
+
+    // Check if it is a Fat boot record
+    if (FatDataBuffer[0] = $EB) or (FatDataBuffer[0] = $E9) then
+      FoundFBR := 1
+    else
+      FoundFBR := 0;
+    
+    if FoundFBR = 0 then  // no fat boot record in sector zero
+    begin                  // must be a master boot record (containing partitioning info)
+      
+      Usart_Write_Text('FoundFBR = 0.'+#10+#13);
+
+      // search for partition information
+      FoundPartition := 0;
+      I := 0;
+      
+      while (I < 4) and (FoundPartition = 0) do
+      begin
+        PartitionTypeOffset := $1C2 + (I * 16);
+        Tmp := FatDataBuffer[PartitionTypeOffset];              // get partition type
+        if (Tmp = 4) or (Tmp = 6) or (Tmp = $0E) then FoundPartition := 1;  // check for Fat16 partition type
+        inc(I); // next primary partition
+      end;
+      
+      if FoundPartition = 1 then
+      begin // partition info found: get the Fat Boot Record sector number, read it and check it
+        
+        Usart_Write_Text('FoundPartition.'+#10+#13);
+//        FBR_Sector :=
+//        Array2Dword(word(@FatDataBuffer[PartitionTypeOffset  + 4]));
+
+        FBR_Sector := FatDataBuffer[PartitionTypeOffset  + 4] +
+        (FatDataBuffer[PartitionTypeOffset + 5] shl 8) +
+        (FatDataBuffer[PartitionTypeOffset + 6] shl 16) +
+        (FatDataBuffer[PartitionTypeOffset + 7] shl 24);
+        
+        // read the sector
+        __mmc_error := Mmc_Read_Sector(FBR_Sector, FatDataBuffer);
+        if __mmc_error = 0 then
+          Result := 1 ;
+        if Result = 0 then exit;
+        
+        Usart_Write_Text('Mmc_Read_Sector ok.'+#10+#13);
+
+        // check sector signature
+        if (FatDataBuffer[$1FE] <> $55) or (FatDataBuffer[$1FF] <> $AA) then exit; // error
+        
+        Usart_Write_Text('sector signature ok.'+#10+#13);
+
+        // check if the sector is a Fat boot record
+        if (FatDataBuffer[0] = $EB) or (FatDataBuffer[0] = $E9) then
+          FoundFBR := 1
+        else
+          FoundFBR := 0;
+        
+        if FoundFBR = 0 then exit;  // Fat boot record
+
+        Usart_Write_Text('FoundFBR ok.'+#10+#13);
+      end;
+    end;
+    
+    // At this point a Fat boot Record is in the FatDataBuffer, continue
+    
+    Result := 0;
+    
+    // ---------------  Get and Calculate boot sector related values ---------------------------
+    
+    // values present in the bootsector
+    
+    Offset := $03;
+    
+    for I := 0 to 7 do OEMName[I] := FatDataBuffer[Offset + I];
+    OEMName[8] := 0;
+    
+    BytesPerSector    := FatDataBuffer[$0B] + (FatDataBuffer[$0C] shl 8);
+    ReservedSectors   := FatDataBuffer[$0E] + (FatDataBuffer[$0F] shl 8);
+    NrOfFats          := FatDataBuffer[$10];
+    MaxRootDirEntries := FatDataBuffer[$11] + (FatDataBuffer[$12] shl 8);
+    SectorsPerFat     := FatDataBuffer[$16] + (FatDataBuffer[$17] shl 8);
+    
+    Offset := $2B;
+    for I := 0 to 10 do VolumeName[I] := FatDataBuffer[Offset + I];
+    VolumeName[11] := 0;
+    
+    // calculated values
+    RootDirStartSector      := FBR_Sector + ReservedSectors + (SectorsPerFat * NrOfFats);
+    RootDirNrOfSectors      := (MaxRootDirEntries * 32) / BytesPerSector;
+    RootDirLastSector       := RootDirStartSector + RootDirNrOfSectors - 1;
+    RootDirEntriesPerSector := BytesPerSector / 32;
+    
+    if mmc_FAT_Init(PORTC, 2) = 0 then // finally initialise the FAT16 library
+      Result := 1
+    else
+      Usart_Write_Text('Fat16Dir_Init: mmc_FAT_Init failed!'+#10+#13);
+  end;
+  Usart_Write_Text('Fat16Dir_Initialised!'+#10+#13);
+  Fat16Dir_Initialised := 1;
+end;
+
+procedure StrTrim(var str: string[20]);
+var
+  idx: byte;
+begin
+  idx := Length(str) - 1;
+  while ((str[idx] = 32) or (str[idx] = '.')) and (idx > 0) do
+    dec(idx);
+  str[idx + 1] := 0;
+end;
+
+function FindNext_(var Fat16DirItem: TFat16DirItem): byte;
+begin
+  Usart_Write_Text('FindNext_ called.'+#10+#13);
+
+  Result := 0;
+  
+  while (Result = 0) and (DirectoryDone = 0) do
+  begin
+    // check current Entry (characterized by "Entry" and "SectorNo")
+    
+    Offset := (Entry * 32);
+    
+    if (FatDataBuffer[Offset] = $00) then
+    begin
+      Usart_Write_Text('no entries any more.'+#10+#13);
+      DirectoryDone := 1;   // no entries any more
+      exit;
+    end;
+    
+    if (FatDataBuffer[Offset] <> $E5) and
+    (FatDataBuffer[Offset + 11] <> $0F) // no "long" FileName entry
+    then
+    begin
+      Usart_Write_Text('FatDataBuffer ok.'+#10+#13);
+      Offset := (Entry * 32);
+      
+      for I := 0 to 7 do FileName[I] := FatDataBuffer[Offset + I];
+      FileName[8] := 0;
+      StrTrim(FileName);
+      Fat16DirItem.FileName := FileName;
+      
+      Offset := (Entry * 32) + 8;
+      for I := 0 to 2 do FileExt[I] := FatDataBuffer[Offset + I];
+      FileExt[3] := 0;
+      StrTrim(FileExt);
+      
+      if FileExt[0] > 0 then
+      begin
+        StrAppendSuf(Fat16DirItem.FileName, '.');
+        StrCat(Fat16DirItem.FileName, FileExt);
+      end;
+      
+      Offset := (Entry * 32) + 28;
+      FileSize := FatDataBuffer[Offset] + (FatDataBuffer[Offset+1] shl 8) + (FatDataBuffer[Offset+2] shl 16) + (FatDataBuffer[Offset+3] shl 24);
+      Fat16DirItem.FileSize := FileSize;
+      
+      Offset := (Entry * 32) + 11;
+      FileAttr := FatDataBuffer[Offset];
+      Fat16DirItem.FileAttr := FileAttr;
+      
+      Result := 1;
+    end
+    else
+    begin
+      // get next entry
+      inc(Entry);
+      if Entry = RootDirEntriesPerSector then
+      begin
+        Entry := 0;
+        inc(SectorNo);
+        if SectorNo <= RootDirLastSector then
+        begin
+          mmc_error := Mmc_Read_Sector(SectorNo, FatDataBuffer); // read in next sector
+          if mmc_error <> 0 then DirectoryDone := 1;       // can not read sector
+        end
+        else DirectoryDone := 1;
+      end;
+    end;
+  end;
+  
+end;
+
+function FindFirst(var Fat16DirItem: TFat16DirItem): byte;
+begin
+  Usart_Write_Text('FindFirst called.'+#10+#13);
+  
+  Result := 0;
+  if Fat16Dir_Initialised = 0 then exit;
+  
+  Usart_Write_Text('FindFirst1'+#10+#13);
+
+  // reading out the rootdirectory
+  DirectoryDone := 0;
+  
+  SectorNo := RootDirStartSector;
+  mmc_error := Mmc_Read_Sector(SectorNo, FatDataBuffer); // read in first directory sector
+  if mmc_error = 0 then
+  begin
+    Entry := 0;
+    Result := FindNext_(Fat16DirItem); // and find the first directory item
+  end
+  else
+  begin
+    Usart_Write_Text('can not read sector.'+#10+#13);
+    DirectoryDone := 1;  // can not read sector
+  end;
+  
+  
+end;
+
+function FindNext(var Fat16DirItem: TFat16DirItem): byte;
+begin
+  Usart_Write_Text('FindNext called.'+#10+#13);
+
+  Result := 0;
+  if Fat16Dir_Initialised = 0 then exit;
+  
+  if DirectoryDone = 1 then Exit;
+  
+  inc(Entry);
+  if Entry = RootDirEntriesPerSector then
+  begin
+    Entry := 0;
+    inc(SectorNo);
+    if SectorNo <= RootDirLastSector then
+    begin
+      mmc_error := Mmc_Read_Sector(SectorNo, FatDataBuffer); // read in next sector
+      if mmc_error <> 0 then DirectoryDone := 1;  // can not read sector
+    end
+    else DirectoryDone := 1;
+  end;
+  
+  if DirectoryDone = 1 then Exit;
+  
+  Result := FindNext_(Fat16DirItem); // and find the next directory item
+  
+end;
+
+end.

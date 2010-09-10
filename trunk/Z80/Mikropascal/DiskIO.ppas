@@ -1,0 +1,457 @@
+unit DiskIO;
+
+uses
+  Memory, Fat16Dir;
+
+var
+  io_buffer: array[0..511] of byte;
+  disk_status: byte; // 0 = ok, >0 = error
+
+const
+  BUFFER_ADDR_LO = $80;
+  BUFFER_ADDR_HI = $00;
+  SECTOR_ADDR_LO = $40;
+  SECTOR_ADDR_HI = $00;
+
+  PROGRAM_OFFSET = $0280;
+
+(******************************************************************************)
+procedure ReadFile(var size: longint);
+var
+  addr_lo, addr_hi: word;
+  data: byte;
+  i: word;
+
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+  TRISB := 0; // data bus = output
+
+  addr_lo := BUFFER_ADDR_LO;
+  addr_hi := BUFFER_ADDR_HI;
+
+  LATA.1 := 1;
+  PORTD := addr_hi;
+  LATA.1 := 0;
+
+  i := 0;
+  while (i < 512) and (size > 0) do
+  begin
+    if addr_lo = 0 then
+    begin
+      LATA.1 := 1;
+      PORTD := addr_hi;
+      LATA.1 := 0;
+    end;
+    PORTD := addr_lo;
+
+    Mmc_Fat_Read(data);
+    PORTB := data;
+
+    // write byte to memory
+    LATE.1 := 0;
+    LATE.1 := 1;
+
+    inc(addr_lo);
+    if addr_lo = 0 then
+      inc(addr_hi);
+
+    inc(i);
+    dec(size);
+  end;
+
+  TRISD := 255;
+  TRISB := 255;
+  LATA.0 := 1;
+
+  // DMA deaktivieren
+  LATA.2 := 1;
+end;
+(******************************************************************************)
+procedure WriteFile(var size: word);
+var
+  addr_lo, addr_hi: word;
+  pdata: ^byte;
+
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+
+  addr_lo := BUFFER_ADDR_LO;
+  addr_hi := BUFFER_ADDR_HI;
+
+  pdata := @io_buffer;
+
+  LATA.1 := 1;
+  PORTD := addr_hi;
+  LATA.1 := 0;
+
+  while size > 0 do
+  begin
+    if addr_lo = 0 then
+    begin
+      LATA.1 := 1;
+      PORTD := addr_hi;
+      LATA.1 := 0;
+    end;
+    PORTD := addr_lo;
+
+    // read byte from memory
+    LATE.0 := 0;
+    pdata^ := PORTB;
+    inc(pdata);
+    LATE.0 := 1;
+
+    inc(addr_lo);
+    if addr_lo = 0 then
+      inc(addr_hi);
+
+    dec(size);
+  end;
+
+  TRISD := 255;
+  LATA.0 := 1;
+
+  Mmc_Fat_Write(io_buffer, size);
+
+  // DMA deaktivieren
+  LATA.2 := 1;
+end;
+(******************************************************************************)
+procedure ReadSector;
+var
+  sector: longint;
+  addr_lo, addr_hi: word;
+  pdata: ^byte;
+  i: word;
+  
+begin
+  // DMA aktivieren
+  LATA.2 := 0;
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+
+  // set high address byte
+  LATA.1 := 1;
+  PORTD := SECTOR_ADDR_HI;
+  LATA.1 := 0;
+
+  // read sector no from RAM
+  addr_lo := SECTOR_ADDR_LO;
+  pdata := @sector;
+  for i := 0 to 3 do
+  begin
+    PORTD := addr_lo;
+    inc(addr_lo);
+
+    LATE.0 := 0;
+    pdata^ := PORTB;
+    LATE.0 := 1;
+    inc(pdata);
+  end;
+
+  // read sector from MMC and write to RAM
+  disk_status := Mmc_Read_Sector(sector, io_buffer);
+  
+  if disk_status = 0 then
+  begin
+    TRISB := 0; // data bus = output
+
+    addr_lo := BUFFER_ADDR_LO;
+    addr_hi := BUFFER_ADDR_HI;
+
+    LATA.1 := 1;
+    PORTD := addr_hi;
+    LATA.1 := 0;
+
+    pdata := @io_buffer;
+    for i := 0 to 511 do
+    begin
+      PORTB := pdata^;
+      inc(pdata);
+
+      if addr_lo = 0 then
+      begin
+        LATA.1 := 1;
+        PORTD := addr_hi;
+        LATA.1 := 0;
+      end;
+      PORTD := addr_lo;
+
+      // write byte to memory
+      LATE.1 := 0;
+      LATE.1 := 1;
+
+      inc(addr_lo);
+      if addr_lo = 0 then
+        inc(addr_hi);
+    end;
+  end;
+  
+  TRISD := 255;
+  TRISB := 255;
+  LATA.0 := 1;
+  
+  // DMA deaktivieren
+  LATA.2 := 1;
+end;
+(******************************************************************************)
+procedure WriteSector;
+var
+  sector: longint;
+  addr_lo, addr_hi: word;
+  pdata: ^byte;
+  i: word;
+
+begin
+  // activate DMA
+  LATA.2 := 0;
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+
+  // set high address byte
+  LATA.1 := 1;
+  PORTD := SECTOR_ADDR_HI;
+  LATA.1 := 0;
+
+  // read sector no from RAM
+  addr_lo := SECTOR_ADDR_LO;
+  pdata := @sector;
+  for i := 0 to 3 do
+  begin
+    PORTD := addr_lo;
+    inc(addr_lo);
+
+    LATE.0 := 0;
+    pdata^ := PORTB;
+    LATE.0 := 1;
+    inc(pdata);
+  end;
+
+  // read sector from RAM and write to MMC
+  addr_lo := BUFFER_ADDR_LO;
+  addr_hi := BUFFER_ADDR_HI;
+
+  LATA.1 := 1;
+  PORTD := addr_hi;
+  LATA.1 := 0;
+
+  pdata := @io_buffer;
+  for i := 0 to 511 do
+  begin
+    if addr_lo = 0 then
+    begin
+      LATA.1 := 1;
+      PORTD := addr_hi;
+      LATA.1 := 0;
+    end;
+    PORTD := addr_lo;
+
+    LATE.0 := 0;
+    pdata^ := PORTB;
+    inc(pdata);
+    LATE.0 := 1;
+
+    inc(addr_lo);
+    if addr_lo = 0 then
+      inc(addr_hi);
+  end;
+
+  disk_status := Mmc_Write_Sector(sector, io_buffer);
+
+  TRISD := 255;
+  LATA.0 := 1;
+
+  // deactivate DMA
+  LATA.2 := 1;
+end;
+(******************************************************************************)
+procedure LoadFile(var fname: string[13]; addr: word);
+var
+  fsize: longint;
+  data: byte;
+  addr_lo, addr_hi: byte;
+  
+begin
+  if Mmc_Fat_Assign(fname, 0) = 1 then
+  begin
+    Mmc_Fat_Reset(fsize);
+
+    addr_lo := Lo(addr);
+    addr_hi := Hi(addr);
+
+    // activate DMA
+    LATA.2 := 0;
+    while PORTA.3 = 0 do
+      nop;
+
+    LATA.0 := 0; // write to address bus
+    TRISD := 0; // address bus = output
+    TRISB := 0; // data bus = output
+
+    LATA.1 := 1;
+    PORTD := addr_hi;
+    LATA.1 := 0;
+
+    while fsize > 0 do
+    begin
+      Mmc_Fat_Read(PORTB);
+
+      if addr_lo = 0 then
+      begin
+        LATA.1 := 1;
+        PORTD := addr_hi;
+        LATA.1 := 0;
+      end;
+      PORTD := addr_lo;
+
+      // write byte to memory
+      LATE.1 := 0;
+      LATE.1 := 1;
+
+      inc(addr_lo);
+      if addr_lo = 0 then
+        inc(addr_hi);
+
+      dec(fsize);
+    end;
+
+    TRISD := 255;
+    TRISB := 255;
+    LATA.0 := 1; // read from address bus
+
+    // deactivate DMA
+    LATA.2 := 1;
+
+    disk_status := 0;
+  end
+  else
+    disk_status := 1;
+end;
+(******************************************************************************)
+procedure LoadProgram(var fname: string[13]);
+var
+  fsize: longint;
+  addr_lo, addr_hi: byte;
+  data: byte;
+//  i: word;
+
+begin
+  Usart_Write_Text('LoadProgram called: ');
+  Usart_Write_Text(fname);
+  Usart_Write_Text(#10+#13);
+
+  if Mmc_Fat_Assign(fname, 0) = 1 then
+  begin
+    Mmc_Fat_Reset(fsize);
+
+    Usart_Write_Text('file opened.'+#10+#13);
+
+    if strcmp(fname, 'bios.bin') = 0 then
+    begin
+      i := 0;
+      while i < PROGRAM_OFFSET do
+      begin
+        Mmc_Fat_Read(data);
+        inc(i);
+      end;
+    end;
+
+    addr_lo := Lo(PROGRAM_OFFSET);
+    addr_hi := Hi(PROGRAM_OFFSET);
+
+    LATA.6 := 0; // reset cpu
+
+    LATA.0 := 0; // write to address bus
+    TRISD := 0; // address bus = output
+    TRISB := 0; // data bus = output
+
+    LATA.1 := 1;
+    PORTD := addr_hi;
+    LATA.1 := 0;
+
+    while fsize > 0 do
+    begin
+      if addr_lo = 0 then
+      begin
+        LATA.1 := 1;
+        PORTD := addr_hi;
+        LATA.1 := 0;
+      end;
+      PORTD := addr_lo;
+
+      Mmc_Fat_Read(PORTB);
+
+      // write byte to memory
+      LATE.1 := 0;
+      LATE.1 := 1;
+
+      inc(addr_lo);
+      if addr_lo = 0 then
+        inc(addr_hi);
+
+      dec(fsize);
+    end;
+
+    TRISD := 255;
+    TRISB := 255;
+    LATA.0 := 1; // read from address bus
+
+    LATA.6 := 1; // release cpu reset line
+    disk_status := 0;
+
+    Usart_Write_Text('Ok.'+#10+#13);
+  end
+  else
+    disk_status := 1;
+end;
+(******************************************************************************)
+procedure ReadVolumeName;
+var
+  dir_item: TFat16DirItem;
+  stop: byte;
+
+begin
+  dir_item.FileAttr := 0;
+  stop := 0;
+  
+  if FindFirst(dir_item) then
+  begin
+    if ((dir_item.FileAttr and 8) > 0) then
+      stop := 1;
+
+    while stop = 0 do
+    begin
+      if FindNext(dir_item) then
+      begin
+        if ((dir_item.FileAttr and 8) > 0) then
+          stop := 1;
+      end
+      else
+        stop := 1;
+    end;
+  end;
+
+  bios_str[0] := 0;
+  if ((dir_item.FileAttr and 8) > 0) then
+  begin
+    strcpy(bios_str, dir_item.FileName);
+    StrTrim(bios_str);
+  end;
+end;
+(******************************************************************************)
+end.

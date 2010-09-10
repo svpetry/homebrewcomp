@@ -1,0 +1,152 @@
+program Z80_CPUTest;
+
+uses rom;
+
+(*
+ * Z80 CPU Test
+ * Clock: 60 MHz ext. = 15 MHz int.
+ *
+ * ROM: $0000-$1fff (8K)
+ * RAM: $2000-$27ff (2K)
+ *
+ * pin layout:
+ * RA0: /RESET
+ * RA1: /MEMWR
+ * RA2: /MEMRD
+ * RB0-RB7: A0-A7
+ * RC0-RC6: A8-A14
+ * RD0-RD7: D0-D7
+ * RE0: Test-LED (an = 0)
+ *)
+
+var
+  ram: array[0..2047] of byte;
+
+(******************************************************************************)
+procedure Init;
+begin
+//  OSCCON := %01110000;
+
+  ADCON0 := 0; // disable A/D Converter
+  ADCON1 := $0f;
+
+  INTCON := 0;
+  PIE1 := 0;
+  PIE2 := 0;
+  RCON := 0;
+  CCP1CON := 0;
+  SSPCON1 := 0;
+  SSPCON2 := 0;
+
+{  TRISA := 0;
+  TRISB := 0;
+  TRISC := 0;
+  TRISD := 0;
+  TRISE := 0;
+
+  while true do
+  begin
+    PORTA := 255;
+    PORTB := 255;
+    PORTC := 255;
+    PORTD := 255;
+    PORTE := 255;
+    Delay_ms(500);
+    PORTA := 0;
+    PORTB := 0;
+    PORTC := 0;
+    PORTD := 0;
+    PORTE := 0;
+    Delay_ms(500);
+  end;
+}
+  TRISA := %00000110;
+  PORTA := 0;
+  TRISB := 255;
+  TRISC := 255;
+  TRISD := 255;
+  TRISE := 0;
+  PORTE := 255;
+
+end;
+(******************************************************************************)
+procedure MainProc;
+var
+  addr: word;
+  value: byte;
+  i: word;
+  
+begin
+  PORTE.0 := 0;
+  Delay_ms(200);
+  PORTE.0 := 1;
+  Delay_ms(800);
+
+  PORTA.0 := 1;
+  
+  while true do
+  begin
+
+    if PORTA.1 = 0 then
+    begin
+      // memory write
+      addr := PORTB + (PORTC shl 8);
+      if (addr >= $2000) and (addr <= $27ff) then
+        ram[addr - $2000] := PORTD;
+  
+      while PORTA.1 = 0 do
+        nop;
+    end;
+  
+    if PORTA.2 = 0 then
+    begin
+      // memory read
+      addr := PORTB + (PORTC shl 8);
+      if (addr >= $2000) and (addr <= $27ff) then
+        value := ram[addr - $2000]
+      else if addr < rom_size then
+      begin
+//        if addr = 0 then
+//          PORTE.0 := 0;
+//        if addr = 1 then
+//          PORTE.1 := 0;
+
+{        if addr > 1 then
+        begin
+          for i := 0 to addr do
+          begin
+            PORTE.0 := 0;
+            Delay_ms(500);
+            PORTE.0 := 1;
+            Delay_ms(500);
+          end;
+        end;
+}
+//        Delay_ms(2000);
+
+        value := rom[addr];
+      end
+      else
+        value := 0;
+
+//      if value <> 0 then
+//        PORTE := 0;
+//      else
+//        PORTE := 255;
+
+      TRISD := 0;
+      PORTD := value;
+
+      while PORTA.2 = 0 do
+        nop;
+
+      TRISD := 255;
+    end;
+  
+  end;
+end;
+(******************************************************************************)
+begin
+  Init;
+  MainProc;
+end.

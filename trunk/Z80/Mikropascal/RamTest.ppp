@@ -1,0 +1,37 @@
+[DeviceName]
+Value=P18F2525
+[DeviceClock]
+Value=8
+[MainUnit]
+Value=RamTest.ppas
+[DeviceFlags]
+Count=10
+Value0=_OSC_INTIO67_1H = $00F8
+Value1=_FCMEN_OFF_1H = $00BF
+Value2=_IESO_OFF_1H = $007F
+Value3=_PWRT_ON_2L = $00FE
+Value4=_BOREN_OFF_2L = $00F9
+Value5=_WDT_OFF_2H = $00FE
+Value6=_MCLRE_OFF_3H = $007F
+Value7=_STVREN_OFF_4L = $00FE
+Value8=_LVP_OFF_4L = $00FB
+Value9=_EBTRB_OFF_7H = $00FF
+Value10=_BKBUG_OFF_4L = $007F
+[BuildSimDebug]
+Build=0
+SimDebug=0
+[ProjectFiles]
+Count=0
+[OtherFiles]
+Count=1
+Value0=X:\Sven\Elektronik\mikroPascal\Z80\RamTest.ppas
+Value1=X:\Sven\Elektronik\mikroPascal\Z80\RamTest.asm
+[TabIndex]
+Value=0
+[SearchPath]
+Count=3
+Value0=X:\PortableApps\mikroPascal8\Defs\
+Value1=X:\PortableApps\mikroPascal8\Uses\p18\
+Value2=X:\Sven\Elektronik\mikroPascal\Z80\
+[EEPROMinfo]
+isused=0

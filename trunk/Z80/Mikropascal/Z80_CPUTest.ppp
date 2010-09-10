@@ -1,0 +1,40 @@
+[DeviceName]
+Value=P18F4620
+[DeviceClock]
+Value=60
+[MainUnit]
+Value=Z80_CPUTest.ppas
+[DeviceFlags]
+Count=13
+Value0=_OSC_ECIO6_1H = $00F5
+Value1=_FCMEN_OFF_1H = $00BF
+Value2=_IESO_OFF_1H = $007F
+Value3=_PWRT_ON_2L = $00FE
+Value4=_BOREN_OFF_2L = $00F9
+Value5=_WDT_OFF_2H = $00FE
+Value6=_MCLRE_OFF_3H = $007F
+Value7=_LPT1OSC_OFF_3H = $00FB
+Value8=_PBADEN_OFF_3H = $00FD
+Value9=_STVREN_OFF_4L = $00FE
+Value10=_LVP_OFF_4L = $00FB
+Value11=_XINST_OFF_4L = $00BF
+Value12=_DEBUG_OFF_4L = $00FF
+[BuildSimDebug]
+Build=0
+SimDebug=0
+[ProjectFiles]
+Count=0
+[OtherFiles]
+Count=3
+Value0=E:\Elektronik\mikroPascal\Z80\Z80_CPUTest.ppas
+Value1=E:\Elektronik\mikroPascal\Z80\rom.ppas
+Value2=E:\Elektronik\mikroPascal\Z80\Z80_CPUTest.asm
+[TabIndex]
+Value=0
+[SearchPath]
+Count=3
+Value0=E:\PortableApps\mikroPascal8\Defs\
+Value1=E:\PortableApps\mikroPascal8\Uses\p18\
+Value2=E:\Elektronik\mikroPascal\Z80\
+[EEPROMinfo]
+isused=0

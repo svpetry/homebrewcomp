@@ -1,0 +1,307 @@
+unit MainBios;
+
+ uses DiskIO, Memory, Keyboard, Fat16Dir;
+
+ var
+   fsize: word;
+
+ const
+   BUSY_ADDR = $0044;
+
+(******************************************************************************)
+procedure ProcessPortWrite;
+var
+  dir_item: TFat16DirItem;
+  value: byte;
+  block_size: word;
+
+begin
+  value := PORTB;
+
+  case PORTD of
+  
+    // write disk command
+    160: begin
+      case value of
+
+        // init mmc
+        0: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          Spi_Init_Advanced(Master_OSC_div64, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
+          disk_status := Fat16Dir_Init;
+          if disk_status = 0 then
+            Spi_Init_Advanced(Master_OSC_div4, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
+          MemWrite(BUSY_ADDR, 0);
+         end;
+
+        // read sector
+        1: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadSector;
+          MemWrite(BUSY_ADDR, 0);
+        end;
+
+        // write sector
+        2: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          WriteSector;
+          MemWrite(BUSY_ADDR, 0);
+        end;
+        
+        // read first dir entry
+        10: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          if FindFirst(dir_item) then
+          begin
+            Strcpy(bios_str, dir_item.FileName);
+            WriteBiosParamDWord(dir_item.FileSize);
+            WriteBiosOutparam(dir_item.FileAttr);
+          end
+          else
+            bios_str[0] := 0;
+          WriteBiosStr;
+          MemWrite(BUSY_ADDR, 0);
+        end;
+        
+        // read next dir entry
+        11: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          if FindNext(dir_item) then
+          begin
+            Strcpy(bios_str, dir_item.FileName);
+            WriteBiosParamDWord(dir_item.FileSize);
+            WriteBiosOutparam(dir_item.FileAttr);
+          end
+          else
+            bios_str[0] := 0;
+          WriteBiosStr;
+          MemWrite(BUSY_ADDR, 0);
+        end;
+        
+        // open file for reading
+		    20: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadBiosStr;
+          Usart_Write_Text(bios_str);
+          Usart_Write_Text(#10+#13);
+          if Mmc_Fat_Assign(bios_str, 0) = 1 then
+          begin
+            WriteBiosOutparam(1);
+            Mmc_Fat_Reset(fsize);
+            WriteBiosParamDWord(fsize);
+          end
+          else
+            WriteBiosOutparam(0);
+          MemWrite(BUSY_ADDR, 0);
+		    end;
+		    
+		    // open file for writing (create new)
+    		21: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadBiosStr;
+          Mmc_Fat_Assign(bios_str, $A0);
+          Mmc_Fat_Rewrite;
+          MemWrite(BUSY_ADDR, 0);
+    		end;
+    		
+    		// open file for writing (append)
+    		22: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadBiosStr;
+          Mmc_Fat_Assign(bios_str, $A0);
+          Mmc_Fat_Append;
+          MemWrite(BUSY_ADDR, 0);
+        end;
+
+        // close file
+    		22: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+    		end;
+
+        // read block
+    		23: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadFile(fsize);
+          MemWrite(BUSY_ADDR, 0);
+    		end;
+
+        // write block
+    		24: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          block_size := MemRead(BIOS_PARAM1_ADDR_LO);
+          WriteFile(block_size);
+          MemWrite(BUSY_ADDR, 0);
+    		end;
+
+        // load complete file into memory
+    		25: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadBiosStr;
+
+          MemWrite(BUSY_ADDR, 0);
+    		end;
+    		
+        // read volume name
+    		26: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadVolumeName;
+          WriteBiosStr;
+          MemWrite(BUSY_ADDR, 0);
+    		end;
+
+        // load program
+    		27: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          ReadBiosStr;
+          LoadProgram(bios_str);
+    		end;
+
+        // delete file
+    		28: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadBiosStr;
+          if Mmc_Fat_Assign(bios_str, 0) = 1 then
+          begin
+            WriteBiosOutparam(1);
+            Mmc_Fat_Delete;
+          end
+          else
+            WriteBiosOutparam(0);
+          MemWrite(BUSY_ADDR, 0);
+    		end;
+
+        // check if file exists
+    		29: begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+          MemWrite(BUSY_ADDR, 1);
+          ReadBiosStr;
+          WriteBiosOutparam(Mmc_Fat_Assign(bios_str, 0));
+          MemWrite(BUSY_ADDR, 0);
+    		end
+
+    		else begin
+          LATA.4 := 0;
+          LATA.4 := 1;
+    		end;
+
+      end; // case value of
+    end; // 160
+    
+    // init RS2332
+    170: begin
+           LATA.4 := 0;
+           LATA.4 := 1;
+           case value of
+              0: Usart_Init(4800);
+              1: Usart_Init(9600);
+              2: Usart_Init(19200);
+              3: Usart_Init(38400);
+           end;
+    end; // 170
+    
+    // write byte to RS232
+    171: begin
+      LATA.4 := 0;
+      LATA.4 := 1;
+      Usart_Write(value);
+    end; // 171
+    
+    // write text to RS232
+    172: begin
+      ReadBiosStr;
+      Usart_Write_Text(bios_str);
+      LATA.4 := 0;
+      LATA.4 := 1;
+    end // 172
+    
+		else begin
+      LATA.4 := 0;
+      LATA.4 := 1;
+		end;
+  end; // case PORTD of
+end;
+(******************************************************************************)
+procedure ProcessPortRead;
+var
+  data: byte;
+  
+begin
+  data := 0;
+
+  case PORTD of
+  
+    // read keyboard
+    128: begin
+      KeybGetChar(data);
+    end;
+    
+    // read disk status
+    161: begin
+      data := disk_status;
+    end;
+    
+    // read byte from file
+    163: begin
+      Mmc_Fat_Read(data);
+    end;
+
+    // read byte from RS232
+    173: begin
+      data := Usart_Read;
+    end;
+
+    // read RS232 status
+    174: begin
+      data := Usart_Data_Ready;
+    end;
+    
+  end;
+
+  TRISB := 0;
+  PORTB := data;
+  LATA.4 := 0;
+  LATA.4 := 1;
+  TRISB := 255;
+end;
+(******************************************************************************)
+procedure MainLoop;
+begin
+  while true do
+  begin
+    if PORTE.2 = 1 then
+      ProcessPortWrite
+    else if PORTE.3 = 1 then
+      ProcessPortRead;
+  end;
+end;
+(******************************************************************************)
+end.
