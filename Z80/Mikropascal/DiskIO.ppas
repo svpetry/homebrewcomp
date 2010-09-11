@@ -348,18 +348,12 @@ var
   fsize: longint;
   addr_lo, addr_hi: byte;
   data: byte;
-//  i: word;
 
 begin
-  Usart_Write_Text('LoadProgram called: ');
-  Usart_Write_Text(fname);
-  Usart_Write_Text(#10+#13);
 
   if Mmc_Fat_Assign(fname, 0) = 1 then
   begin
     Mmc_Fat_Reset(fsize);
-
-    Usart_Write_Text('file opened.'+#10+#13);
 
     if strcmp(fname, 'bios.bin') = 0 then
     begin
@@ -414,7 +408,6 @@ begin
     LATA.6 := 1; // release cpu reset line
     disk_status := 0;
 
-    Usart_Write_Text('Ok.'+#10+#13);
   end
   else
     disk_status := 1;

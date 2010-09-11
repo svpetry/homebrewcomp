@@ -17,16 +17,16 @@ var
 begin
   fname := 'bios.bin';
 
-  Usart_Write_Text('Booting...'+#13+#10);
+//  Usart_Write_Text('Booting...'+#13+#10);
 
   ok := 0;
   repeat
     if Mmc_Init(PORTC, 2) = 0 then
     begin
-      Usart_Write_Text(#10+#13+'Mmc_Init ok.'+#13+#10);
+//      Usart_Write_Text(#10+#13+'Mmc_Init ok.'+#13+#10);
       if Fat16Dir_Init = 1 then
       begin
-        Usart_Write_Text('Fat16Dir_Init ok.'+#13+#10);
+//        Usart_Write_Text('Fat16Dir_Init ok.'+#13+#10);
         if Mmc_Fat_Assign(fname, 0) = 1 then
           ok := 1;
       end;
@@ -37,7 +37,7 @@ begin
 
   Spi_Init_Advanced(Master_OSC_div4, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
 
-  Usart_Write_Text('Loading bios.bin...'+#10+#13);
+//  Usart_Write_Text('Loading bios.bin...'+#10+#13);
   Mmc_Fat_Reset(fsize);
   addr_lo := 0;
   addr_hi := 0;

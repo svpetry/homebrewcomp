@@ -14,6 +14,7 @@ var
   dir_item: TFat16DirItem;
   value: byte;
   block_size: word;
+  i: byte;
 
 begin
   value := PORTB;
@@ -30,8 +31,17 @@ begin
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
           Spi_Init_Advanced(Master_OSC_div64, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
-          disk_status := Fat16Dir_Init;
-          if disk_status = 0 then
+          disk_status := 0;
+          i := 0;
+          while (i < 3) and (disk_status = 0) do
+          begin
+            if Mmc_Init(PORTC, 2) = 0 then
+              disk_status := Fat16Dir_Init;
+            inc(i);
+            if disk_status = 0 then
+              Delay_50us;
+          end;
+          if disk_status = 1 then
             Spi_Init_Advanced(Master_OSC_div4, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
           MemWrite(BUSY_ADDR, 0);
          end;
@@ -94,8 +104,8 @@ begin
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
           ReadBiosStr;
-          Usart_Write_Text(bios_str);
-          Usart_Write_Text(#10+#13);
+//          Usart_Write_Text(bios_str);
+//          Usart_Write_Text(#10+#13);
           if Mmc_Fat_Assign(bios_str, 0) = 1 then
           begin
             WriteBiosOutparam(1);
