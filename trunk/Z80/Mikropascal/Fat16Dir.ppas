@@ -134,18 +134,18 @@ begin
   begin
     Result := 0;
     
-    Usart_Write_Text('Mmc_Read_Sector ok.'+#10+#13);
-    
+//    Usart_Write_Text('Mmc_Read_Sector ok.'+#10+#13);
+
     // check sector signature
     if (FatDataBuffer[$1FE] <> $55) or (FatDataBuffer[$1FF] <> $AA) then
     begin
-      Usart_Write_Text('unknown signature!.'+#10+#13);
-      Usart_Write_Num(FatDataBuffer[$1FE]);
-      Usart_Write_Text(#10+#13);
+//      Usart_Write_Text('unknown signature!.'+#10+#13);
+//      Usart_Write_Num(FatDataBuffer[$1FE]);
+//      Usart_Write_Text(#10+#13);
       exit; // error
     end;
     
-    Usart_Write_Text('sector signature ok.'+#10+#13);
+//    Usart_Write_Text('sector signature ok.'+#10+#13);
 
     // Check if it is a Fat boot record
     if (FatDataBuffer[0] = $EB) or (FatDataBuffer[0] = $E9) then
@@ -156,7 +156,7 @@ begin
     if FoundFBR = 0 then  // no fat boot record in sector zero
     begin                  // must be a master boot record (containing partitioning info)
       
-      Usart_Write_Text('FoundFBR = 0.'+#10+#13);
+//      Usart_Write_Text('FoundFBR = 0.'+#10+#13);
 
       // search for partition information
       FoundPartition := 0;
@@ -173,7 +173,7 @@ begin
       if FoundPartition = 1 then
       begin // partition info found: get the Fat Boot Record sector number, read it and check it
         
-        Usart_Write_Text('FoundPartition.'+#10+#13);
+//        Usart_Write_Text('FoundPartition.'+#10+#13);
 //        FBR_Sector :=
 //        Array2Dword(word(@FatDataBuffer[PartitionTypeOffset  + 4]));
 
@@ -188,12 +188,12 @@ begin
           Result := 1 ;
         if Result = 0 then exit;
         
-        Usart_Write_Text('Mmc_Read_Sector ok.'+#10+#13);
+//        Usart_Write_Text('Mmc_Read_Sector ok.'+#10+#13);
 
         // check sector signature
         if (FatDataBuffer[$1FE] <> $55) or (FatDataBuffer[$1FF] <> $AA) then exit; // error
         
-        Usart_Write_Text('sector signature ok.'+#10+#13);
+//        Usart_Write_Text('sector signature ok.'+#10+#13);
 
         // check if the sector is a Fat boot record
         if (FatDataBuffer[0] = $EB) or (FatDataBuffer[0] = $E9) then
@@ -203,7 +203,7 @@ begin
         
         if FoundFBR = 0 then exit;  // Fat boot record
 
-        Usart_Write_Text('FoundFBR ok.'+#10+#13);
+//        Usart_Write_Text('FoundFBR ok.'+#10+#13);
       end;
     end;
     
@@ -237,11 +237,11 @@ begin
     RootDirEntriesPerSector := BytesPerSector / 32;
     
     if mmc_FAT_Init(PORTC, 2) = 0 then // finally initialise the FAT16 library
-      Result := 1
-    else
-      Usart_Write_Text('Fat16Dir_Init: mmc_FAT_Init failed!'+#10+#13);
+      Result := 1;
+//    else
+//      Usart_Write_Text('Fat16Dir_Init: mmc_FAT_Init failed!'+#10+#13);
   end;
-  Usart_Write_Text('Fat16Dir_Initialised!'+#10+#13);
+//  Usart_Write_Text('Fat16Dir_Initialised!'+#10+#13);
   Fat16Dir_Initialised := 1;
 end;
 
@@ -257,7 +257,7 @@ end;
 
 function FindNext_(var Fat16DirItem: TFat16DirItem): byte;
 begin
-  Usart_Write_Text('FindNext_ called.'+#10+#13);
+//  Usart_Write_Text('FindNext_ called.'+#10+#13);
 
   Result := 0;
   
@@ -269,7 +269,7 @@ begin
     
     if (FatDataBuffer[Offset] = $00) then
     begin
-      Usart_Write_Text('no entries any more.'+#10+#13);
+//      Usart_Write_Text('no entries any more.'+#10+#13);
       DirectoryDone := 1;   // no entries any more
       exit;
     end;
@@ -278,7 +278,7 @@ begin
     (FatDataBuffer[Offset + 11] <> $0F) // no "long" FileName entry
     then
     begin
-      Usart_Write_Text('FatDataBuffer ok.'+#10+#13);
+//      Usart_Write_Text('FatDataBuffer ok.'+#10+#13);
       Offset := (Entry * 32);
       
       for I := 0 to 7 do FileName[I] := FatDataBuffer[Offset + I];
@@ -329,12 +329,12 @@ end;
 
 function FindFirst(var Fat16DirItem: TFat16DirItem): byte;
 begin
-  Usart_Write_Text('FindFirst called.'+#10+#13);
+//  Usart_Write_Text('FindFirst called.'+#10+#13);
   
   Result := 0;
   if Fat16Dir_Initialised = 0 then exit;
   
-  Usart_Write_Text('FindFirst1'+#10+#13);
+//  Usart_Write_Text('FindFirst1'+#10+#13);
 
   // reading out the rootdirectory
   DirectoryDone := 0;
@@ -348,7 +348,7 @@ begin
   end
   else
   begin
-    Usart_Write_Text('can not read sector.'+#10+#13);
+//    Usart_Write_Text('can not read sector.'+#10+#13);
     DirectoryDone := 1;  // can not read sector
   end;
   
@@ -357,7 +357,7 @@ end;
 
 function FindNext(var Fat16DirItem: TFat16DirItem): byte;
 begin
-  Usart_Write_Text('FindNext called.'+#10+#13);
+//  Usart_Write_Text('FindNext called.'+#10+#13);
 
   Result := 0;
   if Fat16Dir_Initialised = 0 then exit;
