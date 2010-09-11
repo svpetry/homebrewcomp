@@ -16,13 +16,15 @@ static struct line_header *line_base;
 static struct line_header *start_line; // 1st line of visible screen area
 static struct line_header *curr_line; // cursor line
 
-static byte edit_active = 0;
+static byte edit_active;
+
+const char scOutOfMemory[] = "out of memory. (press key to continue)";
 
 /******************************************************************************/
 void init_editor() {
 	memset(0x1000, ' ' + 128, 80);
 	memset(0x1c00, ' ' + 128, 80);
-	write_inverse(0, 0, " F2: SAVE   F8: DELETE   F10: QUIT");
+	write_inverse(0, 0, " F2: SAVE   F3: LOAD   F8: DELETE   F10: QUIT");
 
 	if (prog_paramcount) {
 		strcpy(file_name, prog_params[0]);
@@ -31,8 +33,62 @@ void init_editor() {
 		}
 	} else {
 		strcpy(file_name, "<new file>");
+		init_line_base();
+		start_line = curr_line = malloc(LINE_HEADER_SIZE + 1);
+		curr_line->next = NULL;
+		curr_line->prev = line_base;
+		line_base->next = curr_line;
+		curr_line->size = 0;
+		curr_line->line[0] = 0;
 	}
 	write_inverse(24, 1, file_name);
+}
+/******************************************************************************/
+void init_line_base() {
+	line_base = malloc(LINE_HEADER_SIZE + 1);
+	line_base->next = NULL;
+	line_base->prev = NULL;
+	line_base->size = 0;
+	line_base->line[0] = 0;
+}
+/******************************************************************************/
+void start_lineedit() {
+	char *s, *t;
+    byte i;
+
+	if (!edit_active) {
+		s = curr_line->line;
+		t = line_buf;
+		i = 0;
+		while (*s) {
+			*(t++) = *(s++);
+			i++;
+		}
+		while (i < MAX_LINE_LENGTH) {
+			*(t++) = ' ';
+			i++;
+		}
+		*t = 0;
+
+		edit_active = 1;
+	}
+}
+/******************************************************************************/
+void finish_lineedit() {
+	char *s;
+
+	if (edit_active) {
+		s = (char *)((word)line_buf + MAX_LINE_LENGTH - 1);
+		while (*s == ' ' && s != line_buf)
+			s--;
+		if (s == line_buf)
+			*s = 0;
+		else
+			*(s + 1) = 0;
+
+		trim_line(curr_line, 1);
+		edit_active = 0;
+	}
 }
 /******************************************************************************/
 void start_editor() {
@@ -41,6 +97,7 @@ void start_editor() {
 	int l;
 	struct line_header *line1, *line2;
 
+	edit_active = 0;
 	start_line = curr_line = line_base->next;
 	display();
 
@@ -54,9 +111,12 @@ void start_editor() {
 				case 59: // F1
 					break;
 				case 60: // F2
-                	save_file();
+					finish_lineedit();
+					save_file();
 					break;
 				case 61: // F3
+					finish_lineedit();
+					prompt_load_file();
 					break;
 				case 62: // F4
 					break;
@@ -67,6 +127,7 @@ void start_editor() {
 				case 65: // F7
 					break;
 				case 66: // F8
+					finish_lineedit();
 					line1 = curr_line;
 					if (curr_line->next != NULL) {
 						curr_line->prev->next = curr_line->next;
@@ -87,10 +148,12 @@ void start_editor() {
 					
 				case 72: // up
 					if (cur_row > 0) {
+						finish_lineedit();
 						cur_row--;
 						curr_line = curr_line->prev;
 					} else {
 						if (curr_line->prev != line_base) {
+							finish_lineedit();
 							cur_row--;
 							v_scrolldown();
 							start_line = curr_line = curr_line->prev;
@@ -100,6 +163,7 @@ void start_editor() {
 					break;
 				case 80: // down
 					if (curr_line->next != NULL) {
+						finish_lineedit();
 						if (cur_row < V_ROWS - 1) {
 							cur_row++;
 							curr_line = curr_line->next;
@@ -123,6 +187,7 @@ void start_editor() {
 					}
 					break;
 				case 73: // page up
+					finish_lineedit();
 					if (start_line->prev == line_base) {
 						cur_row = 0;
 						curr_line = start_line;
@@ -137,6 +202,7 @@ void start_editor() {
 					display();
 					break;
 				case 81: // page down
+					finish_lineedit();
 					i = V_ROWS;
 					while (i > 0 && start_line->next != NULL) {
 						start_line = start_line->next;
@@ -152,7 +218,13 @@ void start_editor() {
                 	cur_col = 0;
 					break;
 				case 79: // end
-					cur_col = strlen(curr_line->line);
+					if (edit_active) {
+						s = (char *)((word)line_buf + MAX_LINE_LENGTH - 1);
+						while (*s == ' ' && s != line_buf)
+							s--;
+						cur_col = (byte)(s - line_buf) + 1;
+					} else
+						cur_col = strlen(curr_line->line);
 					if (cur_col > 79)
                     	cur_col = 79;
 					break;
@@ -161,11 +233,13 @@ void start_editor() {
 		} else { // if (c == 0)
 
 			if (c == '\n') { // enter
+				finish_lineedit();
+
 				l = strlen(curr_line->line);
 				if (cur_col >= l) {
 					// cursor after text line
 					if ((line2 = malloc(LINE_HEADER_SIZE + 1)) == NULL) {
-						show_message("out of memory. (press key to continue)");
+						show_message(scOutOfMemory);
 						getchar();
 						quit_app();
 					}
@@ -186,7 +260,7 @@ void start_editor() {
                     line1 = curr_line;
 
 					if ((line2 = malloc(LINE_HEADER_SIZE + l - cur_col + 1)) == NULL) {
-						show_message("out of memory. (press key to continue)");
+						show_message(scOutOfMemory);
 						getchar();
 						quit_app();
 					}
@@ -213,36 +287,66 @@ void start_editor() {
 					else
 						cur_row++;
 
-					trim_line(line1);
+					trim_line(line1, 0);
 				}
 
 				cur_col = 0;
 				display();
-			} else if (c == 9) { // backspace
+			} else if (c == 8) { // backspace
 				l = strlen(curr_line->line);
-				if (cur_col >= l) {
-
-
-				} else if (cur_col == 0) {
-
+				if (cur_col > l && !edit_active) {
+					if (cur_col > 0)
+						cur_col--;
+				} else if (cur_col > 0) {
+					start_lineedit();
+					s = line_buf + cur_col;
+					while (*s) {
+						*(s - 1) = *s;
+						s++;
+					}
+					*(s - 1) = ' ';
+					put_line(line_buf, cur_row);
+					cur_col--;
 				} else {
 
 				}
-			} else if (c >= ' ') {
+			} else if (c == 9) { // tab
 
+			} else if (c >= ' ') {
+				// other characters
+				start_lineedit();
+				s = line_buf + MAX_LINE_LENGTH - 2;
+				while (s >= line_buf + cur_col) {
+					*(s + 1) = *(s);
+					s--;
+				}
+				*(s + 1) = c;
+				put_line(line_buf, cur_row);
+				if (cur_col < V_COLS - 1)
+					cur_col++;
 			}
 		} // if (c == 0)
 	} // while (1)
-}
+} // start_editor
 /******************************************************************************/
-void trim_line(struct line_header *line) {
+void trim_line(struct line_header *line, byte use_line_buf) {
 	byte l;
 	struct line_header *new_line;
 
-	l = strlen(line->line);
-	if (l + 2 < line->size) {
-		new_line = malloc(LINE_HEADER_SIZE + l + 1);
-		strcpy(new_line->line, line->line);
+	if (use_line_buf)
+		l = strlen(line_buf);
+	else
+		l = strlen(line->line);
+	if (l + 2 < line->size || use_line_buf) {
+		if ((new_line = malloc(LINE_HEADER_SIZE + l + 1)) == NULL) {
+			show_message(scOutOfMemory);
+			getchar();
+			quit_app();
+		}
+		if (use_line_buf)
+			strcpy(new_line->line, line_buf);
+		else
+			strcpy(new_line->line, line->line);
 		new_line->size = l;
 		new_line->next = line->next;
 		new_line->prev = line->prev;
@@ -255,13 +359,7 @@ void trim_line(struct line_header *line) {
 			start_line = new_line;
 		free(line);
 	}
-}
-/******************************************************************************/
-void edit_begin() {
-}
-/******************************************************************************/
-void edit_end() {
-}
+} // trim_line
 /******************************************************************************/
 void display() {
 	byte i;
@@ -275,18 +373,14 @@ void display() {
 	}
 	while (i < V_ROWS)
 		put_line("", i++);
-}
+} // display
 /******************************************************************************/
 byte load_file() {
 	char c;
 	byte i;
 	struct line_header *line, *new_line;
 
-	line_base = malloc(LINE_HEADER_SIZE + 1);
-	line_base->next = NULL;
-	line_base->prev = NULL;
-	line_base->size = 0;
-	line_base->line[0] = 0;
+	init_line_base();
 	line = line_base;
 
 	strcpy(sparam, file_name);
@@ -314,7 +408,7 @@ byte load_file() {
 				new_line = malloc(LINE_HEADER_SIZE + i);
 				if (new_line == NULL) {
 					malloc_reset();
-					show_message("out of memory. (press key to continue)");
+					show_message(scOutOfMemory);
 					getchar();
 					return 0;
 				}
@@ -337,9 +431,46 @@ byte load_file() {
 		getchar();
 		return 0;
 	}
-}
+} // load_file
 /******************************************************************************/
 void save_file() {
+	int bidx;
+	byte l, i;
+	struct line_header *line;
+	char *s;
 
-}
+	IO_WRITE(160, #21); // open file for writing (create new)
+	while (busy);
+
+	bidx = 0;
+	line = line_base;
+
+	while (line != NULL) {
+		l = strlen(line->line);
+		if (bidx + l + 2 > 0x200) {
+			param1l = bidx;
+			IO_WRITE(160, #24); // write block
+			while (busy);
+			bidx = 0;
+		}
+		s = line->line;
+		for (i = 0; i < l; i++)
+			disk_buffer[bidx++] = *(s++);
+		disk_buffer[bidx++] = 13;
+		disk_buffer[bidx++] = 10;
+
+		line = line->next;
+	}
+	if (bidx > 0) {
+		param1l = bidx;
+		IO_WRITE(160, #24); // write block
+		while (busy);
+	}
+} // save_file
 /******************************************************************************/
+void prompt_load_file() {
+	v_cls();
+	
+} // prompt_load_file
+/******************************************************************************/
+
