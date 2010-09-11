@@ -14,11 +14,15 @@ struct line_header {
 };
 
 void init_editor();
+void init_line_base();
+void start_lineedit();
+void finish_lineedit();
 void start_editor();
-void trim_line(struct line_header *line);
+void trim_line(struct line_header *line, byte use_line_buf);
 void display();
 byte load_file();
 void save_file();
+void prompt_load_file();
 
 #endif /* EDITOR_H_ */
 
