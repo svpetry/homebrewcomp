@@ -105,8 +105,16 @@ void cmdline(void) {
 					puts("DEL [file]");
 					puts("DIR");
 					puts("HELP");
+					puts("INITMMC");
 					puts("SETCOLOR [bg] [fg]");
 					puts("TYPE [file]");
+				} else if (!strcmp(params[0], "initmmc")) {
+					IO_WRITE(160, #0);
+					while (busy);
+					if (io_read(161))
+						puts("\nok.");
+					else
+						puts("\nerror.");
 				} else if (!strcmp(params[0], "setcolor")) {
 					if (paramcount == 3) {
 						io_write(5, atoi(params[1]));
