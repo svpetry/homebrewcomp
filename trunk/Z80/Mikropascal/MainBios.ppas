@@ -33,13 +33,13 @@ begin
           Spi_Init_Advanced(Master_OSC_div64, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
           disk_status := 0;
           i := 0;
-          while (i < 3) and (disk_status = 0) do
+          while (i < 5) and (disk_status = 0) do
           begin
             if Mmc_Init(PORTC, 2) = 0 then
               disk_status := Fat16Dir_Init;
             inc(i);
             if disk_status = 0 then
-              Delay_50us;
+              Delay_ms(100);
           end;
           if disk_status = 1 then
             Spi_Init_Advanced(Master_OSC_div4, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
@@ -123,8 +123,10 @@ begin
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
           ReadBiosStr;
-          Mmc_Fat_Assign(bios_str, $A0);
-          Mmc_Fat_Rewrite;
+          Usart_Write_Text(bios_str);
+          Usart_Write_Text(#13+#10);
+          if Mmc_Fat_Assign(bios_str, $A0) = 1 then
+            Mmc_Fat_Rewrite;
           MemWrite(BUSY_ADDR, 0);
     		end;
     		
@@ -159,7 +161,9 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
-          block_size := MemRead(BIOS_PARAM1_ADDR_LO);
+          block_size := MemReadW(BIOS_PARAM1_ADDR_LO);
+          Usart_Write_Text('Block size: ');
+          Usart_Write_NumW(block_size);
           WriteFile(block_size);
           MemWrite(BUSY_ADDR, 0);
     		end;
