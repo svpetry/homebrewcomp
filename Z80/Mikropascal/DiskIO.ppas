@@ -18,7 +18,7 @@ const
 (******************************************************************************)
 procedure ReadFile(var size: longint);
 var
-  addr_lo, addr_hi: word;
+  addr_lo, addr_hi: byte;
   data: byte;
   i: word;
 
@@ -74,8 +74,9 @@ end;
 (******************************************************************************)
 procedure WriteFile(var size: word);
 var
-  addr_lo, addr_hi: word;
+  addr_lo, addr_hi: byte;
   pdata: ^byte;
+  i: word;
 
 begin
   LATA.2 := 0; // request bus
@@ -94,7 +95,8 @@ begin
   PORTD := addr_hi;
   LATA.1 := 0;
 
-  while size > 0 do
+  i := size;
+  while i > 0 do
   begin
     if addr_lo = 0 then
     begin
@@ -106,15 +108,16 @@ begin
 
     // read byte from memory
     LATE.0 := 0;
-    pdata^ := PORTB;
-    inc(pdata);
-    LATE.0 := 1;
 
     inc(addr_lo);
     if addr_lo = 0 then
       inc(addr_hi);
 
-    dec(size);
+    pdata^ := PORTB;
+    inc(pdata);
+    LATE.0 := 1;
+
+    dec(i);
   end;
 
   TRISD := 255;
@@ -129,7 +132,7 @@ end;
 procedure ReadSector;
 var
   sector: longint;
-  addr_lo, addr_hi: word;
+  addr_lo, addr_hi: byte;
   pdata: ^byte;
   i: word;
   
@@ -210,7 +213,7 @@ end;
 procedure WriteSector;
 var
   sector: longint;
-  addr_lo, addr_hi: word;
+  addr_lo, addr_hi: byte;
   pdata: ^byte;
   i: word;
 

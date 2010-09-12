@@ -1,5 +1,8 @@
 unit Memory;
 
+uses
+  Keyboard;
+
 var
    bios_str: string[20];
 
@@ -132,9 +135,40 @@ begin
   PORTD := Lo(addr);
 
   LATE.0 := 0;
+  nop;
   Result := PORTB;
   LATE.0 := 1;
 
+  TRISD := 255; // address bus = input
+  LATA.0 := 1; // read from address bus
+
+  LATA.2 := 1; // release bus
+end;
+(******************************************************************************)
+function MemReadW(addr: word): word;
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+
+  LATA.1 := 1;
+  PORTD := Hi(addr);
+  LATA.1 := 0;
+  PORTD := Lo(addr);
+
+  LATE.0 := 0;
+  nop;
+  Result := PORTB;
+  LATE.0 := 1;
+  inc(LATD);
+  
+  LATE.0 := 0;
+  nop;
+  Result := Result + (PORTB shl 8);
+  LATE.0 := 1;
   TRISD := 255; // address bus = input
   LATA.0 := 1; // read from address bus
 
@@ -206,9 +240,9 @@ begin
   for i := 0 to 19 do
   begin
     PORTD := addr_lo;
-    inc(addr_lo);
 
     LATE.0 := 0;
+    inc(addr_lo);
     pdata^ := PORTB;
     LATE.0 := 1;
     

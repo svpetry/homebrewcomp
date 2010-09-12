@@ -13,9 +13,19 @@ unit Keyboard;
 (******************************************************************************)
 procedure Usart_Write_Num(num: byte);
 var
-  str: string[4];
+  str: string[3];
 begin
   ByteToStr(num, str);
+  Usart_Write_Text(str);
+  Usart_Write(10);
+  Usart_Write(13);
+end;
+(******************************************************************************)
+procedure Usart_Write_NumW(num: word);
+var
+  str: string[5];
+begin
+  WordToStr(num, str);
   Usart_Write_Text(str);
   Usart_Write(10);
   Usart_Write(13);
