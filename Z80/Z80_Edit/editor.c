@@ -18,7 +18,7 @@ static struct line_header *curr_line; // cursor line
 
 static byte edit_active;
 
-const char scOutOfMemory[] = "out of memory. (press key to continue)";
+const char scOutOfMemory[] = "Out of memory. (Press key to continue.)";
 
 /******************************************************************************/
 void init_editor() {
@@ -32,7 +32,7 @@ void init_editor() {
 			quit_app();
 		}
 	} else {
-		strcpy(file_name, "<new file>");
+		file_name[0] = 0;
 		init_line_base();
 		start_line = curr_line = malloc(LINE_HEADER_SIZE + 1);
 		curr_line->next = NULL;
@@ -41,7 +41,7 @@ void init_editor() {
 		curr_line->size = 0;
 		curr_line->line[0] = 0;
 	}
-	write_inverse(24, 1, file_name);
+	show_status();
 }
 /******************************************************************************/
 void init_line_base() {
@@ -113,10 +113,12 @@ void start_editor() {
 				case 60: // F2
 					finish_lineedit();
 					save_file();
+					show_status();
 					break;
 				case 61: // F3
 					finish_lineedit();
 					prompt_load_file();
+					show_status();
 					break;
 				case 62: // F4
 					break;
@@ -361,6 +363,14 @@ void trim_line(struct line_header *line, byte use_line_buf) {
 	}
 } // trim_line
 /******************************************************************************/
+void show_status() {
+	show_message("");
+	if (file_name[0] == 0)
+		write_inverse(24, 1, "<new file>");
+	else
+		write_inverse(24, 1, file_name);
+}
+/******************************************************************************/
 void display() {
 	byte i;
 	struct line_header *line;
@@ -388,7 +398,7 @@ byte load_file() {
 	IO_WRITE(160, #20); // open file for reading
 	while (busy);
 	if (out_paramb) {
-		show_message("loading...");
+		show_message("Loading...");
 
 		i = 0;
 		
@@ -424,53 +434,135 @@ byte load_file() {
 
 		line->next = NULL;
 
-		show_message("");
 		return 1;
 	} else {
-		show_message("file not found! (press key to continue)");
+		show_message("File not found! (Press key to continue.)");
 		getchar();
 		return 0;
 	}
 } // load_file
 /******************************************************************************/
 void save_file() {
-	int bidx;
+	word bidx;
 	byte l, i;
 	struct line_header *line;
 	char *s;
 
-	IO_WRITE(160, #21); // open file for writing (create new)
-	while (busy);
+	if (prompt_file_name()) {
 
-	bidx = 0;
-	line = line_base;
+		show_message("Saving...");
 
-	while (line != NULL) {
-		l = strlen(line->line);
-		if (bidx + l + 2 > 0x200) {
-			param1l = bidx;
-			IO_WRITE(160, #24); // write block
-			while (busy);
-			bidx = 0;
-		}
-		s = line->line;
-		for (i = 0; i < l; i++)
-			disk_buffer[bidx++] = *(s++);
-		disk_buffer[bidx++] = 13;
-		disk_buffer[bidx++] = 10;
-
-		line = line->next;
-	}
-	if (bidx > 0) {
-		param1l = bidx;
-		IO_WRITE(160, #24); // write block
+		strcpy(sparam, file_name);
+		IO_WRITE(160, #21); // open file for writing (create new)
 		while (busy);
+		if (io_read(161) == 1) {
+
+			bidx = 0;
+			line = line_base->next;
+
+			while (line != NULL) {
+				l = strlen(line->line);
+				if (bidx + l + 2 > 0x200) {
+					param1l = bidx;
+					IO_WRITE(160, #24); // write block
+					while (busy);
+					bidx = 0;
+				}
+				s = line->line;
+				for (i = 0; i < l; i++)
+					disk_buffer[bidx++] = *(s++);
+				if (line->next != NULL) {
+					disk_buffer[bidx++] = 13;
+					disk_buffer[bidx++] = 10;
+				}
+
+				line = line->next;
+			}
+			if (bidx > 0) {
+				param1l = bidx;
+				IO_WRITE(160, #24); // write block
+				while (busy);
+			}
+
+		} else {
+			show_message("Error! (Press key to continue.)");
+			getchar();
+		}
 	}
+
 } // save_file
 /******************************************************************************/
 void prompt_load_file() {
-	v_cls();
-	
+	if (prompt_file_name()) {
+		malloc_reset();
+		load_file();
+		edit_active = 0;
+		start_line = curr_line = line_base->next;
+		display();
+	}
 } // prompt_load_file
+/******************************************************************************/
+byte prompt_file_name() {
+	char s[13];
+	byte pos;
+	byte c;
+	byte cnt;
+
+	const byte pos_offset = 11;
+
+	pos = strlen(file_name);
+	strcpy(s, file_name);
+	show_message("");
+	write_inverse(24, 1, "Filename: ");
+
+	write_inverse(24, pos_offset, s);
+
+	c = 0;
+	while (c != '\n') {
+
+		// getchar vvv
+		cnt = 0;
+		do
+		{
+			if (cnt == 0)
+				*((char *)0x1c00 + pos + pos_offset) = ' ';
+			c = io_read(128);
+			if (c == 255) {
+				delay_ms(15);
+				if (cnt == CURSOR_DELAY)
+					*((char *)0x1c00 + pos + pos_offset) = ' ' + 128;
+				if (++cnt == CURSOR_DELAY << 1)
+					cnt = 0;
+			}
+		} while (c == 255);
+		*((char *)0x1c00 + pos + pos_offset) = ' ' + 128;
+		// getchar ^^^
+
+		if ((c >= 'A' && c <= 'Z')
+			|| (c >= 'a' && c <= 'z')
+			|| (c >= '0' && c <= '9')
+			|| c == ' ' || c == '_' || c == '-' || c == '.')
+		{
+			if (pos < 12) {
+				s[pos] = c;
+				*((char *)0x1c00 + pos + pos_offset) = c + 128;
+				pos++;
+			}
+
+		} else if (c == 8) { // backspace) {
+			if (pos > 0) {
+				pos--;
+				s[pos] = ' ';
+				*((char *)0x1c00 + pos + pos_offset) = ' ' + 128;
+			}
+		} else if (c == 27) { // ESC
+			return 0;
+		}
+	}
+
+	s[pos] = 0;
+	strcpy(file_name, s);
+    return 1;
+} // prompt_file_name
 /******************************************************************************/
 
