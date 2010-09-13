@@ -125,7 +125,8 @@ begin
           ReadBiosStr;
           Usart_Write_Text(bios_str);
           Usart_Write_Text(#13+#10);
-          if Mmc_Fat_Assign(bios_str, $A0) = 1 then
+          disk_status := Mmc_Fat_Assign(bios_str, $A0);
+          if disk_status = 1 then
             Mmc_Fat_Rewrite;
           MemWrite(BUSY_ADDR, 0);
     		end;
