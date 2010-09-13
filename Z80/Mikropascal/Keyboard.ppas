@@ -84,6 +84,11 @@ begin
 
   TRISC.1 := 0; // clock line = output
   LATC.1 := 0; // pull clock line to 0
+
+  Delay_us(50);
+  
+//  if Result = 1 then
+//    Usart_Write_Num(value);
 end;
 (******************************************************************************)
 // result: 0 = no key pressed, 1 = key pressed
@@ -153,8 +158,14 @@ begin
           $41: value := ',';
           $49: value := '.';
           $4A: value := '-';
-          $12: keyb_shift := 1; // left shift
-          $59: keyb_shift := 1; // right shift
+          $12: begin
+            keyb_shift := 1; // left shift
+//            Usart_Write_Text('left shift on');
+          end;
+          $59: begin
+            keyb_shift := 1; // right shift
+//            Usart_Write_Text('right shift on');
+          end;
           $F0: begin // break codes
             repeat
               result := KeybGetScancode(scode);
@@ -214,8 +225,14 @@ begin
               result := KeybGetScancode(scode);
             until result = 1;
             case scode of
-              $12: keyb_shift := 0; // left shift
-              $59: keyb_shift := 0; // right shift
+              $12: begin
+                keyb_shift := 0; // left shift
+//                Usart_Write_Text('left shift off');
+              end;
+              $59: begin
+                keyb_shift := 0; // right shift
+//                Usart_Write_Text('right shift off');
+              end;
             end; // case scode of
             scode := 0;
           end; // $F0
