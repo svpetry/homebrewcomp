@@ -24,6 +24,8 @@ _endasm
 #define SELECT_BANK1 IO_WRITE(0, #2)
 #define SELECT_BANK2 IO_WRITE(0, #3)
 
+#define CURSOR_DELAY 20
+
 void puts_nlb(char *s);
 char getchar(void);
 void beep(void);

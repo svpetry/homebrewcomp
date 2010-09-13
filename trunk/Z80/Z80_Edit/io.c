@@ -30,9 +30,9 @@ char getchar(void) {
 		result = io_read(128);
 		if (result == 255) {
 			delay_ms(15);
-			if (cnt == 20)
+			if (cnt == CURSOR_DELAY)
 				v_hidecursor();
-			if (++cnt == 40)
+			if (++cnt == CURSOR_DELAY << 1)
 				cnt = 0;
 		}
 	} while (result == 255);

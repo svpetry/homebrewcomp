@@ -19,10 +19,12 @@ void start_lineedit();
 void finish_lineedit();
 void start_editor();
 void trim_line(struct line_header *line, byte use_line_buf);
+void show_status();
 void display();
 byte load_file();
 void save_file();
 void prompt_load_file();
+byte prompt_file_name();
 
 #endif /* EDITOR_H_ */
 
