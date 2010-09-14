@@ -12,7 +12,7 @@
 
 #define VIDEO_RAM 0x1080
 #define VRAM_SIZE 0x0b80
-#define VIDEO_BUFFER 0x7800
+#define VIDEO_BUFFER 0x4800
 #define V_ROWS 23
 #define V_COLS 80
 #define V_ROWSIZE 128

@@ -10,7 +10,7 @@ call compile video.c
 call compile malloc.c
 call compile editor.c
 
-sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x5d70 --data-loc 0x6000 crt0.o io.o utils.o video.o malloc.o editor.o edit.o
+sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x2d70 --data-loc 0x3000 crt0.o io.o utils.o video.o malloc.o editor.o edit.o
 
 ren crt0.ihx edit.ihx
 

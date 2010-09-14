@@ -5,6 +5,20 @@
 static Header *freep = NULL;
 
 /******************************************************************************/
+unsigned int malloc_free_ram() {
+	unsigned int size;
+	Header *p;
+
+	size = freep->size;
+	p = freep->ptr;
+	
+	while (p != freep) {
+		size += p->size;
+		p = p->ptr;
+	}
+	return size << 2;
+}
+/******************************************************************************/
 void malloc_reset() {
 	freep = NULL;
 }

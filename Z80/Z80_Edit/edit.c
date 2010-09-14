@@ -6,10 +6,10 @@
 #include "video.h"
 #include "editor.h"
 
-/* code: 0x0290-0x5fff
- * data: 0x6000-0x7000
- * stack: 0x7000-0x77ff
- * vram buffer: 0x7800-0x7fff
+/* code: 0x0290-0x2fff
+ * data: 0x3000-0x4000
+ * stack: 0x4000-0x47ff
+ * vram buffer: 0x4800-0x4fff
  */
 
 /******************************************************************************/
