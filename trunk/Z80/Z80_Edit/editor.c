@@ -88,6 +88,7 @@ void finish_lineedit() {
 
 		trim_line(curr_line, 1);
 		edit_active = 0;
+		show_status();
 	}
 }
 /******************************************************************************/
@@ -138,6 +139,7 @@ void start_editor() {
 							start_line = curr_line->next;
 						curr_line = curr_line->next;
 						free(line1);
+						show_status();
 					} else
 						curr_line->line[0] = 0;
 					display();
@@ -257,6 +259,7 @@ void start_editor() {
 						start_line = start_line->next;
 					else
 						cur_row++;
+					show_status();
 				} else {
 					// cursor in text line
                     line1 = curr_line;
@@ -290,6 +293,7 @@ void start_editor() {
 						cur_row++;
 
 					trim_line(line1, 0);
+					show_status();
 				}
 
 				cur_col = 0;
@@ -364,11 +368,17 @@ void trim_line(struct line_header *line, byte use_line_buf) {
 } // trim_line
 /******************************************************************************/
 void show_status() {
+	char s[20];
+
 	show_message("");
 	if (file_name[0] == 0)
 		write_inverse(24, 1, "<new file>");
 	else
 		write_inverse(24, 1, file_name);
+	write_inverse(24, 20, "Free RAM: ");
+	ltoa(malloc_free_ram(), s);
+	strcat(s, " Bytes");
+	write_inverse(24, 30, s);
 }
 /******************************************************************************/
 void display() {

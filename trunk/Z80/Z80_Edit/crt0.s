@@ -6,7 +6,7 @@
 
 	.org	0x0280
 init:
-	ld	sp,#0x7fff
+	ld	sp,#0x47ff
         
 	call	gsinit
 	call	_main
