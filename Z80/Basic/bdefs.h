@@ -1,9 +1,8 @@
 #ifndef _BDEFS_H
 #define _BDEFS_H
 
-#define MAX_PROGRAM			1024 * 32
-#define MAX_STRING_VARS		200
-#define MAX_NUM_VARS		500
+#define MAX_STRING_VARS		20
+#define MAX_NUM_VARS		100
 #define MAX_STRING_LEN		127
 #define MAX_TOKEN_LEN		127
 #define MAX_VAR_NAME_LEN	3
@@ -43,7 +42,6 @@
 #define T_WHILE		22
 #define T_WEND		23
 #define T_STOP		24
-#define T_ON		25
 
 // string functions
 #define T_MID		100
@@ -167,4 +165,4 @@ struct s_for_stack_entry {
 
 /******************************************************************************/
 
-#endif
+#endif // _BDEFS_H

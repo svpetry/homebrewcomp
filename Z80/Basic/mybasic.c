@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "mybasic.h"
 #include "bdefs.h"
 
 /******************************************************************************/
@@ -63,7 +64,7 @@ const struct s_name_token num_func_names[] = {
 
 /******************************************************************************/
 
-char prog[MAX_PROGRAM];
+char prog[32768];
 
 char *ip;
 char token_str[MAX_TOKEN_LEN + 1];
@@ -95,12 +96,6 @@ char *gosub_stack[GOSUB_STACK_SIZE];
 byte gosub_count = 0;
 
 char *read_pointer = 0;
-
-/******************************************************************************/
-
-void parse_expression();
-void parse_num_expr(struct s_num *a);
-byte eval_bool_expr();
 
 /******************************************************************************/
 void error(byte errno) {
@@ -163,12 +158,12 @@ void error(byte errno) {
 		ip--;
 	ip++;
 	while (*ip && *ip != '\n' && *ip != '\r')
-		putch(*(ip++));
-	putch('\r');
-	putch('\n');
-	getch();
+		putchar(*(ip++));
+	putchar('\r');
+	putchar('\n');
+	getchar();
 	exit(1);
-}
+} // void error(byte errno)
 /******************************************************************************/
 char load_program() {
 	char *p = prog;
@@ -184,7 +179,7 @@ char load_program() {
 		*p = getc(fp);
 		p++;
 		i++;
-	} while (!feof(fp) && i < MAX_PROGRAM);
+	} while (!feof(fp) && i < 32768);
 
 	*(p - 2) = 0; // null terminate the program
 
@@ -192,7 +187,7 @@ char load_program() {
 	
 	fclose(fp);
 	return 1;
-}
+} // load_program
 /******************************************************************************/
 byte iswhite(char c) {
 	return c == ' ' || c == '\t';
@@ -211,7 +206,7 @@ void next_line() {
 		ip++;
 	while ((*ip == '\r' || *ip == '\n') && *ip)
 		ip++;
-}
+} // void next_line()
 /******************************************************************************/
 void build_label_list() {
 	char *pos;
@@ -240,7 +235,7 @@ void build_label_list() {
 		next_line();
 	}
 	ip = prog;
-}
+} // void build_label_list()
 /******************************************************************************/
 byte find_command(char *s) {
 	byte i;
@@ -250,7 +245,7 @@ byte find_command(char *s) {
 			return cmd_names[i].token;
 	}
 	return 0;
-}
+} // byte find_command(char *s)
 /******************************************************************************/
 void set_strvar(char *varname, char *value) {
 	int i;
@@ -266,7 +261,7 @@ void set_strvar(char *varname, char *value) {
 		strcpy(str_vars[i].name, varname);
 	}
 	strcpy(str_vars[i].value, value);
-}
+} // void set_strvar(char *varname, char *value)
 /******************************************************************************/
 struct s_num *find_numvar(char *varname) {
 	int i;
@@ -282,7 +277,7 @@ struct s_num *find_numvar(char *varname) {
 		strcpy(num_vars[i].name, varname);
 	}
     return &num_vars[i].value;
-}
+} //struct s_num *find_numvar(char *varname)
 /******************************************************************************/
 void set_numvar(char *varname, struct s_num *value) {
     struct s_num *var;
@@ -291,7 +286,7 @@ void set_numvar(char *varname, struct s_num *value) {
 	(*var).ival = (*value).ival;
 	(*var).fval = (*value).fval;
 	(*var).isint = (*value).isint;
-}
+} // void set_numvar(char *varname, struct s_num *value)
 /******************************************************************************/
 byte find_str_func(char *s) {
 	register byte i;
@@ -301,7 +296,7 @@ byte find_str_func(char *s) {
 			return str_func_names[i].token;
 	}
 	return 0;
-}
+} // byte find_str_func(char *s)
 /******************************************************************************/
 byte find_num_func(char *s) {
 	register byte i;
@@ -311,7 +306,7 @@ byte find_num_func(char *s) {
 			return num_func_names[i].token;
 	}
 	return 0;
-}
+} // byte find_num_func(char *s)
 /******************************************************************************/
 void get_next_token() {
 	int i;
@@ -448,7 +443,7 @@ void get_next_token() {
 		ip++;
 	} else
     	error(E_SYNTAX);
-}
+} // void get_next_token()
 /******************************************************************************/
 void eval_strfunc(char *result, int *l) {
 	char s[256];
@@ -587,7 +582,7 @@ void eval_strfunc(char *result, int *l) {
 	get_next_token();
 	if (token_str[0] != ')')
 		error(E_SYNTAX);
-}
+} // void eval_strfunc(char *result, int *l)
 /******************************************************************************/
 void str2num(char *str, struct s_num *value) {
 	char *src, *dest;
@@ -614,7 +609,7 @@ void str2num(char *str, struct s_num *value) {
 		(*value).ival = atoi(s);
 	else
 		(*value).fval = atof(s);
-}
+} // void str2num(char *str, struct s_num *value)
 /******************************************************************************/
 void eval_numfunc(struct s_num *result) {
 	int func_token = token;
@@ -728,7 +723,7 @@ void eval_numfunc(struct s_num *result) {
 	get_next_token();
 	if (token_str[0] != ')')
 		error(E_SYNTAX);
-}
+} // void eval_numfunc(struct s_num *result)
 /******************************************************************************/
 void get_numvar(char *name, struct s_num *result) {
 	struct s_num *var;
@@ -751,7 +746,7 @@ void get_numvar(char *name, struct s_num *result) {
 		(*result).isint = 1;
 		(*result).ival = 0;
 	}
-}
+} // void get_numvar(char *name, struct s_num *result)
 /******************************************************************************/
 void get_strvar(char *name, char *result, int *l) {
 	char *src;
@@ -771,7 +766,7 @@ void get_strvar(char *name, char *result, int *l) {
 		}
 	}
 
-}
+} // void get_strvar(char *name, char *result, int *l)
 /******************************************************************************/
 void put_back() {
 	token_back = 1;
@@ -822,7 +817,7 @@ void parse_num_2(struct s_num *a) {
 		}
 
 	}
-}
+} // void parse_num_2(struct s_num *a)
 /******************************************************************************/
 void parse_num_1(struct s_num *a) {
 	struct s_num b;
@@ -859,7 +854,7 @@ void parse_num_1(struct s_num *a) {
 		get_next_token();
 	}
 	put_back();
-}
+} // void parse_num_1(struct s_num *a)
 /******************************************************************************/
 void parse_num_expr(struct s_num *a) {
 	struct s_num b;
@@ -886,7 +881,7 @@ void parse_num_expr(struct s_num *a) {
 		get_next_token();
 	}
 	put_back();
-}
+} // void parse_num_expr(struct s_num *a)
 /******************************************************************************/
 void parse_str_expr() {
 	int l = 0;
@@ -924,7 +919,7 @@ void parse_str_expr() {
 	}
 	(*res) = 0;
 	strcpy(expr_res.sval, result);
-}
+} // void parse_str_expr()
 /******************************************************************************/
 void parse_expression() {
 	struct s_num a;
@@ -949,7 +944,7 @@ void parse_expression() {
 		parse_str_expr();
 		expr_res.type = VT_STRING;
 	}
-}
+} // void parse_expression()
 /******************************************************************************/
 byte eval_bool_1() {
 	byte result;
@@ -1058,7 +1053,7 @@ byte eval_bool_1() {
         	error(E_SYNTAX);
     }
     return result;
-}
+} // byte eval_bool_1()
 /******************************************************************************/
 byte eval_bool_expr() {
 	byte a, b;
@@ -1079,7 +1074,7 @@ byte eval_bool_expr() {
 	}
 	put_back();
 	return a;
-}
+} // byte eval_bool_expr()
 /******************************************************************************/
 void assign_numvar() {
 	char varname[MAX_VAR_NAME_LEN + 1];
@@ -1098,7 +1093,7 @@ void assign_numvar() {
 	value.fval = expr_res.fval;
 	value.isint = expr_res.type = VT_INT ? 1 : 0;
 	set_numvar(varname, &value);
-}
+} // void assign_numvar()
 /******************************************************************************/
 void assign_strvar() {
 	char *src, *dest;
@@ -1118,7 +1113,7 @@ void assign_strvar() {
 		error(E_SYNTAX);
 
 	set_strvar(varname, expr_res.sval);
-}
+} // void assign_strvar()
 /******************************************************************************/
 char *get_label(int lbl) {
 	int pos, len, new_pos, label;
@@ -1139,7 +1134,7 @@ char *get_label(int lbl) {
 	} while (len > 0);
 	error(E_LBL_NOT_FOUND);
 	return 0;
-}
+} // char *get_label(int lbl)
 /******************************************************************************/
 void goto_tokens(byte t1, byte t2) {
 	byte if_cnt = 0, while_cnt = 0;
@@ -1179,7 +1174,7 @@ void goto_tokens(byte t1, byte t2) {
 				break;
 		}
 	}
-}
+} // void goto_tokens(byte t1, byte t2)
 /******************************************************************************/
 void exec_print() {
 	char *s;
@@ -1196,40 +1191,40 @@ void exec_print() {
 				break;
 			case VT_INT:
 				if (last_sc && !last_num)
-					putch(' ');
+					putchar(' ');
 				sprintf(expr_res.sval, "%d", expr_res.ival);
 				last_num = 1;
 				break;
 			case VT_FLOAT:
 				if (last_sc && !last_num)
-					putch(' ');
+					putchar(' ');
 				sprintf(expr_res.sval, "%f", expr_res.fval);
 				last_num = 1;
 				break;
 			default:
-				putch('\r');
-				putch('\n');
+				putchar('\r');
+				putchar('\n');
 				return;
 		}
 
 		s = expr_res.sval;
 		while (*s) {
-			putch(*(s++));
+			putchar(*(s++));
 			print_pos++;
 		}
 		if (last_num)
-        	putch(' ');
+        	putchar(' ');
 
 		get_next_token();
 		if (token == T_COLON || token == T_LINEEND) {
-			putch('\r');
-			putch('\n');
+			putchar('\r');
+			putchar('\n');
 			return;
 		} else if (*token_str == ',') {
 			byte p = 8 - print_pos % 8;
 			last_sc = 0;
 			while (p) {
-				putch(' ');
+				putchar(' ');
 				print_pos++;
 				p--;
 			}
@@ -1242,7 +1237,7 @@ void exec_print() {
 				put_back();
 		}
 	}
-}
+} // void exec_print()
 /******************************************************************************/
 void exec_input() {
 	char *s;
@@ -1257,7 +1252,7 @@ void exec_input() {
 	if (token == T_STRVAL) {
 		s = token_str + 1;
 		while (*s != '"')
-			putch(*(s++));
+			putchar(*(s++));
 		get_next_token();
 		if (token_str[0] != ';' && token_str[0] != ',')
 			error(E_SYNTAX);
@@ -1269,16 +1264,16 @@ void exec_input() {
 	strcpy(varname, token_str);
 	var_token = token;
 	
-	putch('?');
-	putch(' ');
+	putchar('?');
+	putchar(' ');
 	l = 0;
 	while (l < MAX_STRING_LEN && (c = getch()) != '\r') {
-		putch(c);
+		putchar(c);
 		input[l++] = c;
 	}
 	input[l] = 0;
-	putch('\r');
-	putch('\n');
+	putchar('\r');
+	putchar('\n');
 
 	if (var_token == T_STRVAR) {
 		varname[strlen(varname) - 1] = 0;
@@ -1287,7 +1282,7 @@ void exec_input() {
 		str2num(input, &value);
 		set_numvar(varname, &value);
     }
-}
+} // void exec_input()
 /******************************************************************************/
 void exec_if() {
 	byte cond;
@@ -1325,7 +1320,7 @@ void exec_if() {
             	put_back();
 		}
 	}
-}
+} // void exec_if()
 /******************************************************************************/
 void exec_goto() {
 	char *lbl;
@@ -1344,7 +1339,7 @@ void exec_goto() {
         }
 	}
 	ip = lbl;
-}
+} // void exec_goto()
 /******************************************************************************/
 void exec_for() {
 	struct s_for_stack_entry *fe;
@@ -1382,7 +1377,8 @@ void exec_for() {
 	unify((*fe).var, &(*fe).step);
 	unify((*fe).var, &(*fe).end_value);
 	for_count++;
-}
+} // void exec_for()
+
 /******************************************************************************/
 void exec_next() {
 	struct s_for_stack_entry *fe = &(for_stack[for_count - 1]);
@@ -1410,7 +1406,7 @@ void exec_next() {
 	get_next_token();
 	if (token != T_NUMVAR)
 		put_back();
-}
+} // void exec_next()
 /******************************************************************************/
 void exec_while() {
 	if (while_count == WHILE_STACK_SIZE - 1)
@@ -1421,7 +1417,7 @@ void exec_while() {
 		while_count++;
 	else
 		goto_tokens(T_WEND, 0);
-}
+} // void exec_while()
 /******************************************************************************/
 void exec_wend() {
 	char *ip_temp;
@@ -1434,7 +1430,7 @@ void exec_wend() {
 		while_count--;
 		ip = ip_temp;
 	}
-}
+} // void exec_wend()
 /******************************************************************************/
 void exec_gosub() {
 	if (gosub_count == GOSUB_STACK_SIZE - 1)
@@ -1444,13 +1440,13 @@ void exec_gosub() {
 		error(E_SYNTAX);
 	gosub_stack[gosub_count++] = ip;
 	ip = get_label(expr_res.ival);
-}
+} // void exec_gosub()
 /******************************************************************************/
 void exec_return() {
 	if (gosub_count == 0)
 		error(E_RETURN_WITHOUT_GOSUB);
 	ip = gosub_stack[--gosub_count];
-}
+} // void exec_return()
 /******************************************************************************/
 void exec_read() {
 	char *temp_ip;
@@ -1503,7 +1499,7 @@ void exec_read() {
     	token_str[strlen(token_str) - 1] = 0;
 		set_strvar(varname, token_str + 1);
 	}
-}
+} // void exec_read()
 /******************************************************************************/
 void exec_on() {
 	byte i, j;
@@ -1527,7 +1523,7 @@ void exec_on() {
         	error(E_SYNTAX);
 	}
 	ip = get_label(atoi(token_str));
-}
+} // void exec_on()
 /******************************************************************************/
 int main(int argc, char *argv[]) {
 
@@ -1649,7 +1645,7 @@ int main(int argc, char *argv[]) {
 		get_next_token();
 	}
 		
-	getch();
+	getchar();
 
 	return 1;
 }
