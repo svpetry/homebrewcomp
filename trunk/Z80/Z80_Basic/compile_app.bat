@@ -10,7 +10,7 @@ call compile video.c
 call compile malloc.c
 call compile mybasic.c
 
-sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x7170 --data-loc 0x8000 crt0.o io.o utils.o video.o malloc.o mybasic.o basic.o
+sdcc -mz80 "-Wl -b _CODE2 = 0x8000" --no-std-crt0 --code-loc 0x0290 --code-size 0x5d70 --data-loc 0x6000 crt0.o io.o utils.o video.o malloc.o mybasic.o basic.o
 
 ren crt0.ihx basic.ihx
 
