@@ -12,13 +12,13 @@ init:
 	call	_main
         halt
 
-        .area	_HOME
-        .area	_CODE
-	.area	_GSINIT
-	.area	_GSFINAL
-        .area	_DATA
-
+	.area	_HOME
+	.area	_CODE
 	.area	_GSINIT
 gsinit::
 	.area	_GSFINAL
 	ret
+	.area	_DATA
+	
+	.area	_CODE2
+

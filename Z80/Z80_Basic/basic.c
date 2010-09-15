@@ -6,10 +6,11 @@
 #include "video.h"
 #include "mybasic.h"
 
-/* code: 0x0290-0x73ff
- * data: 0x8000-0xffff
- * stack: 0x7400-0x77ff
+/* code1: 0x0290-0x5fff
+ * data: 0x6000-0x6fff
+ * stack: 0x7000-0x77ff
  * vram buffer: 0x7800-0x7fff
+ * code2: 0x8000-0xffff
  */
 
 /******************************************************************************/

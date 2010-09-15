@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "bdefs.h"
 #include "video.h"
+#include "malloc.h"
 
 /******************************************************************************/
 const struct s_name_token cmd_names[] = {
