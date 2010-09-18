@@ -22,7 +22,7 @@ _endasm
 #define DISABLE_VRAM IO_WRITE(7, #0)
 #define SELECT_BANK0 IO_WRITE(0, #1)
 #define SELECT_BANK1 IO_WRITE(0, #2)
-#define SELECT_BANK2 IO_WRITE(0, #3)
+#define SELECT_BANK2 IO_WRITE(0, #4)
 
 void puts_nlb(char *s);
 char getchar(void);

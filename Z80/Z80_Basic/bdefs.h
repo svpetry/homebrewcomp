@@ -1,6 +1,8 @@
 #ifndef _BDEFS_H
 #define _BDEFS_H
 
+#include "defs.h"
+
 #define MAX_STRING_VARS		10
 #define MAX_NUM_VARS		10
 #define MAX_STRING_LEN		127
@@ -12,8 +14,6 @@
 #define LABEL_STACK_SIZE	25
 #define IF_STACK_SIZE		10
 #define WHILE_STACK_SIZE	10
-
-#define PROG_NAME "TEST.BAS"
 
 // Tokens ----------------------------------------------------------------------
 
