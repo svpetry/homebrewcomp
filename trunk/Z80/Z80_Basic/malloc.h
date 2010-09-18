@@ -1,8 +1,8 @@
 #ifndef MALLOC_H_
 #define MALLOC_H_
 
-#define HEAP_START  0x5000
-#define HEAP_SIZE	0x2c00
+#define HEAP_START  0x8000
+#define HEAP_SIZE	0x2000
 
 struct header {
 	struct header *ptr;

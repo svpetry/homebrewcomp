@@ -68,9 +68,15 @@ void delay_ms(word ms) {
 //	strcpy(buf, s);
 //}
 /******************************************************************************/
+char tolower1(char c) {
+	if (c >= 'A' && c <= 'Z')
+		return c - 'A' + 'a';
+	return c;
+}
+/******************************************************************************/
 void strtolower(char *s) {
 	while (*s) {
-		*s = tolower(*s);
+		*s = tolower1(*s);
 		s++;
     }
 }

@@ -7,6 +7,7 @@ void delay_ms(word ms);
 void reverse(char s[]);
 void itoa(int n, char s[]);
 void ltoa(long i, char* buf);
+char tolower1(char c);
 void strtolower(char *s);
 void memcpy_f(byte *dest, byte *src, word size);
 //void memset_f(byte *dest, char value, word size);

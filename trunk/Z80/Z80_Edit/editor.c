@@ -397,7 +397,7 @@ void display() {
 /******************************************************************************/
 byte load_file() {
 	char c;
-	byte i;
+	byte i, col;
 	struct line_header *line, *new_line;
 
 	init_line_base();
@@ -409,12 +409,14 @@ byte load_file() {
 	while (busy);
 	if (out_paramb) {
 		show_message("Loading...");
+		col = 0;
 
 		i = 0;
 		
 		while (param1l > 0) {
 			c = io_read(163);
 			param1l--;
+			//io_write(5, col++);
 
 			if (c >= ' ' && (unsigned char)c < 128 ) {
 				line_buf[i++] = c;
@@ -444,6 +446,7 @@ byte load_file() {
 
 		line->next = NULL;
 
+		//IO_WRITE(5, #8);
 		return 1;
 	} else {
 		show_message("File not found! (Press key to continue.)");
