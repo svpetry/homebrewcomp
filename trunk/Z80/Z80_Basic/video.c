@@ -4,7 +4,7 @@
 
 #include "video.h"
 #include "defs.h"
-#include "utils.h"
+#include "utils_b0.h"
 
 byte cur_col = 0;
 byte cur_row = 0;

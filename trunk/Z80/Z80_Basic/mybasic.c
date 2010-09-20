@@ -7,6 +7,7 @@
 #include "mybasic.h"
 #include "defs.h"
 #include "utils.h"
+#include "utils_b0.h"
 #include "bdefs.h"
 #include "video.h"
 #include "malloc.h"
@@ -36,7 +37,7 @@ void load_program(char *file_name) {
 			*ip = 0;
 			SELECT_BANK0;
 		} else {
-			puts("File size > 32kb! Press key to continue.");
+			puts("File too large (size > 32kb)! Press key to continue.");
 			getchar();
 			quit_app();
 		}
@@ -48,6 +49,7 @@ void load_program(char *file_name) {
 }
 /******************************************************************************/
 void error(byte errno) {
+	SELECT_BANK0;
 	print_error_text(errno);
 	SELECT_BANK1;
 	ip--;
@@ -114,22 +116,39 @@ void build_label_list() {
 /******************************************************************************/
 void set_strvar(char *varname, char *value) {
 	int i;
+	byte l, l1;
+	struct s_strvar *svar = NULL;
 
 #ifdef DEBUG
 	puts("set_strvar()");
 #endif
 
+	l = strlen(value);
+	l1 = (l & 0b11111000) + 8;
+
+	SELECT_BANK1;
 	for (i = 0; i < str_var_count; i++) {
-		if (!strcmp(varname, str_vars[i].name))
+		if (!strcmp(varname, str_vars[i].name)) {
+			svar = &(str_vars[i]);
+			if (svar->maxlen < l) {
+				free(svar->value);
+				svar->value = malloc(l1);
+				svar->maxlen = l1;
+			}
 			break;
+		}
 	}
 	if (i == str_var_count) {
 		if (str_var_count == MAX_STRING_VARS)
 			error(E_TOO_MANY_VARS);
 		str_var_count++;
-		strcpy(str_vars[i].name, varname);
+		svar = &(str_vars[i]);
+		strcpy(svar->name, varname);
+		svar->value = malloc(l1);
+		svar->maxlen = l1;
 	}
-	strcpy(str_vars[i].value, value);
+	strcpy(svar->value, value);
+	SELECT_BANK0;
 } // void set_strvar(char *varname, char *value)
 /******************************************************************************/
 struct s_num *find_numvar(char *varname) {
@@ -167,7 +186,7 @@ void set_numvar(char *varname, struct s_num *value) {
 /******************************************************************************/
 void get_next_token() {
 	int i;
-	char *src;
+//	char *src;
 
 #ifdef DEBUG
 	puts("get_next_token()");
@@ -381,7 +400,7 @@ void get_numvar(char *name, struct s_num *result) {
 
 	if (name[0] == 'p' && name[1] == 'i' && name[2] == 0) {
 		(*result).isint = 0;
-		(*result).fval = 3.141593;
+		(*result).fval = PI;
 	} else {
 		(*result).isint = 1;
 		(*result).ival = 0;
@@ -401,15 +420,16 @@ void get_strvar(char *name, char *result, int *l) {
 		src++;
 	*src = 0;
 
+	SELECT_BANK1;
 	for (i = 0; i < str_var_count; i++) {
 		if (!strcmp(name, str_vars[i].name)) {
 			src = str_vars[i].value;
 			while (*src && *l < MAX_STRING_LEN)
 				result[(*l)++] = *(src++);
-			return;
+			break;
 		}
 	}
-
+	SELECT_BANK0;
 } // void get_strvar(char *name, char *result, int *l)
 /******************************************************************************/
 void put_back() {
@@ -567,6 +587,10 @@ void start_basic() {
 				exec_on();
 				break;
 
+			case T_DIM:
+				exec_dim();
+				break;
+
 			case T_END:
 			case T_STOP:
 			case T_INTVAL:
@@ -582,7 +606,6 @@ void start_basic() {
 
 		get_next_token();
 	}
-	getchar();
  }
 /******************************************************************************/
 

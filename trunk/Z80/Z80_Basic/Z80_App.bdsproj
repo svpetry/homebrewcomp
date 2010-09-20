@@ -30,6 +30,7 @@
         <property category="build.config.1" name="win32.win32b.builddir" value="Release_Build"/>
         <property category="build.node" name="name" value="Z80_App.exe"/>
         <property category="build.node" name="packages" value="vclx;vcl;rtl;xmlrtl;vclie;inet;inetdbbde;inetdbxpress;soaprtl;dbrtl;dsnap"/>
+        <property category="build.node" name="sparelibs" value="rtl.lib"/>
         <property category="build.node" name="use_packages" value="1"/>
         <property category="build.platform" name="active" value="win32"/>
         <property category="build.platform" name="win32.Debug_Build.toolset" value="win32b"/>
@@ -178,7 +179,6 @@
         <FILE FILENAME="compile_app.bat" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="io.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="io" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="io.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="utils.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="utils" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="utils.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="video.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="video" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="video.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
@@ -191,10 +191,15 @@
         <FILE FILENAME="mybasic.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="basic.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="basic" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="bdefs.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="basic_helpers.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="basic_helpers.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="basic_helpers.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="basic_helpers" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="vars.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="vars" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="vars.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="vars.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="ftoa.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="ftoa" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="ftoa.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="utils.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="utils" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="utils_b0.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="utils_b0" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="utils_b0.h" CONTAINERID="" LOCALCOMMAND=""/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>
