@@ -3,15 +3,17 @@
 
 #include "defs.h"
 
-#define MAX_STRING_VARS		10
-#define MAX_NUM_VARS		10
+#define MAX_STRING_VARS		40
+#define MAX_NUM_VARS		40
+#define MAX_STRING_DVARS	20
+#define MAX_NUM_DVARS		20
 #define MAX_STRING_LEN		127
 #define MAX_TOKEN_LEN		127
 #define MAX_VAR_NAME_LEN	3
 #define MAX_NUMSTR_LEN		10
 #define FOR_STACK_SIZE		10
 #define GOSUB_STACK_SIZE	10
-#define LABEL_STACK_SIZE	25
+#define LABEL_STACK_SIZE	2000
 #define IF_STACK_SIZE		10
 #define WHILE_STACK_SIZE	10
 
@@ -62,6 +64,7 @@
 #define T_SQR		157
 #define T_ASC		158
 #define T_TAN		159
+#define T_LOG		160
 
 // other
 #define T_REM		180
@@ -141,7 +144,8 @@ struct s_expr_res {
 
 struct s_strvar {
 	char name[MAX_VAR_NAME_LEN + 1];
-	char value[MAX_STRING_LEN + 1];
+	char *value;
+	byte maxlen;
 };
 
 struct s_numvar {
@@ -149,7 +153,23 @@ struct s_numvar {
 	struct s_num value;
 };
 
-struct s_label_stack_entry {
+struct s_strdvar {
+	char name[MAX_VAR_NAME_LEN + 1];
+	byte len_dim1;
+	byte len_dim2;
+	byte len_dim3;
+	char *(*data)[];
+};
+
+struct s_numdvar {
+	char name[MAX_VAR_NAME_LEN + 1];
+	byte len_dim1;
+	byte len_dim2;
+	byte len_dim3;
+	struct s_num (*data)[]; 
+};
+
+struct s_label_stack_entry { // size: 4 bytes
 	char *pos;
 	int label;
 };

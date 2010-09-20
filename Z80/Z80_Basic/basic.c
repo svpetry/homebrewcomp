@@ -12,7 +12,8 @@
  * data: 0x6000-0x6fff
  * stack: 0x7000-0x77ff
  * vram buffer: 0x7800-0x7fff
- * code2: 0x8000-0xffff (bank 0)
+ * code2: 0x8000-0xdfff (bank 0)
+ * label stack: 0xe000-0xffff (bank 0)
  * prog[]: 0x8000-0xffff (bank 1)
  * malloc heap: 0x8000-0xffff (bank 2)
  */
@@ -26,8 +27,6 @@ void init() {
 }
 /******************************************************************************/
 void main() {
-	byte i;
-
 	init();
 
 	puts("                    ___ _            _     ___          _    ");
@@ -44,8 +43,8 @@ void main() {
 		start_basic();
 	}
 
-//	puts("\n\nPress any key to continue.");
-//	getchar();
+	puts("\n\nPress any key to continue.");
+	getchar();
 	quit_app();
 
 	return;
