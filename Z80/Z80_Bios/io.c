@@ -75,7 +75,7 @@ void io_write(byte addr, byte val) {
 }
 /******************************************************************************/
 void list_dir() {
-	char s[12];
+	char s[12], c;
 	byte i;
 
 //	puts("\n directory listing");
@@ -121,6 +121,12 @@ void list_dir() {
 		}
 		io_write(160, 11);
 		while (busy);
+
+		c = io_read(128);
+		if (c == 27)
+        	break;
+		else if (c == 0)
+			c = io_read(128);
 	}
 	putchar('\n');
 }
