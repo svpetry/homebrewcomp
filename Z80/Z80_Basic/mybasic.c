@@ -126,13 +126,14 @@ void set_strvar(char *varname, char *value) {
 	l = strlen(value);
 	l1 = (l & 0b11111000) + 8;
 
-	SELECT_BANK1;
+	SELECT_BANK2;
 	for (i = 0; i < str_var_count; i++) {
 		if (!strcmp(varname, str_vars[i].name)) {
 			svar = &(str_vars[i]);
 			if (svar->maxlen < l) {
 				free(svar->value);
-				svar->value = malloc(l1);
+				if ((svar->value = malloc(l1)) == NULL)
+					error(E_OUT_OF_MEMORY);
 				svar->maxlen = l1;
 			}
 			break;
@@ -144,7 +145,8 @@ void set_strvar(char *varname, char *value) {
 		str_var_count++;
 		svar = &(str_vars[i]);
 		strcpy(svar->name, varname);
-		svar->value = malloc(l1);
+		if ((svar->value = malloc(l1)) == NULL)
+			error(E_OUT_OF_MEMORY);
 		svar->maxlen = l1;
 	}
 	strcpy(svar->value, value);
@@ -168,20 +170,47 @@ struct s_num *find_numvar(char *varname) {
 		num_var_count++;
 		strcpy(num_vars[i].name, varname);
 	}
-    return &num_vars[i].value;
+	return &num_vars[i].value;
 } //struct s_num *find_numvar(char *varname)
 /******************************************************************************/
 void set_numvar(char *varname, struct s_num *value) {
 	struct s_num *var;
+	struct s_numdvar *dvar;
+	int i;
 
 #ifdef DEBUG
 	puts("set_numvar()");
 #endif
 
-	var = find_numvar(varname);
-	(*var).ival = (*value).ival;
-	(*var).fval = (*value).fval;
-	(*var).isint = (*value).isint;
+	for (i = 0; i < num_dvar_count; i++) {
+		if (!strcmp(varname, num_dvars[i].name))
+			break;
+	}
+	if (i < num_dvar_count) {
+		if (!dim1)
+        	error(E_VAR_DIM_ERROR);
+
+		dim1--;
+		dim2--;
+		dim3--;
+
+		dvar = &num_dvars[i];
+		SELECT_BANK2;
+		var = &(*dvar->data)[dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2];
+		(*var).ival = (*value).ival;
+		(*var).fval = (*value).fval;
+		(*var).isint = (*value).isint;
+		SELECT_BANK0;
+
+	} else {
+		if (dim1)
+			error(E_VAR_DIM_ERROR);
+
+		var = find_numvar(varname);
+		(*var).ival = (*value).ival;
+		(*var).fval = (*value).fval;
+		(*var).isint = (*value).isint;
+	}
 } // void set_numvar(char *varname, struct s_num *value)
 /******************************************************************************/
 void get_next_token() {
@@ -380,34 +409,55 @@ void get_next_token() {
 	}
 } // void get_next_token()
 /******************************************************************************/
-void get_numvar(char *name, struct s_num *result) {
+void get_numvar(char *varname, struct s_num *result) {
 	struct s_num *var;
+	struct s_numdvar *dvar;
 	byte i;
 
 #ifdef DEBUG
 	puts("get_numvar()");
 #endif
 
-	for (i = 0; i < num_var_count; i++) {
-		if (!strcmp(name, num_vars[i].name)) {
-			var = &(num_vars[i].value);
-			(*result).isint = (*var).isint;
-			(*result).fval = (*var).fval;
-			(*result).ival = (*var).ival;
-			return;
-		}
+	for (i = 0; i < num_dvar_count; i++) {
+		if (!strcmp(varname, num_dvars[i].name))
+			break;
 	}
+	if (i < num_dvar_count) {
+		read_dimensions();
+		dim1--;
+		dim2--;
+		dim3--;
 
-	if (name[0] == 'p' && name[1] == 'i' && name[2] == 0) {
-		(*result).isint = 0;
-		(*result).fval = PI;
+		dvar = &num_dvars[i];
+		SELECT_BANK2;
+		var = &(*dvar->data)[dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2];
+		(*result).isint = (*var).isint;
+		(*result).fval = (*var).fval;
+		(*result).ival = (*var).ival;
+		SELECT_BANK0;
+
 	} else {
-		(*result).isint = 1;
-		(*result).ival = 0;
+		for (i = 0; i < num_var_count; i++) {
+			if (!strcmp(varname, num_vars[i].name)) {
+				var = &(num_vars[i].value);
+				(*result).isint = (*var).isint;
+				(*result).fval = (*var).fval;
+				(*result).ival = (*var).ival;
+				return;
+			}
+		}
+
+		if (varname[0] == 'p' && varname[1] == 'i' && varname[2] == 0) {
+			(*result).isint = 0;
+			(*result).fval = PI;
+		} else {
+			(*result).isint = 1;
+			(*result).ival = 0;
+		}
 	}
 } // void get_numvar(char *name, struct s_num *result)
 /******************************************************************************/
-void get_strvar(char *name, char *result, int *l) {
+void get_strvar(char *varname, char *result, int *l) {
 	char *src;
 	int i;
 
@@ -415,14 +465,14 @@ void get_strvar(char *name, char *result, int *l) {
 	puts("get_strvar()");
 #endif
 
-	src = name;
+	src = varname;
 	while (*src != '$')
 		src++;
 	*src = 0;
 
 	SELECT_BANK1;
 	for (i = 0; i < str_var_count; i++) {
-		if (!strcmp(name, str_vars[i].name)) {
+		if (!strcmp(varname, str_vars[i].name)) {
 			src = str_vars[i].value;
 			while (*src && *l < MAX_STRING_LEN)
 				result[(*l)++] = *(src++);
@@ -450,6 +500,13 @@ void assign_numvar() {
 	strcpy(varname, token_str);
 
 	get_next_token();
+	dim1 = 0;
+	if (token_str[0] == '(') {
+    	put_back();
+		read_dimensions();
+		get_next_token();
+	}
+
 	if (token_str[0] != '=')
 		error(E_SYNTAX);
 	parse_expression();
@@ -477,6 +534,13 @@ void assign_strvar() {
 	*dest = 0;
 
 	get_next_token();
+	dim1 = 0;
+	if (token_str[0] == '(') {
+    	put_back();
+		read_dimensions();
+		get_next_token();
+	}
+
 	if (token_str[0] != '=')
 		error(E_SYNTAX);
 	parse_expression();
@@ -591,6 +655,10 @@ void start_basic() {
 				exec_dim();
 				break;
 
+			case T_BEEP:
+                beep();
+				break;
+
 			case T_END:
 			case T_STOP:
 			case T_INTVAL:
@@ -607,5 +675,15 @@ void start_basic() {
 		get_next_token();
 	}
  }
+/******************************************************************************/
+void *malloc_checked(unsigned int size) {
+	void *result;
+
+	SELECT_BANK2;
+	result = malloc(size);
+	SELECT_BANK0;
+	if (result == NULL)
+		error(E_OUT_OF_MEMORY);
+}
 /******************************************************************************/
 

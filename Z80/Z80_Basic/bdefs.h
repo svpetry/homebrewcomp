@@ -9,11 +9,11 @@
 #define MAX_NUM_DVARS		20
 #define MAX_STRING_LEN		127
 #define MAX_TOKEN_LEN		127
-#define MAX_VAR_NAME_LEN	3
-#define MAX_NUMSTR_LEN		10
+#define MAX_VAR_NAME_LEN	5
+#define MAX_NUMSTR_LEN		12
 #define FOR_STACK_SIZE		10
 #define GOSUB_STACK_SIZE	10
-#define LABEL_STACK_SIZE	2000
+#define LABEL_STACK_SIZE	2000 // don't modify!
 #define IF_STACK_SIZE		10
 #define WHILE_STACK_SIZE	10
 
@@ -44,6 +44,7 @@
 #define T_WHILE		22
 #define T_WEND		23
 #define T_STOP		24
+#define T_BEEP		25
 
 // string functions
 #define T_MID		100
@@ -121,6 +122,11 @@
 #define E_RETURN_WITHOUT_GOSUB	15
 #define E_NO_DATA				16
 #define E_WRONG_VALUE			17
+#define E_INTEXP				18
+#define E_STREXP				19
+#define E_DIMVAR_KNOWN			20
+#define E_OUT_OF_MEMORY			21
+#define E_VAR_DIM_ERROR			22
 
 /******************************************************************************/
 

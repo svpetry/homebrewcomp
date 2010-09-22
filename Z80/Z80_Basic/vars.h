@@ -23,12 +23,20 @@ extern int token_type;
 extern byte token_back;
 extern byte print_pos;
 
+extern byte dim1;
+extern byte dim2;
+extern byte dim3;
+
 extern struct s_expr_res expr_res;
 
 extern struct s_strvar str_vars[MAX_STRING_VARS];
 extern int str_var_count;
 extern struct s_numvar num_vars[MAX_NUM_VARS];
 extern int num_var_count;
+extern struct s_strdvar str_dvars[MAX_STRING_DVARS];
+extern int str_dvar_count;
+extern struct s_numdvar num_dvars[MAX_NUM_DVARS];
+extern int num_dvar_count;
 
 extern struct s_label_stack_entry at 0xe000 labels[LABEL_STACK_SIZE];
 extern int label_count;
