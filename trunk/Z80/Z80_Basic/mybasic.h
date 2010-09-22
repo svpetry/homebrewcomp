@@ -13,11 +13,12 @@ void set_strvar(char *varname, char *value);
 struct s_num *find_numvar(char *varname);
 void set_numvar(char *varname, struct s_num *value);
 void get_next_token();
-void get_numvar(char *name, struct s_num *result);
-void get_strvar(char *name, char *result, int *l);
+void get_numvar(char *varname, struct s_num *result);
+void get_strvar(char *varname, char *result, int *l);
 void put_back();
 void assign_numvar();
 void assign_strvar();
 void start_basic();
+void *malloc_checked(unsigned int size);
 
 #endif // _MYBASIC_H

@@ -72,12 +72,20 @@ int token_type;
 byte token_back = 0;
 byte print_pos;
 
+byte dim1;
+byte dim2;
+byte dim3;
+
 struct s_expr_res expr_res;
 
 struct s_strvar str_vars[MAX_STRING_VARS];
 int str_var_count = 0;
 struct s_numvar num_vars[MAX_NUM_VARS];
 int num_var_count = 0;
+struct s_strdvar str_dvars[MAX_STRING_DVARS];
+int str_dvar_count = 0;
+struct s_numdvar num_dvars[MAX_NUM_DVARS];
+int num_dvar_count = 0;
 
 struct s_label_stack_entry at 0xe000 labels[LABEL_STACK_SIZE];
 int label_count = 0;

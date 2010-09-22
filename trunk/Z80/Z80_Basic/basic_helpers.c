@@ -66,6 +66,21 @@ void print_error_text(byte errno) {
 		case E_NO_DATA:
 			puts("\nno data:");
 			break;
+		case E_INTEXP:
+			puts("\ninteger expected:");
+			break;
+		case E_STREXP:
+			puts("\nstring expected:");
+			break;
+		case E_DIMVAR_KNOWN:
+			puts("\nvariable already defined:");
+			break;
+		case E_OUT_OF_MEMORY:
+			puts("\nout of memory:");
+			break;
+		case E_VAR_DIM_ERROR:
+			puts("\nwrong variable dimension:");
+			break;
 	}
 } // print_error_text
 /******************************************************************************/
@@ -296,7 +311,7 @@ void exec_goto() {
 
 	parse_expression();
 	if (expr_res.type != VT_INT)
-		error(E_SYNTAX);
+		error(E_INTEXP);
 	lbl = get_label(expr_res.ival);
 	if (if_count) {
 		if (lbl < if_starts[if_count - 1])
@@ -406,7 +421,7 @@ void exec_gosub() {
 		error(E_STACK_OVERFLOW);
 	parse_expression();
 	if (expr_res.type != VT_INT)
-		error(E_SYNTAX);
+		error(E_INTEXP);
 	gosub_stack[gosub_count++] = ip;
 	ip = get_label(expr_res.ival);
 } // void exec_gosub()
@@ -475,7 +490,7 @@ void exec_on() {
 
 	parse_expression();
 	if (expr_res.type != VT_INT || expr_res.ival < 1)
-		error(E_SYNTAX);
+		error(E_INTEXP);
 	j = expr_res.ival;
 	get_next_token();
 	if (token != T_GOTO)
@@ -488,14 +503,73 @@ void exec_on() {
 		}
 		get_next_token();
 		if (token != T_INTVAL)
-        	error(E_SYNTAX);
+        	error(E_INTEXP);
 	}
 	ip = get_label(atoi(token_str));
 } // void exec_on()
 /******************************************************************************/
 void exec_dim() {
+	byte var_token, i;
+	char varname[MAX_VAR_NAME_LEN + 1];
+	struct s_strdvar *strdvar;
+	struct s_numdvar *numdvar;
 
+	get_next_token();
+	if (token == T_STRVAR || token == T_NUMVAR) {
 
+		i = strlen(token_str) - 1;
+		if (token_str[i] == '$')
+			token_str[i] = 0;
+		strcpy(varname, token_str);
+		var_token = token;
+
+		read_dimensions();
+
+		// create array structure
+		if (var_token == T_STRVAR) {
+
+			// string
+			for (i = 0; i < str_var_count; i++) {
+				if (!strcmp(varname, str_vars[i].name))
+					error(E_DIMVAR_KNOWN);
+			}
+			for (i = 0; i < str_dvar_count; i++) {
+				if (!strcmp(varname, str_dvars[i].name))
+					error(E_DIMVAR_KNOWN);
+			}
+			if (str_dvar_count == MAX_STRING_DVARS)
+				error(E_TOO_MANY_VARS);
+
+			strdvar = &str_dvars[str_dvar_count++];
+			strcpy(strdvar->name, varname);
+			strdvar->len_dim1 = dim1;
+			strdvar->len_dim2 = dim2;
+			strdvar->len_dim3 = dim3;
+			strdvar->data = malloc_checked(dim1 * dim2 * dim3 * sizeof(char *));
+		} else {
+
+			// numeric
+			for (i = 0; i < num_var_count; i++) {
+				if (!strcmp(varname, num_vars[i].name))
+					error(E_DIMVAR_KNOWN);
+			}
+			for (i = 0; i < num_dvar_count; i++) {
+				if (!strcmp(varname, num_dvars[i].name))
+					error(E_DIMVAR_KNOWN);
+			}
+			if (num_dvar_count == MAX_NUM_DVARS)
+				error(E_TOO_MANY_VARS);
+
+			numdvar = &num_dvars[num_dvar_count++];
+			strcpy(numdvar->name, varname);
+			numdvar->len_dim1 = dim1;
+			numdvar->len_dim2 = dim2;
+			numdvar->len_dim3 = dim3;
+			numdvar->data = malloc_checked(dim1 * dim2 * dim3 * sizeof(struct s_num));
+		} // else (var_token == T_STRVAR)
+
+	} else
+        error(E_SYNTAX);
 } // exec_dim()
 /******************************************************************************/
 void eval_strfunc(char *result, int *l) {
@@ -521,7 +595,7 @@ void eval_strfunc(char *result, int *l) {
 
 			parse_expression();
 			if (expr_res.type != VT_INT)
-				error(E_SYNTAX);
+				error(E_INTEXP);
 			a = expr_res.ival;
 
 			get_next_token();
@@ -530,7 +604,7 @@ void eval_strfunc(char *result, int *l) {
 
 			parse_expression();
 			if (expr_res.type != VT_INT)
-				error(E_SYNTAX);
+				error(E_INTEXP);
 			b = expr_res.ival;
 
 			p = s;
@@ -557,7 +631,7 @@ void eval_strfunc(char *result, int *l) {
 
 			parse_expression();
 			if (expr_res.type != VT_INT)
-				error(E_SYNTAX);
+				error(E_INTEXP);
 			a = expr_res.ival;
 
 			p = s;
@@ -582,7 +656,7 @@ void eval_strfunc(char *result, int *l) {
 
 			parse_expression();
 			if (expr_res.type != VT_INT)
-				error(E_SYNTAX);
+				error(E_INTEXP);
 			a = expr_res.ival;
 
 			p = s;
@@ -604,7 +678,7 @@ void eval_strfunc(char *result, int *l) {
 		case T_TAB:
 			parse_expression();
 			if (expr_res.type != VT_INT)
-				error(E_SYNTAX);
+				error(E_INTEXP);
 			a = expr_res.ival - print_pos;
 
 			q = result;
@@ -624,7 +698,7 @@ void eval_strfunc(char *result, int *l) {
 		case T_CHR:
 			parse_expression();
 			if (expr_res.type != VT_INT)
-				error(E_SYNTAX);
+				error(E_INTEXP);
 			if (*l < MAX_STRING_LEN) {
 				*result = expr_res.ival;
 				(*l)++;                
@@ -703,7 +777,7 @@ void eval_numfunc(struct s_num *result) {
 			if (expr_res.type == VT_STRING)
 				str2num(expr_res.sval, result);
 			else
-				error(E_SYNTAX);
+				error(E_STREXP);
 			break;
 
 		case T_SIN:
@@ -757,7 +831,7 @@ void eval_numfunc(struct s_num *result) {
 				(*result).isint = 1;
 				(*result).ival = expr_res.sval[0];
 			} else
-				error(E_SYNTAX);
+				error(E_STREXP);
 			break;
 
 		case T_TAN:
@@ -1009,7 +1083,7 @@ byte eval_bool_1() {
 				strcpy(str, expr_res.sval);
 				parse_expression();
 				if (expr_res.type != VT_STRING)
-					error(E_SYNTAX);
+					error(E_STREXP);
 				if (op1 == '=')
 					return !strcmp(str, expr_res.sval);
 				if (op1 == '#')
@@ -1072,7 +1146,7 @@ byte eval_bool_1() {
 				error(E_SYNTAX);
 
 			}
-		} else
+		} else // if (op1 == '=' || op1 == '>' || op1 == '<' ...
         	error(E_SYNTAX);
     }
     return result;
@@ -1119,5 +1193,44 @@ char *get_label(int lbl) {
 	error(E_LBL_NOT_FOUND);
 	return 0;
 } // char *get_label(int lbl)
+/******************************************************************************/
+void read_dimensions() {
+	get_next_token();
+	if (token != T_SPECIAL || token_str[0] != '(')
+		error(E_SYNTAX);
+
+	// read 1st dimensions
+	parse_expression();
+	if (expr_res.type != VT_INT)
+		error(E_INTEXP);
+	dim1 = expr_res.ival;
+
+	dim2 = 1;
+	dim3 = 1;
+
+	get_next_token();
+	if (token == T_SPECIAL && token_str[0] == ',') {
+		// read 2nd dimension
+		parse_expression();
+		if (expr_res.type != VT_INT)
+			error(E_INTEXP);
+		dim2 = expr_res.ival;
+
+		get_next_token();
+		if (token == T_SPECIAL && token_str[0] == ',') {
+			// read 3rd dimension
+			parse_expression();
+			if (expr_res.type != VT_INT)
+				error(E_INTEXP);
+			dim3 = expr_res.ival;
+		} else
+			put_back();
+	} else
+		put_back();
+
+	get_next_token();
+	if (token != T_SPECIAL || token_str[0] != ')')
+		error(E_SYNTAX);
+}
 /******************************************************************************/
 

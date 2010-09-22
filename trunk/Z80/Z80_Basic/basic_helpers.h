@@ -35,5 +35,6 @@ void parse_expression();
 byte eval_bool_1();
 byte eval_bool_expr();
 char *get_label(int lbl);
+void read_dimensions();
 
 #endif // _BASIC_HELPERS_H
