@@ -7,7 +7,7 @@
 #define MAX_NUM_VARS		40
 #define MAX_STRING_DVARS	20
 #define MAX_NUM_DVARS		20
-#define MAX_STRING_LEN		127
+#define MAX_STRING_LEN		255
 #define MAX_TOKEN_LEN		127
 #define MAX_VAR_NAME_LEN	5
 #define MAX_NUMSTR_LEN		12
@@ -164,7 +164,7 @@ struct s_strdvar {
 	byte len_dim1;
 	byte len_dim2;
 	byte len_dim3;
-	char *(*data)[];
+	char **data;
 };
 
 struct s_numdvar {
@@ -172,7 +172,7 @@ struct s_numdvar {
 	byte len_dim1;
 	byte len_dim2;
 	byte len_dim3;
-	struct s_num (*data)[]; 
+	struct s_num *data; 
 };
 
 struct s_label_stack_entry { // size: 4 bytes

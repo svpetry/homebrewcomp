@@ -196,7 +196,7 @@ void set_numvar(char *varname, struct s_num *value) {
 
 		dvar = &num_dvars[i];
 		SELECT_BANK2;
-		var = &(*dvar->data)[dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2];
+		var = dvar->data + dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2;
 		(*var).ival = (*value).ival;
 		(*var).fval = (*value).fval;
 		(*var).isint = (*value).isint;
@@ -430,7 +430,7 @@ void get_numvar(char *varname, struct s_num *result) {
 
 		dvar = &num_dvars[i];
 		SELECT_BANK2;
-		var = &(*dvar->data)[dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2];
+		var = dvar->data + dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2;
 		(*result).isint = (*var).isint;
 		(*result).fval = (*var).fval;
 		(*result).ival = (*var).ival;
