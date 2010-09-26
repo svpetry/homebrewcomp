@@ -33,6 +33,7 @@ const struct s_name_token cmd_names[] = {
 	{"wend", T_WEND},
 	{"stop", T_STOP},
 	{"on", T_ON},
+	{"beep", T_BEEP},
 	{"", 0}
 };
 
@@ -72,9 +73,9 @@ int token_type;
 byte token_back = 0;
 byte print_pos;
 
-byte dim1;
-byte dim2;
-byte dim3;
+word dim1;
+word dim2;
+word dim3;
 
 struct s_expr_res expr_res;
 

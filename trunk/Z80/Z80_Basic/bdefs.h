@@ -7,7 +7,7 @@
 #define MAX_NUM_VARS		40
 #define MAX_STRING_DVARS	20
 #define MAX_NUM_DVARS		20
-#define MAX_STRING_LEN		255
+#define MAX_STRING_LEN		250
 #define MAX_TOKEN_LEN		127
 #define MAX_VAR_NAME_LEN	5
 #define MAX_NUMSTR_LEN		12
@@ -127,6 +127,7 @@
 #define E_DIMVAR_KNOWN			20
 #define E_OUT_OF_MEMORY			21
 #define E_VAR_DIM_ERROR			22
+#define E_OUT_OF_RANGE			23
 
 /******************************************************************************/
 
