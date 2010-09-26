@@ -23,6 +23,13 @@ void load_program(char *file_name) {
 
 	IO_WRITE(160, #20); // open file for reading
 	while (busy);
+
+	if (!out_paramb) {
+		strcat(sparam, ".bas");
+		IO_WRITE(160, #20); // open file for reading
+		while (busy);
+	}
+
 	if (out_paramb) {
 
 		if (param1l < 32768) {
@@ -37,7 +44,7 @@ void load_program(char *file_name) {
 			*ip = 0;
 			SELECT_BANK0;
 		} else {
-			puts("File too large (size > 32kb)! Press key to continue.");
+			puts("File too large! Press key to continue.");
 			getchar();
 			quit_app();
 		}
@@ -118,39 +125,73 @@ void set_strvar(char *varname, char *value) {
 	int i;
 	byte l, l1;
 	struct s_strvar *svar = NULL;
+	struct s_strdvar *sdvar;
+	char **s;
 
 #ifdef DEBUG
 	puts("set_strvar()");
 #endif
 
 	l = strlen(value);
-	l1 = (l & 0b11111000) + 8;
-
-	SELECT_BANK2;
-	for (i = 0; i < str_var_count; i++) {
-		if (!strcmp(varname, str_vars[i].name)) {
-			svar = &(str_vars[i]);
-			if (svar->maxlen < l) {
-				free(svar->value);
-				if ((svar->value = malloc(l1)) == NULL)
-					error(E_OUT_OF_MEMORY);
-				svar->maxlen = l1;
-			}
+	for (i = 0; i < str_dvar_count; i++) {
+		if (!strcmp(varname, str_dvars[i].name))
 			break;
+	}
+	if (i < str_dvar_count) {
+		if (!dim1)
+			error(E_VAR_DIM_ERROR);
+		dim1--;
+		dim2--;
+		dim3--;
+
+		SELECT_BANK2;
+		sdvar = &str_dvars[i];
+		if (dim3)
+			s = sdvar->data + dim1 + dim2 * sdvar->len_dim1 + dim3 * sdvar->len_dim1 * sdvar->len_dim2;
+		else if (dim2)
+			s = sdvar->data + dim1 + dim2 * sdvar->len_dim1;
+		else
+			s = sdvar->data + dim1;
+
+		if (*s != NULL)
+			free(*s);
+		if (l > 0) {
+			*s = malloc(l);
+			strcpy(*s, value);
+//			puts_nlb("set_strvar: ");
+//			puts(*s);
 		}
+		SELECT_BANK0;
+	} else {
+
+		l1 = ((l + 1) & 0b11111000) + 8;
+
+		SELECT_BANK2;
+		for (i = 0; i < str_var_count; i++) {
+			if (!strcmp(varname, str_vars[i].name)) {
+				svar = &(str_vars[i]);
+				if (svar->maxlen < l) {
+					free(svar->value);
+					if ((svar->value = malloc(l1)) == NULL)
+						error(E_OUT_OF_MEMORY);
+					svar->maxlen = l1;
+				}
+				break;
+			}
+		}
+		if (i == str_var_count) {
+			if (str_var_count == MAX_STRING_VARS)
+				error(E_TOO_MANY_VARS);
+			str_var_count++;
+			svar = &(str_vars[i]);
+			strcpy(svar->name, varname);
+			if ((svar->value = malloc(l1)) == NULL)
+				error(E_OUT_OF_MEMORY);
+			svar->maxlen = l1;
+		}
+		strcpy(svar->value, value);
+		SELECT_BANK0;
 	}
-	if (i == str_var_count) {
-		if (str_var_count == MAX_STRING_VARS)
-			error(E_TOO_MANY_VARS);
-		str_var_count++;
-		svar = &(str_vars[i]);
-		strcpy(svar->name, varname);
-		if ((svar->value = malloc(l1)) == NULL)
-			error(E_OUT_OF_MEMORY);
-		svar->maxlen = l1;
-	}
-	strcpy(svar->value, value);
-	SELECT_BANK0;
 } // void set_strvar(char *varname, char *value)
 /******************************************************************************/
 struct s_num *find_numvar(char *varname) {
@@ -188,24 +229,25 @@ void set_numvar(char *varname, struct s_num *value) {
 	}
 	if (i < num_dvar_count) {
 		if (!dim1)
-        	error(E_VAR_DIM_ERROR);
-
+			error(E_VAR_DIM_ERROR);
 		dim1--;
 		dim2--;
 		dim3--;
 
 		dvar = &num_dvars[i];
 		SELECT_BANK2;
-		var = dvar->data + dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2;
+		if (dim3)
+			var = dvar->data + dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2;
+		else if (dim2)
+			var = dvar->data + dim1 + dim2 * dvar->len_dim1;
+		else
+			var = dvar->data + dim1;
 		(*var).ival = (*value).ival;
 		(*var).fval = (*value).fval;
 		(*var).isint = (*value).isint;
 		SELECT_BANK0;
 
 	} else {
-		if (dim1)
-			error(E_VAR_DIM_ERROR);
-
 		var = find_numvar(varname);
 		(*var).ival = (*value).ival;
 		(*var).fval = (*value).fval;
@@ -215,6 +257,8 @@ void set_numvar(char *varname, struct s_num *value) {
 /******************************************************************************/
 void get_next_token() {
 	int i;
+//	char nums[MAX_NUMSTR_LEN];
+//	char *s;
 //	char *src;
 
 #ifdef DEBUG
@@ -284,9 +328,9 @@ void get_next_token() {
 	} else if (isletter(*ip)) {
 
 		i = 0;
-		do {
+		do { // todo SP: [] weg
 			token_str[i++] = tolower1(*(ip++));
-		} while ((isletter(*ip) || *ip == '$') && i < MAX_TOKEN_LEN);
+		} while ((isletter(*ip) || isnum(*ip) || *ip == '$') && i < MAX_TOKEN_LEN);
 		token_str[i] = 0;
 	#ifdef DEBUG
 		puts_nlb("token_str: ");
@@ -364,6 +408,63 @@ void get_next_token() {
 			if (i > MAX_VAR_NAME_LEN)
 				error(E_VARNAME_TOO_LONG);
 		}
+
+		// read variable dimensions
+//		SELECT_BANK1;
+//		while (iswhite(*ip))
+//			ip++;
+//		dim1 = 0;
+//		if (*ip == '(') {
+//			ip++;
+//			while (iswhite(*ip))
+//				ip++;
+//
+//			dim2 = 1;
+//			dim3 = 1;
+//
+//			// read 1st dimension
+//			s = nums;
+//			while (*ip >= '0' && *ip <= '9')
+//				*(s++) = *(ip++);
+//			*s = 0;
+//			dim1 = atoi(nums);
+//
+//			while (iswhite(*ip))
+//				ip++;
+//			if (*ip == ',') {
+//				ip++;
+//				while (iswhite(*ip))
+//					ip++;
+//
+//				// read 2nd dimension
+//				s = nums;
+//				while (*ip >= '0' && *ip <= '9')
+//					*(s++) = *(ip++);
+//				*s = 0;
+//				dim2 = atoi(nums);
+//
+//				while (iswhite(*ip))
+//					ip++;
+//				if (*ip == ',') {
+//					ip++;
+//					while (iswhite(*ip))
+//						ip++;
+//
+//					// read 3rd dimension
+//					s = nums;
+//					while (*ip >= '0' && *ip <= '9')
+//						*(s++) = *(ip++);
+//					*s = 0;
+//					dim3 = atoi(nums);
+//				}
+//			}
+//			while (iswhite(*ip))
+//				ip++;
+//			if (*ip != ')')
+//				error(E_SYNTAX);
+//			ip++;
+//		}
+//		SELECT_BANK0;
 		return;
 		
 	} else if (*ip == '\r' || *ip == '\n') {
@@ -424,13 +525,20 @@ void get_numvar(char *varname, struct s_num *result) {
 	}
 	if (i < num_dvar_count) {
 		read_dimensions();
+		if (!dim1)
+			error(E_VAR_DIM_ERROR);
 		dim1--;
 		dim2--;
 		dim3--;
 
 		dvar = &num_dvars[i];
 		SELECT_BANK2;
-		var = dvar->data + dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2;
+		if (dim3)
+			var = dvar->data + dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2;
+		else if (dim2)
+			var = dvar->data + dim1 + dim2 * dvar->len_dim1;
+		else
+			var = dvar->data + dim1;
 		(*result).isint = (*var).isint;
 		(*result).fval = (*var).fval;
 		(*result).ival = (*var).ival;
@@ -458,8 +566,10 @@ void get_numvar(char *varname, struct s_num *result) {
 } // void get_numvar(char *name, struct s_num *result)
 /******************************************************************************/
 void get_strvar(char *varname, char *result, int *l) {
-	char *src;
+	char *src, *dest;
 	int i;
+	struct s_strdvar *sdvar;
+	char **s;
 
 #ifdef DEBUG
 	puts("get_strvar()");
@@ -470,16 +580,57 @@ void get_strvar(char *varname, char *result, int *l) {
 		src++;
 	*src = 0;
 
-	SELECT_BANK1;
-	for (i = 0; i < str_var_count; i++) {
-		if (!strcmp(varname, str_vars[i].name)) {
-			src = str_vars[i].value;
-			while (*src && *l < MAX_STRING_LEN)
-				result[(*l)++] = *(src++);
+	for (i = 0; i < str_dvar_count; i++) {
+		if (!strcmp(varname, str_dvars[i].name))
 			break;
-		}
 	}
-	SELECT_BANK0;
+	if (i < str_dvar_count) {
+    	read_dimensions();
+		if (!dim1)
+			error(E_VAR_DIM_ERROR);
+		dim1--;
+		dim2--;
+		dim3--;
+
+		SELECT_BANK2;
+		sdvar = &str_dvars[i];
+		if (dim3)
+			s = sdvar->data + dim1 + dim2 * sdvar->len_dim1 + dim3 * sdvar->len_dim1 * sdvar->len_dim2;
+		else if (dim2)
+			s = sdvar->data + dim1 + dim2 * sdvar->len_dim1;
+		else
+			s = sdvar->data + dim1;
+
+		if (*s != NULL) {
+			dest = result + *l;
+			while (**s && *l < MAX_STRING_LEN) {
+				*(dest++) = *((*s)++);
+				(*l)++;
+			}
+			//puts_nlb("get_strvar: ");
+			//*dest = 0;
+			//puts(result);
+		}
+		SELECT_BANK0;
+	} else {
+		SELECT_BANK2;
+		for (i = 0; i < str_var_count; i++) {
+			if (!strcmp(varname, str_vars[i].name)) {
+				src = str_vars[i].value;
+//				puts(src);
+				dest = result + *l;
+				while (*src && *l < MAX_STRING_LEN) {
+					*(dest++) = *(src++);
+					(*l)++;
+				}
+//				puts_nlb("get_strvar: ");
+//				*dest = 0;
+//				puts(result);
+				break;
+			}
+		}
+		SELECT_BANK0;
+	}
 } // void get_strvar(char *name, char *result, int *l)
 /******************************************************************************/
 void put_back() {
@@ -487,6 +638,14 @@ void put_back() {
 	puts("put_back()");
 #endif
 	token_back = 1;
+}
+/******************************************************************************/
+void put_back_undo() {
+#ifdef DEBUG
+	puts("put_back_undo()");
+#endif
+	token_back = 0;
+	ip -= strlen(token_str);
 }
 /******************************************************************************/
 void assign_numvar() {
@@ -499,13 +658,8 @@ void assign_numvar() {
 
 	strcpy(varname, token_str);
 
+	read_dimensions();
 	get_next_token();
-	dim1 = 0;
-	if (token_str[0] == '(') {
-    	put_back();
-		read_dimensions();
-		get_next_token();
-	}
 
 	if (token_str[0] != '=')
 		error(E_SYNTAX);
@@ -533,13 +687,8 @@ void assign_strvar() {
 		*(dest++) = *(src++);
 	*dest = 0;
 
+	read_dimensions();
 	get_next_token();
-	dim1 = 0;
-	if (token_str[0] == '(') {
-    	put_back();
-		read_dimensions();
-		get_next_token();
-	}
 
 	if (token_str[0] != '=')
 		error(E_SYNTAX);
@@ -659,6 +808,10 @@ void start_basic() {
                 beep();
 				break;
 
+			case T_GOTOXY:
+            	exec_gotoxy();
+            	break;
+
 			case T_END:
 			case T_STOP:
 			case T_INTVAL:
@@ -678,9 +831,16 @@ void start_basic() {
 /******************************************************************************/
 void *malloc_checked(unsigned int size) {
 	void *result;
+//	char s[10];
+
+//	puts_nlb("malloc_checked(");
+//	itoa(size, s);
+//	puts_nlb(s);
+//	puts(")");
 
 	SELECT_BANK2;
 	result = malloc(size);
+	memset(result, 0, size);
 	SELECT_BANK0;
 	if (result == NULL)
 		error(E_OUT_OF_MEMORY);

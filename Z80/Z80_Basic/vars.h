@@ -23,9 +23,9 @@ extern int token_type;
 extern byte token_back;
 extern byte print_pos;
 
-extern byte dim1;
-extern byte dim2;
-extern byte dim3;
+extern word dim1;
+extern word dim2;
+extern word dim3;
 
 extern struct s_expr_res expr_res;
 

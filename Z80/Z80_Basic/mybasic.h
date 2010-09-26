@@ -16,6 +16,7 @@ void get_next_token();
 void get_numvar(char *varname, struct s_num *result);
 void get_strvar(char *varname, char *result, int *l);
 void put_back();
+void put_back_undo();
 void assign_numvar();
 void assign_strvar();
 void start_basic();

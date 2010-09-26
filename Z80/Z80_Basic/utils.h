@@ -3,6 +3,7 @@
 
 #include "defs.h"
 
+void putn(int n);
 void delay_ms(word ms);
 void reverse(char s[]);
 void itoa(int n, char s[]);

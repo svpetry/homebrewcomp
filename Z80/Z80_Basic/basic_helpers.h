@@ -23,6 +23,7 @@ void exec_return();
 void exec_read();
 void exec_on();
 void exec_dim();
+void exec_gotoxy();
 void eval_strfunc(char *result, int *l);
 void str2num(char *str, struct s_num *value);
 void eval_numfunc(struct s_num *result);

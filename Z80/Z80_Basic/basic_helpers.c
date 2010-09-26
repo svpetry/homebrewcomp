@@ -81,6 +81,9 @@ void print_error_text(byte errno) {
 		case E_VAR_DIM_ERROR:
 			puts("\nwrong variable dimension:");
 			break;
+		case E_OUT_OF_RANGE:
+			puts("\nvalue out of range:");
+			break;
 	}
 } // print_error_text
 /******************************************************************************/
@@ -436,7 +439,7 @@ void exec_read() {
 	char *temp_ip;
 	byte vtoken, i;
 	char varname[MAX_VAR_NAME_LEN + 1];
-	struct s_num *value;
+	struct s_num value;
 
 	get_next_token();
 	if (token_type != TT_VARIABLE)
@@ -447,6 +450,9 @@ void exec_read() {
     	token_str[i] = 0;
 	strcpy(varname, token_str);
 
+	read_dimensions();
+
+	put_back_undo();
 	temp_ip = ip;
 	if (!read_pointer) {
 		goto_tokens(T_DATA, 0);
@@ -471,12 +477,12 @@ void exec_read() {
 		get_next_token();
 	read_pointer = ip;
 	ip = temp_ip;
-	if (token_type != TT_VALUE)
-		error(E_SYNTAX);
+//	if (token_type != TT_VALUE)
+//		error(E_SYNTAX);
 
 	if (vtoken == T_NUMVAR) {
-    	value = find_numvar(varname);
-		str2num(token_str, value);
+		str2num(token_str, &value);
+		set_numvar(varname, &value);
 	} else {
 		if (token != T_STRVAL)
         	error(E_WRONG_VALUE);
@@ -514,63 +520,95 @@ void exec_dim() {
 	struct s_strdvar *strdvar;
 	struct s_numdvar *numdvar;
 
-	get_next_token();
-	if (token == T_STRVAR || token == T_NUMVAR) {
+	do {
+		get_next_token();
+		if (token == T_STRVAR || token == T_NUMVAR) {
 
-		i = strlen(token_str) - 1;
-		if (token_str[i] == '$')
-			token_str[i] = 0;
-		strcpy(varname, token_str);
-		var_token = token;
+			i = strlen(token_str) - 1;
+			if (token_str[i] == '$')
+				token_str[i] = 0;
+			strcpy(varname, token_str);
+			var_token = token;
 
-		read_dimensions();
+			read_dimensions();
 
-		// create array structure
-		if (var_token == T_STRVAR) {
+			// create array structure
+			if (var_token == T_STRVAR) {
 
-			// string
-			for (i = 0; i < str_var_count; i++) {
-				if (!strcmp(varname, str_vars[i].name))
-					error(E_DIMVAR_KNOWN);
-			}
-			for (i = 0; i < str_dvar_count; i++) {
-				if (!strcmp(varname, str_dvars[i].name))
-					error(E_DIMVAR_KNOWN);
-			}
-			if (str_dvar_count == MAX_STRING_DVARS)
-				error(E_TOO_MANY_VARS);
+				// string
+				for (i = 0; i < str_var_count; i++) {
+					if (!strcmp(varname, str_vars[i].name))
+						error(E_DIMVAR_KNOWN);
+				}
+				for (i = 0; i < str_dvar_count; i++) {
+					if (!strcmp(varname, str_dvars[i].name))
+						error(E_DIMVAR_KNOWN);
+				}
+				if (str_dvar_count == MAX_STRING_DVARS)
+					error(E_TOO_MANY_VARS);
 
-			strdvar = &str_dvars[str_dvar_count++];
-			strcpy(strdvar->name, varname);
-			strdvar->len_dim1 = dim1;
-			strdvar->len_dim2 = dim2;
-			strdvar->len_dim3 = dim3;
-			strdvar->data = malloc_checked(dim1 * dim2 * dim3 * sizeof(char *));
-		} else {
+				strdvar = &str_dvars[str_dvar_count++];
+				strcpy(strdvar->name, varname);
+				strdvar->len_dim1 = dim1;
+				strdvar->len_dim2 = dim2;
+				strdvar->len_dim3 = dim3;
+				strdvar->data = malloc_checked(dim1 * dim2 * dim3 * sizeof(char *));
+			} else {
 
-			// numeric
-			for (i = 0; i < num_var_count; i++) {
-				if (!strcmp(varname, num_vars[i].name))
-					error(E_DIMVAR_KNOWN);
-			}
-			for (i = 0; i < num_dvar_count; i++) {
-				if (!strcmp(varname, num_dvars[i].name))
-					error(E_DIMVAR_KNOWN);
-			}
-			if (num_dvar_count == MAX_NUM_DVARS)
-				error(E_TOO_MANY_VARS);
+				// numeric
+				for (i = 0; i < num_var_count; i++) {
+					if (!strcmp(varname, num_vars[i].name))
+						error(E_DIMVAR_KNOWN);
+				}
+				for (i = 0; i < num_dvar_count; i++) {
+					if (!strcmp(varname, num_dvars[i].name))
+						error(E_DIMVAR_KNOWN);
+				}
+				if (num_dvar_count == MAX_NUM_DVARS)
+					error(E_TOO_MANY_VARS);
 
-			numdvar = &num_dvars[num_dvar_count++];
-			strcpy(numdvar->name, varname);
-			numdvar->len_dim1 = dim1;
-			numdvar->len_dim2 = dim2;
-			numdvar->len_dim3 = dim3;
-			numdvar->data = malloc_checked(dim1 * dim2 * dim3 * sizeof(struct s_num));
-		} // else (var_token == T_STRVAR)
-
-	} else
-        error(E_SYNTAX);
+				numdvar = &num_dvars[num_dvar_count++];
+				strcpy(numdvar->name, varname);
+				numdvar->len_dim1 = dim1;
+				numdvar->len_dim2 = dim2;
+				numdvar->len_dim3 = dim3;
+				numdvar->data = malloc_checked(dim1 * dim2 * dim3 * (word)sizeof(struct s_num));
+			} // else (var_token == T_STRVAR)
+		} else
+			error(E_SYNTAX);
+		get_next_token();
+	} while (token_str[0] == ',');
+	put_back();
 } // exec_dim()
+/******************************************************************************/
+void exec_gotoxy() {
+
+	get_next_token();
+	if (token_str[0] != '(')
+		error(E_SYNTAX);
+
+	parse_expression();
+	if (expr_res.type != VT_INT)
+		error(E_SYNTAX);
+	if (expr_res.ival < 0 || expr_res.ival > 79)
+		error(E_OUT_OF_RANGE);
+	cur_col = expr_res.ival;
+
+	get_next_token();
+	if (token_str[0] != ',')
+		error(E_SYNTAX);
+
+	parse_expression();
+	if (expr_res.type != VT_INT)
+		error(E_SYNTAX);
+	if (expr_res.ival < 0 || expr_res.ival > 24)
+		error(E_OUT_OF_RANGE);
+	cur_row = expr_res.ival;
+
+	if (token_str[0] != ')')
+		error(E_SYNTAX);
+	get_next_token();
+} // exec_gotoxy()
 /******************************************************************************/
 void eval_strfunc(char *result, int *l) {
 	char s[256];
@@ -1196,8 +1234,11 @@ char *get_label(int lbl) {
 /******************************************************************************/
 void read_dimensions() {
 	get_next_token();
-	if (token != T_SPECIAL || token_str[0] != '(')
-		error(E_SYNTAX);
+	if (token_str[0] != '(') {
+        dim1 = 0;
+		put_back();
+		return;
+    }
 
 	// read 1st dimensions
 	parse_expression();
