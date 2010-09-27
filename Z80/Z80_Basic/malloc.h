@@ -1,6 +1,8 @@
 #ifndef MALLOC_H_
 #define MALLOC_H_
 
+#ifndef _DEBUG
+
 #define HEAP_START  0x8000
 #define HEAP_SIZE	0x2000
 
@@ -15,6 +17,8 @@ unsigned int malloc_free_ram();
 void malloc_reset();
 void *malloc(unsigned int nbytes);
 void free(void *ap);
+
+#endif // _DEBUG
 
 #endif /* MALLOC_H_ */
 

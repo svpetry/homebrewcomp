@@ -6,8 +6,10 @@
 void putn(int n);
 void delay_ms(word ms);
 void reverse(char s[]);
+#ifndef _DEBUG
 void itoa(int n, char s[]);
 void ltoa(long i, char* buf);
-void quit_app();
+#endif // _DEBUG
+void quit_app(void);
 
 #endif /* UTILS_H_ */

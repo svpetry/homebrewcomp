@@ -19,11 +19,13 @@
  */
 
 /******************************************************************************/
-void init() {
+void init(void) {
+#ifndef _DEBUG
 	ENABLE_VRAM;
 	v_cls();
 	IO_WRITE(5, #32);
 	IO_WRITE(6, #31);
+#endif
 }
 /******************************************************************************/
 void main() {
@@ -35,6 +37,11 @@ void main() {
 	puts("                   |___/_|_|_|_| .__/_\\___|___/\\__,_/__/_\\__|");
 	puts("                               |_|           (c)2010 S.Petry ");
 	puts("\n");
+#ifdef _DEBUG
+	load_program("TEST.BAS");
+	puts("\n\nPress any key to continue.");
+	start_basic();
+#else
 	if (prog_paramcount) {
 		load_program(prog_params[0]);
 		puts("\n\nProgram ready. Press any key to start.");
@@ -42,6 +49,7 @@ void main() {
 		v_cls();
 		start_basic();
 	}
+#endif // _DEBUG
 
 	puts("\n\nPress any key to continue.");
 	getchar();

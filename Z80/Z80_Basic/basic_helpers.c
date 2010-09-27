@@ -4,13 +4,18 @@
 #include <math.h>
 #include <ctype.h>
 
+#ifdef _DEBUG
+#include <conio.h>
+#endif // _DEBUG
+
 #include "basic_helpers.h"
+#include "mybasic.h"
 #include "io.h"
 #include "utils.h"
 #include "ftoa.h"
 #include "video.h"
 
-#pragma codeseg _CODE2
+//#pragma codeseg _CODE2
 
 /******************************************************************************/
 void print_error_text(byte errno) {
@@ -173,15 +178,21 @@ void exec_print() {
 			case VT_INT:
 				if (last_sc && !last_num)
 					putchar(' ');
+			#ifdef _DEBUG
+				sprintf(expr_res.sval, "%d", expr_res.ival);
+			#else
 				itoa(expr_res.ival, expr_res.sval);
-				//expr_res.sval, "%d", expr_res.ival);
+			#endif // _DEBUG
 				last_num = 1;
 				break;
 			case VT_FLOAT:
 				if (last_sc && !last_num)
 					putchar(' ');
+			#ifdef _DEBUG
+				sprintf(expr_res.sval, "%f", expr_res.fval);
+			#else
 				ftoa(expr_res.fval, expr_res.sval);
-				//sprintf(expr_res.sval, "%f", expr_res.fval);
+			#endif // _DEBUG
 				last_num = 1;
 				break;
 			default:
@@ -251,7 +262,11 @@ void exec_input() {
 	while (l < MAX_STRING_LEN && (c = getchar()) != '\n') {
 		if (c == 8) { // Backspace
 			if (l > 0) {
+			#ifdef _DEBUG
+            	putchar(c);
+			#else
 				v_backspace();
+			#endif
             	l--;
 			}
 		} else if (c >= 32) {
@@ -582,6 +597,9 @@ void exec_dim() {
 } // exec_dim()
 /******************************************************************************/
 void exec_gotoxy() {
+#ifdef _DEBUG
+	int x, y;
+#endif // _DEBUG
 
 	get_next_token();
 	if (token_str[0] != '(')
@@ -592,7 +610,11 @@ void exec_gotoxy() {
 		error(E_SYNTAX);
 	if (expr_res.ival < 0 || expr_res.ival > 79)
 		error(E_OUT_OF_RANGE);
+#ifdef _DEBUG
+	x = expr_res.ival;
+#else
 	cur_col = expr_res.ival;
+#endif
 
 	get_next_token();
 	if (token_str[0] != ',')
@@ -603,7 +625,13 @@ void exec_gotoxy() {
 		error(E_SYNTAX);
 	if (expr_res.ival < 0 || expr_res.ival > 24)
 		error(E_OUT_OF_RANGE);
+#ifdef _DEBUG
+	y = expr_res.ival;
+
+	gotoxy(x, y);
+#else
 	cur_row = expr_res.ival;
+#endif // _DEBUG
 
 	if (token_str[0] != ')')
 		error(E_SYNTAX);
@@ -822,9 +850,17 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression();
 			if (expr_res.type == VT_FLOAT) {
+			#ifdef _DEBUG
+				(*result).fval = sin(expr_res.fval);
+			#else
 				(*result).fval = sinf(expr_res.fval);
+			#endif
 			} else if (expr_res.type == VT_INT) {
+			#ifdef _DEBUG
+				(*result).fval = sin(expr_res.ival);
+			#else
 				(*result).fval = sinf(expr_res.ival);
+			#endif
 			} else
 				error(E_SYNTAX);
 			break;
@@ -833,9 +869,17 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression();
 			if (expr_res.type == VT_FLOAT) {
+			#ifdef _DEBUG
+				(*result).fval = cos(expr_res.fval);
+			#else
 				(*result).fval = cosf(expr_res.fval);
+			#endif
 			} else if (expr_res.type == VT_INT) {
+			#ifdef _DEBUG
+				(*result).fval = cos(expr_res.ival);
+			#else
 				(*result).fval = cosf(expr_res.ival);
+			#endif
 			} else
 				error(E_SYNTAX);
 			break;
@@ -855,9 +899,17 @@ void eval_numfunc(struct s_num *result) {
 		case T_SQR:
 			parse_expression();
 			if (expr_res.type == VT_FLOAT) {
+			#ifdef _DEBUG
+				(*result).fval = sqrt(expr_res.fval);
+			#else
 				(*result).fval = sqrtf(expr_res.fval);
+			#endif
 			} else if (expr_res.type == VT_INT) {
+			#ifdef _DEBUG
+				(*result).fval = sqrt(expr_res.ival);
+			#else
 				(*result).fval = sqrtf(expr_res.ival);
+			#endif
 			} else
 				error(E_SYNTAX);
 			(*result).isint = 0;
@@ -876,9 +928,17 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression();
 			if (expr_res.type == VT_FLOAT) {
+			#ifdef _DEBUG
+				(*result).fval = tan(expr_res.fval);
+			#else
 				(*result).fval = tanf(expr_res.fval);
+			#endif
 			} else if (expr_res.type == VT_INT) {
+			#ifdef _DEBUG
+				(*result).fval = tan(expr_res.ival);
+			#else
 				(*result).fval = tanf(expr_res.ival);
+			#endif
 			} else
 				error(E_SYNTAX);
 			break;
@@ -887,9 +947,17 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression();
 			if (expr_res.type == VT_FLOAT) {
+			#ifdef _DEBUG
+				(*result).fval = log(expr_res.fval);
+			#else
 				(*result).fval = logf(expr_res.fval);
+			#endif
 			} else if (expr_res.type == VT_INT) {
+			#ifdef _DEBUG
+				(*result).fval = log(expr_res.ival);
+			#else
 				(*result).fval = logf(expr_res.ival);
+			#endif
 			} else
 				error(E_SYNTAX);
 			break;

@@ -6,6 +6,8 @@
 #define MAX_PARAMS 8
 #define CMDLINE_MAXLEN 64
 
+#ifndef _DEBUG
+
 volatile dword at 0x0040 sector; // Sektor bei Disk-Operationen
 volatile byte  at 0x0044 busy;
 
@@ -22,5 +24,7 @@ volatile char at 0x0080 disk_buffer[0x200];
 
 volatile byte at 0x0058 prog_paramcount;
 volatile char at 0x0080 prog_params[MAX_PARAMS - 1][CMDLINE_MAXLEN];
+
+#endif // _DEBUG
 
 #endif /* BIOS_CMD_H_ */

@@ -8,6 +8,7 @@
 #pragma codeseg _CODE2
 
 /******************************************************************************/
+#ifndef _DEBUG
 
 typedef union {
 	long	L;
@@ -91,4 +92,5 @@ char *ftoa(float f, char outbuf[]) {
 
 	return outbuf;
 }
+#endif // _DEBUG
 /******************************************************************************/

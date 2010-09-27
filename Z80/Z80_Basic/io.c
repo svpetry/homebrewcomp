@@ -7,9 +7,11 @@
 #include "utils.h"
 #include "bios_cmd.h"
 
+#ifndef _DEBUG
 static byte io_val;
 static word io_addr;
 static volatile byte at 0x0080 filebuf[0x200];
+#endif // _DEBUG
 
 /******************************************************************************/
 void puts_nlb(char *s) {
@@ -20,6 +22,7 @@ void puts_nlb(char *s) {
 	}
 }
 /******************************************************************************/
+#ifndef _DEBUG
 char getchar(void) {
 	byte result;
 	byte cnt = 0;
@@ -38,12 +41,6 @@ char getchar(void) {
 	} while (result == 255);
 	v_hidecursor();
 	return result;
-}
-/******************************************************************************/
-void beep(void) {
-	IO_WRITE(4, #1);
-	delay_ms(200);
-	IO_WRITE(4, #0);
 }
 /******************************************************************************/
 byte io_read(byte addr) {
@@ -72,6 +69,13 @@ void io_write(byte addr, byte val) {
 		pop bc
 		pop af
 	_endasm;
+}
+#endif
+/******************************************************************************/
+void beep(void) {
+	IO_WRITE(4, #1);
+	delay_ms(200);
+	IO_WRITE(4, #0);
 }
 /******************************************************************************/
 

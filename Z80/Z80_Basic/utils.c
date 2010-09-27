@@ -8,7 +8,7 @@
 #include "io.h"
 #include "bios_cmd.h"
 
-#pragma codeseg _CODE2
+//#pragma codeseg _CODE2
 
 static char *m_dest;
 static char *m_src;
@@ -18,7 +18,11 @@ static char m_value;
 /******************************************************************************/
 void putn(int n) {
 	char s[20];
+#ifdef _DEBUG
+	itoa(n, s, 10);
+#else
 	itoa(n, s);
+#endif
 	puts(s);
 }
 /******************************************************************************/
@@ -29,6 +33,7 @@ void delay_ms(word ms) {
 	}
 }
 /******************************************************************************/
+#ifndef _DEBUG
 void reverse(char s[])
 {
 	int i, j;
@@ -75,9 +80,12 @@ void ltoa(long i, char* buf)
 		*--s = '-';
 	strcpy(buf, s);
 }
+#endif // _DEBUG
 /******************************************************************************/
 void quit_app() {
-
+#ifdef _DEBUG
+	exit(0);
+#else
 	strcpy(sparam, "bios.bin");
 	IO_WRITE(160, #29); // check if file exists
 	while (busy);
@@ -103,6 +111,7 @@ void quit_app() {
 	_asm
 		halt
 	_endasm;
+#endif // _DEBUG
 }
 /******************************************************************************/
 
