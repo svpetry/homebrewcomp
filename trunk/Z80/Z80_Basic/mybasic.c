@@ -19,6 +19,27 @@
 
 /******************************************************************************/
 void load_program(char *file_name) {
+#ifdef _DEBUG
+	char *p = prog;
+	FILE *fp;
+	int i = 0;
+
+	fp = fopen(file_name, "rb");
+	if (!fp)
+    	exit(1);
+	i = 0;
+	do {
+		*p = getc(fp);
+		p++;
+		i++;
+	} while (!feof(fp) && i < 32768);
+
+	*(p - 2) = 0; // null terminate the program
+
+    ip = prog;
+	
+	fclose(fp);
+#else // _DEBUG
 	strcpy(sparam, file_name);
 
 	IO_WRITE(160, #20); // open file for reading
@@ -53,6 +74,7 @@ void load_program(char *file_name) {
 		getchar();
 		quit_app();
 	}
+#endif // _DEBUG
 }
 /******************************************************************************/
 void error(byte errno) {
@@ -158,13 +180,16 @@ void set_strvar(char *varname, char *value) {
 		if (l > 0) {
 			*s = malloc(l);
 			strcpy(*s, value);
-//			puts_nlb("set_strvar: ");
-//			puts(*s);
 		}
+
 		SELECT_BANK0;
 	} else {
 
+	#ifdef _DEBUG
+    	l1 = ((l + 1 ) & 0xf8) + 8;
+	#else
 		l1 = ((l + 1) & 0b11111000) + 8;
+	#endif // _DEBUG
 
 		SELECT_BANK2;
 		for (i = 0; i < str_var_count; i++) {
@@ -557,7 +582,7 @@ void get_numvar(char *varname, struct s_num *result) {
 
 		if (varname[0] == 'p' && varname[1] == 'i' && varname[2] == 0) {
 			(*result).isint = 0;
-			(*result).fval = PI;
+			(*result).fval = 3.14159265;
 		} else {
 			(*result).isint = 1;
 			(*result).ival = 0;
@@ -585,7 +610,7 @@ void get_strvar(char *varname, char *result, int *l) {
 			break;
 	}
 	if (i < str_dvar_count) {
-    	read_dimensions();
+		read_dimensions();
 		if (!dim1)
 			error(E_VAR_DIM_ERROR);
 		dim1--;
@@ -602,14 +627,12 @@ void get_strvar(char *varname, char *result, int *l) {
 			s = sdvar->data + dim1;
 
 		if (*s != NULL) {
+			src = *s;
 			dest = result + *l;
-			while (**s && *l < MAX_STRING_LEN) {
-				*(dest++) = *((*s)++);
+			while (*src && *l < MAX_STRING_LEN) {
+				*(dest++) = *(src++);
 				(*l)++;
 			}
-			//puts_nlb("get_strvar: ");
-			//*dest = 0;
-			//puts(result);
 		}
 		SELECT_BANK0;
 	} else {
@@ -617,15 +640,11 @@ void get_strvar(char *varname, char *result, int *l) {
 		for (i = 0; i < str_var_count; i++) {
 			if (!strcmp(varname, str_vars[i].name)) {
 				src = str_vars[i].value;
-//				puts(src);
 				dest = result + *l;
 				while (*src && *l < MAX_STRING_LEN) {
 					*(dest++) = *(src++);
 					(*l)++;
 				}
-//				puts_nlb("get_strvar: ");
-//				*dest = 0;
-//				puts(result);
 				break;
 			}
 		}
@@ -781,7 +800,11 @@ void start_basic() {
 				break;
 
 			case T_CLS:
+			#ifdef _DEBUG
+            	system("cls");
+			#else
 				v_cls();
+			#endif
 				break;
 
 			case T_GOSUB:
@@ -844,6 +867,7 @@ void *malloc_checked(unsigned int size) {
 	SELECT_BANK0;
 	if (result == NULL)
 		error(E_OUT_OF_MEMORY);
+	return result;
 }
 /******************************************************************************/
 

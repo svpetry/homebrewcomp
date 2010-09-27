@@ -5,6 +5,8 @@
 #define _FTOA_TOO_SMALL 2
 #define BUFFER_MAX 30
 
+#ifndef _DEBUG
 char *ftoa(float f, char outbuf[]);
+#endif
 
 #endif // FTOA_H_

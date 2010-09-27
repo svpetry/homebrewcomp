@@ -10,6 +10,8 @@
 #ifndef VIDEO_H_
 #define VIDEO_H_
 
+#ifndef _DEBUG
+
 #define VIDEO_RAM 0x1000
 #define VRAM_SIZE 0x0c80
 #define VIDEO_BUFFER 0x7800
@@ -29,5 +31,6 @@ void v_scrollup();
 void v_backspace();
 
 void putchar(char c);
+#endif // _DEBUG
 
 #endif /* VIDEO_H_ */

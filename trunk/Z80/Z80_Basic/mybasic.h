@@ -7,19 +7,19 @@
 
 void load_program(char *file_name);
 void error(byte errno);
-void next_line();
-void build_label_list();
+void next_line(void);
+void build_label_list(void);
 void set_strvar(char *varname, char *value);
 struct s_num *find_numvar(char *varname);
 void set_numvar(char *varname, struct s_num *value);
-void get_next_token();
+void get_next_token(void);
 void get_numvar(char *varname, struct s_num *result);
 void get_strvar(char *varname, char *result, int *l);
-void put_back();
-void put_back_undo();
-void assign_numvar();
-void assign_strvar();
-void start_basic();
+void put_back(void);
+void put_back_undo(void);
+void assign_numvar(void);
+void assign_strvar(void);
+void start_basic(void);
 void *malloc_checked(unsigned int size);
 
 #endif // _MYBASIC_H

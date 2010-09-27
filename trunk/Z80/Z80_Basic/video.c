@@ -6,6 +6,8 @@
 #include "defs.h"
 #include "utils_b0.h"
 
+#ifndef _DEBUG
+
 byte cur_col = 0;
 byte cur_row = 0;
 //static byte show_cursor = 1;
@@ -113,4 +115,4 @@ void putchar(char c) {
 	}
 }
 /******************************************************************************/
-
+#endif // _DEBUG
