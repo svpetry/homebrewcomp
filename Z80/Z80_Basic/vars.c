@@ -34,6 +34,7 @@ const struct s_name_token cmd_names[] = {
 	{"stop", T_STOP},
 	{"on", T_ON},
 	{"beep", T_BEEP},
+	{"restore", T_RESTORE},
 	{"", 0}
 };
 
@@ -44,6 +45,7 @@ const struct s_name_token str_func_names[] = {
 	{"tab", T_TAB},
 	{"str", T_STR},
 	{"chr$", T_CHR},
+	{"upper$", T_UPPER},
 	{"", 0}
 };
 
@@ -59,6 +61,7 @@ const struct s_name_token num_func_names[] = {
 	{"asc", T_ASC},
 	{"tan", T_TAN},
 	{"log", T_LOG},
+	{"instr", T_INSTR},
 	{"", 0}
 };
 
