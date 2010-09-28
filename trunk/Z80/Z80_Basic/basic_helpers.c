@@ -279,10 +279,10 @@ void exec_input() {
 
 	if (var_token == T_STRVAR) {
 		varname[strlen(varname) - 1] = 0;
-		set_strvar(varname, input);
+		set_strvar(varname, input, dim1, dim2, dim3);
 	} else {
 		str2num(input, &value);
-		set_numvar(varname, &value);
+		set_numvar(varname, &value, dim1, dim2, dim3);
     }
 } // void exec_input()
 /******************************************************************************/
@@ -452,58 +452,79 @@ void exec_return() {
 /******************************************************************************/
 void exec_read() {
 	char *temp_ip;
-	byte vtoken, i;
+	byte vtoken, i, neg;
 	char varname[MAX_VAR_NAME_LEN + 1];
 	struct s_num value;
 
-	get_next_token();
-	if (token_type != TT_VARIABLE)
-		error(E_SYNTAX);
-	vtoken = token;
-	i = strlen(token_str) - 1;
-	if (token_str[i] == '$')
-    	token_str[i] = 0;
-	strcpy(varname, token_str);
-
-	read_dimensions();
-
-	put_back_undo();
-	temp_ip = ip;
-	if (!read_pointer) {
-		goto_tokens(T_DATA, 0);
-		if (token == T_EOP) {
-        	ip = temp_ip;
-			error(E_NO_DATA);
-		}
-	} else
-		ip = read_pointer;
-
-	get_next_token();
-	if (token == T_LINEEND) {
-		goto_tokens(T_DATA, 0);
-		if (token == T_EOP) {
-        	ip = temp_ip;
-			error(E_NO_DATA);
-		}
+	do {
 		get_next_token();
-	}
+		if (token_type != TT_VARIABLE)
+			error(E_SYNTAX);
+		vtoken = token;
+		i = strlen(token_str) - 1;
+		if (token_str[i] == '$')
+			token_str[i] = 0;
+		strcpy(varname, token_str);
 
-	if (token_str[0] == ',')
+		read_dimensions();
 		get_next_token();
-	read_pointer = ip;
-	ip = temp_ip;
-//	if (token_type != TT_VALUE)
-//		error(E_SYNTAX);
 
-	if (vtoken == T_NUMVAR) {
-		str2num(token_str, &value);
-		set_numvar(varname, &value);
-	} else {
-		if (token != T_STRVAL)
-        	error(E_WRONG_VALUE);
-    	token_str[strlen(token_str) - 1] = 0;
-		set_strvar(varname, token_str + 1);
-	}
+		put_back_undo();
+		temp_ip = ip;
+		if (!read_pointer) {
+			goto_tokens(T_DATA, 0);
+			if (token == T_EOP) {
+				ip = temp_ip;
+				error(E_NO_DATA);
+			}
+		} else
+			ip = read_pointer;
+
+		get_next_token();
+		if (token == T_LINEEND) {
+			goto_tokens(T_DATA, 0);
+			if (token == T_EOP) {
+				ip = temp_ip;
+				error(E_NO_DATA);
+			}
+			get_next_token();
+		}
+
+		if (token_str[0] == ',')
+			get_next_token();
+
+		if (token_str[0] == '-') {
+			get_next_token();
+			neg = 1;
+			if (token_type != TT_VALUE)
+				error(E_SYNTAX);
+		} else
+			neg = 0;
+
+		read_pointer = ip;
+		ip = temp_ip;
+	//	if (token_type != TT_VALUE)
+	//		error(E_SYNTAX);
+
+		if (vtoken == T_NUMVAR) {
+			str2num(token_str, &value);
+			if (neg) {
+				if (value.isint)
+					value.ival = -value.ival;
+				else
+					value.fval = -value.fval;
+			}
+			set_numvar(varname, &value, dim1, dim2, dim3);
+		} else {
+			if (token != T_STRVAL)
+				error(E_WRONG_VALUE);
+			token_str[strlen(token_str) - 1] = 0;
+			set_strvar(varname, token_str + 1, dim1, dim2, dim3);
+		}
+
+		get_next_token();
+	} while (token_str[0] == ',');
+	put_back();
 } // void exec_read()
 /******************************************************************************/
 void exec_on() {
@@ -546,6 +567,7 @@ void exec_dim() {
 			var_token = token;
 
 			read_dimensions();
+			get_next_token();
 
 			// create array structure
 			if (var_token == T_STRVAR) {
@@ -591,7 +613,6 @@ void exec_dim() {
 			} // else (var_token == T_STRVAR)
 		} else
 			error(E_SYNTAX);
-		get_next_token();
 	} while (token_str[0] == ',');
 	put_back();
 } // exec_dim()
@@ -613,7 +634,7 @@ void exec_gotoxy() {
 #ifdef _DEBUG
 	x = expr_res.ival;
 #else
-	cur_col = expr_res.ival;
+	cur_col = expr_res.ival - 1;
 #endif
 
 	get_next_token();
@@ -630,7 +651,7 @@ void exec_gotoxy() {
 
 	gotoxy(x, y);
 #else
-	cur_row = expr_res.ival;
+	cur_row = expr_res.ival - 1;
 #endif // _DEBUG
 
 	if (token_str[0] != ')')
@@ -652,7 +673,7 @@ void eval_strfunc(char *result, int *l) {
 		case T_MID:
 			parse_expression();
 			if (expr_res.type != VT_STRING)
-				error(E_SYNTAX);
+				error(E_STREXP);
 			strcpy(s, expr_res.sval);
 
 			get_next_token();
@@ -688,7 +709,7 @@ void eval_strfunc(char *result, int *l) {
 		case T_LEFT:
 			parse_expression();
 			if (expr_res.type != VT_STRING)
-				error(E_SYNTAX);
+				error(E_STREXP);
 			strcpy(s, expr_res.sval);
 
 			get_next_token();
@@ -713,7 +734,7 @@ void eval_strfunc(char *result, int *l) {
 		case T_RIGHT:
 			parse_expression();
 			if (expr_res.type != VT_STRING)
-				error(E_SYNTAX);
+				error(E_STREXP);
 			strcpy(s, expr_res.sval);
 
 			get_next_token();
@@ -740,7 +761,7 @@ void eval_strfunc(char *result, int *l) {
 			}
 			(*q) = 0;
 			break;
-			
+
 		case T_TAB:
 			parse_expression();
 			if (expr_res.type != VT_INT)
@@ -769,6 +790,18 @@ void eval_strfunc(char *result, int *l) {
 				*result = expr_res.ival;
 				(*l)++;                
 			}
+			break;
+
+		case T_UPPER:
+        	parse_expression();
+			if (expr_res.type != VT_STRING)
+				error(E_STREXP);
+			p = expr_res.sval;
+			q = result;
+			while (*p && *l < MAX_STRING_LEN) {
+				*(q++) = toupper(*(p++));
+				(*l)++;
+            }
 			break;
 	}
 
@@ -806,7 +839,9 @@ void str2num(char *str, struct s_num *value) {
 /******************************************************************************/
 void eval_numfunc(struct s_num *result) {
 	int func_token = token;
-	//char *src, *dest;
+	char s[MAX_STRING_LEN];
+	char *s1, *s2, *q;
+	byte i;
 
 	get_next_token();
 	if (token_str[0] != '(')
@@ -960,6 +995,49 @@ void eval_numfunc(struct s_num *result) {
 			#endif
 			} else
 				error(E_SYNTAX);
+			break;
+
+			case T_INSTR:
+				(*result).isint = 1;
+				parse_expression();
+				if (expr_res.type != VT_STRING)
+					error(E_STREXP);
+				strcpy(s, expr_res.sval);
+
+				get_next_token();
+				if (token_str[0] != ',')
+                	error(E_SYNTAX);
+
+				parse_expression();
+				if (expr_res.type != VT_STRING)
+					error(E_STREXP);
+
+				(*result).isint = 1;
+				(*result).ival = 0;
+				if (strlen(s) >= strlen(expr_res.sval)) {
+					s1 = s;
+					i = 1;
+					while (*s1) {
+						q = s1;
+						s2 = expr_res.sval;
+						while (*s2) {
+							if (*s2 == *q) {
+								s2++;
+								q++;
+							} else
+								break;
+						}
+						if (!*s2) {
+							(*result).ival = i;
+							break;
+						}
+						s1++;
+						i++;
+					}
+				}
+
+				// Todo
+
 			break;
 
 	}
@@ -1313,7 +1391,6 @@ void read_dimensions() {
 	if (expr_res.type != VT_INT)
 		error(E_INTEXP);
 	dim1 = expr_res.ival;
-
 	dim2 = 1;
 	dim3 = 1;
 
@@ -1334,6 +1411,7 @@ void read_dimensions() {
 			dim3 = expr_res.ival;
 		} else
 			put_back();
+
 	} else
 		put_back();
 

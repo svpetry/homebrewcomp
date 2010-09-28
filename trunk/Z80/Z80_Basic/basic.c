@@ -40,6 +40,8 @@ void main() {
 #ifdef _DEBUG
 	load_program("TEST.BAS");
 	puts("\n\nPress any key to continue.");
+	getchar();
+	system("cls");
 	start_basic();
 #else
 	if (prog_paramcount) {

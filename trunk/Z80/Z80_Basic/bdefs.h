@@ -7,7 +7,7 @@
 #define MAX_NUM_VARS		40
 #define MAX_STRING_DVARS	20
 #define MAX_NUM_DVARS		20
-#define MAX_STRING_LEN		250
+#define MAX_STRING_LEN		200
 #define MAX_TOKEN_LEN		127
 #define MAX_VAR_NAME_LEN	5
 #define MAX_NUMSTR_LEN		12
@@ -45,6 +45,7 @@
 #define T_WEND		23
 #define T_STOP		24
 #define T_BEEP		25
+#define T_RESTORE	26
 
 // string functions
 #define T_MID		100
@@ -53,6 +54,7 @@
 #define T_TAB		103
 #define T_STR		104
 #define T_CHR		105
+#define T_UPPER		106
 
 // numeric/math functions
 #define T_LEN		150
@@ -66,6 +68,7 @@
 #define T_ASC		158
 #define T_TAN		159
 #define T_LOG		160
+#define T_INSTR		161
 
 // other
 #define T_REM		180

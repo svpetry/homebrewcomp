@@ -143,7 +143,7 @@ void build_label_list() {
 	SELECT_BANK0;
 } // void build_label_list()
 /******************************************************************************/
-void set_strvar(char *varname, char *value) {
+void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 	int i;
 	byte l, l1;
 	struct s_strvar *svar = NULL;
@@ -160,20 +160,20 @@ void set_strvar(char *varname, char *value) {
 			break;
 	}
 	if (i < str_dvar_count) {
-		if (!dim1)
+		if (!vd1)
 			error(E_VAR_DIM_ERROR);
-		dim1--;
-		dim2--;
-		dim3--;
+		vd1--;
+		vd2--;
+		vd3--;
 
 		SELECT_BANK2;
 		sdvar = &str_dvars[i];
-		if (dim3)
-			s = sdvar->data + dim1 + dim2 * sdvar->len_dim1 + dim3 * sdvar->len_dim1 * sdvar->len_dim2;
-		else if (dim2)
-			s = sdvar->data + dim1 + dim2 * sdvar->len_dim1;
+		if (vd3)
+			s = sdvar->data + vd1 + vd2 * sdvar->len_dim1 + vd3 * sdvar->len_dim1 * sdvar->len_dim2;
+		else if (vd2)
+			s = sdvar->data + vd1 + vd2 * sdvar->len_dim1;
 		else
-			s = sdvar->data + dim1;
+			s = sdvar->data + vd1;
 
 		if (*s != NULL)
 			free(*s);
@@ -239,7 +239,7 @@ struct s_num *find_numvar(char *varname) {
 	return &num_vars[i].value;
 } //struct s_num *find_numvar(char *varname)
 /******************************************************************************/
-void set_numvar(char *varname, struct s_num *value) {
+void set_numvar(char *varname, struct s_num *value, int vd1, int vd2, int vd3) {
 	struct s_num *var;
 	struct s_numdvar *dvar;
 	int i;
@@ -253,20 +253,20 @@ void set_numvar(char *varname, struct s_num *value) {
 			break;
 	}
 	if (i < num_dvar_count) {
-		if (!dim1)
+		if (!vd1)
 			error(E_VAR_DIM_ERROR);
-		dim1--;
-		dim2--;
-		dim3--;
+		vd1--;
+		vd2--;
+		vd3--;
 
 		dvar = &num_dvars[i];
 		SELECT_BANK2;
-		if (dim3)
-			var = dvar->data + dim1 + dim2 * dvar->len_dim1 + dim3 * dvar->len_dim1 * dvar->len_dim2;
-		else if (dim2)
-			var = dvar->data + dim1 + dim2 * dvar->len_dim1;
+		if (vd3)
+			var = dvar->data + vd1 + vd2 * dvar->len_dim1 + vd3 * dvar->len_dim1 * dvar->len_dim2;
+		else if (vd2)
+			var = dvar->data + vd1 + vd2 * dvar->len_dim1;
 		else
-			var = dvar->data + dim1;
+			var = dvar->data + vd1;
 		(*var).ival = (*value).ival;
 		(*var).fval = (*value).fval;
 		(*var).isint = (*value).isint;
@@ -433,63 +433,6 @@ void get_next_token() {
 			if (i > MAX_VAR_NAME_LEN)
 				error(E_VARNAME_TOO_LONG);
 		}
-
-		// read variable dimensions
-//		SELECT_BANK1;
-//		while (iswhite(*ip))
-//			ip++;
-//		dim1 = 0;
-//		if (*ip == '(') {
-//			ip++;
-//			while (iswhite(*ip))
-//				ip++;
-//
-//			dim2 = 1;
-//			dim3 = 1;
-//
-//			// read 1st dimension
-//			s = nums;
-//			while (*ip >= '0' && *ip <= '9')
-//				*(s++) = *(ip++);
-//			*s = 0;
-//			dim1 = atoi(nums);
-//
-//			while (iswhite(*ip))
-//				ip++;
-//			if (*ip == ',') {
-//				ip++;
-//				while (iswhite(*ip))
-//					ip++;
-//
-//				// read 2nd dimension
-//				s = nums;
-//				while (*ip >= '0' && *ip <= '9')
-//					*(s++) = *(ip++);
-//				*s = 0;
-//				dim2 = atoi(nums);
-//
-//				while (iswhite(*ip))
-//					ip++;
-//				if (*ip == ',') {
-//					ip++;
-//					while (iswhite(*ip))
-//						ip++;
-//
-//					// read 3rd dimension
-//					s = nums;
-//					while (*ip >= '0' && *ip <= '9')
-//						*(s++) = *(ip++);
-//					*s = 0;
-//					dim3 = atoi(nums);
-//				}
-//			}
-//			while (iswhite(*ip))
-//				ip++;
-//			if (*ip != ')')
-//				error(E_SYNTAX);
-//			ip++;
-//		}
-//		SELECT_BANK0;
 		return;
 		
 	} else if (*ip == '\r' || *ip == '\n') {
@@ -628,7 +571,7 @@ void get_strvar(char *varname, char *result, int *l) {
 
 		if (*s != NULL) {
 			src = *s;
-			dest = result + *l;
+			dest = result;
 			while (*src && *l < MAX_STRING_LEN) {
 				*(dest++) = *(src++);
 				(*l)++;
@@ -640,7 +583,7 @@ void get_strvar(char *varname, char *result, int *l) {
 		for (i = 0; i < str_var_count; i++) {
 			if (!strcmp(varname, str_vars[i].name)) {
 				src = str_vars[i].value;
-				dest = result + *l;
+				dest = result;
 				while (*src && *l < MAX_STRING_LEN) {
 					*(dest++) = *(src++);
 					(*l)++;
@@ -670,6 +613,7 @@ void put_back_undo() {
 void assign_numvar() {
 	char varname[MAX_VAR_NAME_LEN + 1];
 	struct s_num value;
+	int vd1, vd2, vd3;
 
 #ifdef DEBUG
 	puts("assign_numvar()");
@@ -678,6 +622,9 @@ void assign_numvar() {
 	strcpy(varname, token_str);
 
 	read_dimensions();
+	vd1 = dim1;
+	vd2 = dim2;
+	vd3 = dim3;
 	get_next_token();
 
 	if (token_str[0] != '=')
@@ -689,12 +636,13 @@ void assign_numvar() {
 	value.ival = expr_res.ival;
 	value.fval = expr_res.fval;
 	value.isint = expr_res.type = VT_INT ? 1 : 0;
-	set_numvar(varname, &value);
+	set_numvar(varname, &value, vd1, vd2, vd3);
 } // void assign_numvar()
 /******************************************************************************/
 void assign_strvar() {
 	char *src, *dest;
 	char varname[MAX_VAR_NAME_LEN + 1];
+	int vd1, vd2, vd3;
 
 #ifdef DEBUG
 	puts("assign_strvar()");
@@ -707,6 +655,9 @@ void assign_strvar() {
 	*dest = 0;
 
 	read_dimensions();
+	vd1 = dim1;
+	vd2 = dim2;
+	vd3 = dim3;
 	get_next_token();
 
 	if (token_str[0] != '=')
@@ -715,7 +666,7 @@ void assign_strvar() {
 	if (expr_res.type != VT_STRING)
 		error(E_SYNTAX);
 
-	set_strvar(varname, expr_res.sval);
+	set_strvar(varname, expr_res.sval, vd1, vd2, vd3);
 } // void assign_strvar()
 /******************************************************************************/
 void start_basic() {
@@ -833,7 +784,11 @@ void start_basic() {
 
 			case T_GOTOXY:
             	exec_gotoxy();
-            	break;
+				break;
+
+			case T_RESTORE:
+				read_pointer = NULL;
+				break;
 
 			case T_END:
 			case T_STOP:
