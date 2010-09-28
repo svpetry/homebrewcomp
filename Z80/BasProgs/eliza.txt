@@ -22,7 +22,7 @@
 190 rem ----- USER INPUT SECTION -----
 200 rem
 210 input i$
-211 if i$ = ""
+211 if i$ = "" then
 212    print "SPEAK UP. I CAN'T HEAR YOU."
 213    goto 210
 215 endif
@@ -33,7 +33,7 @@
 232 rem IF instr(I$,'SHUT') > 0 THEN STOP
 240 rem  GET RID OF APOSTROPHES
 250 i$ = srep$(i$,"'","")
-260 if i$ = p$
+260 if i$ = p$ then
 270    print "I HEARD YOU THE FIRST TIME."
 280    goto 180
 290 endif
