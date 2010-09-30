@@ -26,13 +26,12 @@
 212    print "SPEAK UP. I CAN'T HEAR YOU."
 213    goto 210
 215 endif
-220 i$ = " "+i$+" " : i$ = uprc$(" "+i$+" ")
+220 i$ = " "+i$+" " : i$ = upper$(" "+i$+" ")
 221     rem for k=1 to len(l$) : if mid$(l$,k,1) >= "a" then mid$(l$,k,1) = chr$(asc(mid$(l$,k,1))-32)
 222     rem next k
-230 if idx(i$,"SHUT") > 0 then stop
-232 rem IF instr(I$,'SHUT') > 0 THEN STOP
+230 if instr(i$,"SHUT") > 0 then stop
 240 rem  GET RID OF APOSTROPHES
-250 i$ = srep$(i$,"'","")
+250 rem i$ = srep$(i$,"'","")
 260 if i$ = p$ then
 270    print "I HEARD YOU THE FIRST TIME."
 280    goto 180
@@ -46,7 +45,7 @@
 360   read k$
 370   if s > 0 then 430
 380 for l = 1 to len(i$)-len(k$)+1
-390   if mstr$(i$,l,len(k$)) = k$ then s = k
+390   if mid$(i$,l,len(k$)) = k$ then s = k
 400   t = l
 410   f$ = k$
 420 next l
@@ -67,28 +66,28 @@
 570   next x
 580 rem SKIP OVER KEYWORDS
 590 x = len(i$)-len(f$)-l+1
-600 c$ = " "+mstr$(i$,len(i$)-x+1,x)+" "
+600 c$ = " "+mid$(i$,len(i$)-x+1,x)+" "
 610 for x = 1 to n2/2
 620   read s$,r$
 630     for l = 1 to len(c$)
 640     if l+len(s$) > len(c$) then 700
-650     if mstr$(c$,l,len(s$)) <> s$ then 700
+650     if mid$(c$,l,len(s$)) <> s$ then 700
 660     xx = len(c$)-l-len(s$)+1
-670     c$ = mstr$(c$,1,l-1)+r$+mstr$(c$,len(c$)-xx+1,xx)
+670     c$ = mid$(c$,1,l-1)+r$+mid$(c$,len(c$)-xx+1,xx)
 680     l = l+len(r$)
 690     goto 750
 700     if l+len(r$) > len(c$) then 750
-710     if mstr$(c$,l,len(r$)) <> r$ then 750
+710     if mid$(c$,l,len(r$)) <> r$ then 750
 720     xx = len(c$)-l-len(r$)+1
-730     c$ = mstr$(c$,l,l-1)+s$+mstr$(c$,len(c$)-xx+1,xx)
+730     c$ = mid$(c$,l,l-1)+s$+mid$(c$,len(c$)-xx+1,xx)
 740     l = l+len(s$)
 750     next l
 760   next x
-770 if mstr$(c$,2,1) = " " then c$ = mstr$(c$,1,len(c$)-1)
+770 if mid$(c$,2,1) = " " then c$ = mid$(c$,1,len(c$)-1)
 780 rem ONLY 1 SPACE
 790 for l = 1 to len(c$)
-800 c$ = srep$(i$,"!","")
-810 if mstr$(c$,l,1) = "!" then 800
+800 c$ = i$ : rem c$ = srep$(i$,"!","")
+810 if mid$(c$,l,1) = "!" then 800
 820 next l
 830 rem
 840 rem NOW USING THE KEYWORD NUMBER(K) GET REPLY
@@ -103,10 +102,10 @@
 930 rem READ AND WRITE REPLY
 940 r(k) = r(k)+1
 950 if r(k) > n(k) then r(k) = s1(k)
-960 if mstr$(f$,len(f$),1) <> "*" then print f$
-970 if mstr$(f$,len(f$),1) <> "*" then p$ = i$
-980 if mstr$(f$,len(f$),1) <> "*" then 180
-990 print mstr$(f$,1,len(f$)-1);c$
+960 if mid$(f$,len(f$),1) <> "*" then print f$
+970 if mid$(f$,len(f$),1) <> "*" then p$ = i$
+980 if mid$(f$,len(f$),1) <> "*" then 180
+990 print mid$(f$,1,len(f$)-1);c$
 1000 p$ = i$
 1010 goto 180
 1020 rem
@@ -248,24 +247,3 @@
 2380 data 28,4,28,4,32,3,35,5,40,9,40,9,40,9,40,9,40,9,40,9
 2390 data 49,2,51,4,55,4,59,4,63,1,63,1,64,5,69,5,74,2,76,4
 2400 data 80,3,83,7,90,3,93,6,99,7,106,6
-8000 sub uprc$(a$,b$,i,c)
-8010 b$ = ""
-8020 for i = 1 to len(a$)
-8030   c = asc(mid$(a$,i,1)) : if c > 96 then c = c-32
-8040   b$ = b$+chr$(c)
-8050 next i
-8090 return(b$)
-8100 sub idx(a$,b$,i)
-8110 i = instr(a$,b$)
-8190 return(i)
-8200 sub srep$(a$,f$,t$,b$,i,c$)
-8210 b$ = ""
-8220 for i = 1 to len(a$)
-8230   c$ = mid$(a$,i,1) : if c$ = f$ then c$ = t$
-8240   b$ = b$+c$
-8250 next i
-8290 return(b$)
-8300 sub mstr$(a$,b,n,r$)
-8310 r$ = mid$(a$,b,n)
-8390 return(r$)
-9990 end
