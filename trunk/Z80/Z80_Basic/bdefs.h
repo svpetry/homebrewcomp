@@ -16,6 +16,7 @@
 #define LABEL_STACK_SIZE	2000 // don't modify!
 #define IF_STACK_SIZE		10
 #define WHILE_STACK_SIZE	10
+#define MAX_PROG_FILE_SIZE	32768
 
 // Tokens ----------------------------------------------------------------------
 
@@ -69,6 +70,7 @@
 #define T_TAN		159
 #define T_LOG		160
 #define T_INSTR		161
+#define T_EXP		162
 
 // other
 #define T_REM		180
