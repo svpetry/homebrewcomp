@@ -1,18 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
-  <PersonalityInfo>
-    <Option>
-      <Option Name="Personality">CPlusPlusBuilder.Personality</Option>
-      <Option Name="ProjectType">CppConsoleApplication</Option>
-      <Option Name="Version">1.0</Option>
-      <Option Name="GUID">{AAD5530C-3C45-4FA1-9129-63CC6C046612}</Option>
-    </Option>
-  </PersonalityInfo>
-  <CPlusPlusBuilder.Personality>
-    <Source>
-      <Source Name="MainSource">Z80_App.bpf</Source>
-    </Source>
-    <BCBPROJECT>
+	<PersonalityInfo>
+		<Option>
+			<Option Name="Personality">CPlusPlusBuilder.Personality</Option>
+			<Option Name="ProjectType">CppConsoleApplication</Option>
+			<Option Name="Version">1.0</Option>
+			<Option Name="GUID">{AAD5530C-3C45-4FA1-9129-63CC6C046612}</Option>
+		</Option>
+	</PersonalityInfo>
+	<CPlusPlusBuilder.Personality>
+		<Source>
+			<Source Name="MainSource">Z80_App.bpf</Source>
+		</Source>
+		<BCBPROJECT>
       <project version="10.0">
         <property category="build.config" name="active" value="0"/>
         <property category="build.config" name="count" value="1"/>
@@ -29,8 +29,10 @@
         <property category="build.config.1" name="type" value="Toolset"/>
         <property category="build.config.1" name="win32.win32b.builddir" value="Release_Build"/>
         <property category="build.node" name="lastconfig" value="Debug_Build"/>
+        <property category="build.node" name="libraries" value="rtl.lib"/>
         <property category="build.node" name="name" value="Z80_App.exe"/>
         <property category="build.node" name="packages" value="vclx;vcl;rtl;dbrtl;vcldb;adortl;dbxcds;dbexpress;xmlrtl;vclie;inet;inetdbbde;inetdbxpress;soaprtl;dsnap;vclactnband;bdertl;vcldbx"/>
+        <property category="build.node" name="sparelibs" value="rtl.lib"/>
         <property category="build.node" name="use_packages" value="0"/>
         <property category="build.platform" name="active" value="win32"/>
         <property category="build.platform" name="win32.Debug_Build.toolset" value="win32b"/>
@@ -160,29 +162,31 @@
         </optionset>
       </project>
       <FILELIST>
+        <FILE FILENAME="compile.bat" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="compile_app.bat" CONTAINERID="" LOCALCOMMAND=""/>
         <FILE FILENAME="Z80_App.bpf" CONTAINERID="BPF" LOCALCOMMAND="" UNITNAME="Z80_App" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="Z80_App.res" CONTAINERID="ResTool" LOCALCOMMAND="" UNITNAME="Z80_App.res" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="defs.h" CONTAINERID="" LOCALCOMMAND=""/>
-        <FILE FILENAME="bdefs.h" CONTAINERID="" LOCALCOMMAND=""/>
-        <FILE FILENAME="bios_cmd.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="defs.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="bdefs.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="bios_cmd.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="basic.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="basic" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="basic_helpers.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="basic_helpers.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="basic_helpers.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="basic_helpers" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="ftoa.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="ftoa.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="ftoa.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="ftoa" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="io.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="io.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="io.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="io" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="malloc.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="malloc.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="malloc.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="malloc" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="mybasic.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="mybasic.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="mybasic.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="mybasic" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="utils.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="utils.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="utils.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="utils" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="utils_b0.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="utils_b0.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="utils_b0.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="utils_b0" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="vars.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="vars.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="vars.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="vars" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="video.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="video.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="video.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="video" FORMNAME="" DESIGNCLASS=""/>
       </FILELIST>
       <IDEOPTIONS>
@@ -233,12 +237,17 @@
           <Parameters Name="LoadAllSymbols">True</Parameters>
           <Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
         </Parameters>
+        <Language>
+          <Language Name="ActiveLang"></Language>
+          <Language Name="ProjectLang">$00000000</Language>
+          <Language Name="RootDir"></Language>
+        </Language>
         <Linker>
           <Linker Name="LibPrefix"></Linker>
           <Linker Name="LibSuffix"></Linker>
           <Linker Name="LibVersion"></Linker>
         </Linker>
       </IDEOPTIONS>
-    </BCBPROJECT>
+    </BCBPROJECT>  <buildevents/>
   </CPlusPlusBuilder.Personality>
 </BorlandProject>

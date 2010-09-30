@@ -50,13 +50,13 @@ extern struct s_label_stack_entry at 0xe000 labels[LABEL_STACK_SIZE];
 extern int label_count;
 
 extern char *if_starts[IF_STACK_SIZE];
-extern byte if_count;
+extern byte if_pos;
 
 extern struct s_for_stack_entry for_stack[FOR_STACK_SIZE];
-extern byte for_count;
+extern byte for_pos;
 
 extern char *while_stack[WHILE_STACK_SIZE];
-extern byte while_count;
+extern byte while_pos;
 
 extern char *gosub_stack[GOSUB_STACK_SIZE];
 extern byte gosub_count;

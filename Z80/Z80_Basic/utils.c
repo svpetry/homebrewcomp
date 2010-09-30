@@ -34,8 +34,7 @@ void delay_ms(word ms) {
 }
 /******************************************************************************/
 #ifndef _DEBUG
-void reverse(char s[])
-{
+void reverse(char s[]) {
 	int i, j;
 	char c;
 
@@ -46,8 +45,7 @@ void reverse(char s[])
 	}
 }
 /******************************************************************************/
-void itoa(int n, char s[])
-{
+void itoa(int n, char s[]) {
 	 int i, sign;
 
 	 if ((sign = n) < 0)  /* record sign */
@@ -62,8 +60,7 @@ void itoa(int n, char s[])
 	 reverse(s);
 }
 /******************************************************************************/
-void ltoa(long i, char* buf)
-{
+void ltoa(long i, char* buf) {
 	char reverse[14];
 	char* s;
 	char sign = i < 0;

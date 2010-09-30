@@ -43,7 +43,7 @@ const struct s_name_token str_func_names[] = {
 	{"left$", T_LEFT},
 	{"right$", T_RIGHT},
 	{"tab", T_TAB},
-	{"str", T_STR},
+	{"str$", T_STR},
 	{"chr$", T_CHR},
 	{"upper$", T_UPPER},
 	{"", 0}
@@ -62,6 +62,7 @@ const struct s_name_token num_func_names[] = {
 	{"tan", T_TAN},
 	{"log", T_LOG},
 	{"instr", T_INSTR},
+	{"exp", T_EXP},
 	{"", 0}
 };
 
@@ -103,13 +104,13 @@ struct s_label_stack_entry at 0xe000 labels[LABEL_STACK_SIZE];
 int label_count = 0;
 
 char *if_starts[IF_STACK_SIZE];
-byte if_count = 0;
+byte if_pos = 0;
 
 struct s_for_stack_entry for_stack[FOR_STACK_SIZE];
-byte for_count = 0;
+byte for_pos = 0;
 
 char *while_stack[WHILE_STACK_SIZE];
-byte while_count = 0;
+byte while_pos = 0;
 
 char *gosub_stack[GOSUB_STACK_SIZE];
 byte gosub_count = 0;

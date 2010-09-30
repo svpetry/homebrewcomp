@@ -19,27 +19,25 @@
 
 /******************************************************************************/
 void load_program(char *file_name) {
+	word i = 0;
+	char val[MAX_NUMSTR_LEN + 1], *s;
+	byte l;
+	int lbl, last_lbl = 0;
+	
 #ifdef _DEBUG
-	char *p = prog;
+#define READ_CHAR getc(fp)
+#define FILE_OK !feof(fp)
 	FILE *fp;
-	int i = 0;
+
+	ip = prog;
 
 	fp = fopen(file_name, "rb");
 	if (!fp)
     	exit(1);
 	i = 0;
-	do {
-		*p = getc(fp);
-		p++;
-		i++;
-	} while (!feof(fp) && i < 32768);
-
-	*(p - 2) = 0; // null terminate the program
-
-    ip = prog;
-	
-	fclose(fp);
 #else // _DEBUG
+#define READ_CHAR io_read(163)
+#define FILE_OK param1l > 0
 	strcpy(sparam, file_name);
 
 	IO_WRITE(160, #20); // open file for reading
@@ -51,29 +49,96 @@ void load_program(char *file_name) {
 		while (busy);
 	}
 
-	if (out_paramb) {
-
-		if (param1l < 32768) {
-			puts("Loading...");
-
-			SELECT_BANK1;
-			ip = prog;
-			while (param1l > 0) {
-				*(ip++) = io_read(163);
-				param1l--;
-			}
-			*ip = 0;
-			SELECT_BANK0;
-		} else {
-			puts("File too large! Press key to continue.");
-			getchar();
-			quit_app();
-		}
-	} else {
+	if (!out_paramb) {
 		puts("File not found! Press key to continue.");
 		getchar();
 		quit_app();
 	}
+	puts("Loading...");
+
+	SELECT_BANK1;
+	i = 0;
+	ip = prog;
+#endif // _DEBUG
+	while (FILE_OK && i < MAX_PROG_FILE_SIZE) {
+		*ip = READ_CHAR;
+
+		if (*ip != '\r') {
+			if (*ip == '\n' || i == 0) {
+
+				if (*ip == '\n')
+					*(++ip) = READ_CHAR;
+				
+				// skip white space
+				while (FILE_OK && i < MAX_PROG_FILE_SIZE && (iswhite(*ip) || *ip == '\n')) {
+					*ip = READ_CHAR;
+					i++;
+				#ifndef _DEBUG
+					param1l--;
+				#endif // _DEBUG
+				}
+
+				// read label value into string
+				s = val;
+				l = 0;
+				while (FILE_OK && isnum(*ip) && i < MAX_PROG_FILE_SIZE && l < 6) {
+					*(s++) = *ip;
+					*ip = READ_CHAR;
+					i++;
+					l++;
+				#ifndef _DEBUG
+					param1l--;
+				#endif // _DEBUG
+				}
+				*s = 0;
+
+				// skip white space
+				while (FILE_OK && i < MAX_PROG_FILE_SIZE && iswhite(*ip)) {
+					*ip = READ_CHAR;
+					i++;
+				#ifndef _DEBUG
+					param1l--;
+				#endif // _DEBUG
+				}
+
+				// create label
+				if (l > 0) {
+					lbl = atoi(val);
+					if (last_lbl >= lbl)
+						error(E_LABEL_ORDER);
+					last_lbl = lbl;
+
+					val[l] = 0;
+					labels[label_count].pos = ip;
+					labels[label_count].label = lbl;
+					label_count++;
+				}
+
+			} // if (*ip == '\n' || i == 0) {
+		} // if (*ip != '\r') {
+
+		if (*ip != '\r') {
+			if (FILE_OK && i < MAX_PROG_FILE_SIZE) {
+				ip++;
+				i++;
+			#ifndef _DEBUG
+				param1l--;
+			#endif // _DEBUG
+			}
+		} // if (*ip != '\r') {
+	} // while (param1l > 0 && i < MAX_PROG_FILE_SIZE)
+
+	if (i == MAX_PROG_FILE_SIZE) {
+		puts("File too large! Press key to continue.");
+		getchar();
+		quit_app();
+	}
+
+	*ip = 0; // null terminate the program
+#ifdef _DEBUG
+	fclose(fp);
+#else // _DEBUG
+	SELECT_BANK0;
 #endif // _DEBUG
 }
 /******************************************************************************/
@@ -82,11 +147,12 @@ void error(byte errno) {
 	print_error_text(errno);
 	SELECT_BANK1;
 	ip--;
-	while (ip > prog && *ip != '\n' && *ip != '\r')
-		ip--;
+	do {
+	  ip--;
+	} while (ip > prog && *ip != '\n');
 	if (ip > prog)
 		ip++;
-	while (*ip && *ip != '\n' && *ip != '\r')
+	while (*ip && *ip != '\n')
 		putchar(*(ip++));
 	SELECT_BANK0;
 	putchar('\n');
@@ -98,50 +164,15 @@ void next_line() {
 #ifdef DEBUG
 	puts("next_line()");
 #endif
+	token_back = 0;
+	
 	SELECT_BANK1;
-	while (*ip != '\r' && *ip != '\n' && *ip)
+	while (*ip != '\n' && *ip)
 		ip++;
-	while ((*ip == '\r' || *ip == '\n') && *ip)
+	while (*ip == '\n' && *ip)
 		ip++;
 	SELECT_BANK0;
 } // void next_line()
-/******************************************************************************/
-void build_label_list() {
-	char *pos;
-	char val[MAX_NUMSTR_LEN + 1];
-	byte l;
-	int lbl, last_lbl = 0;
-
-#ifdef DEBUG
-	puts("build_label_list()");
-#endif
-
-	SELECT_BANK1;
-	while (*ip) {
-		while (iswhite(*ip))
-			ip++;
-		l = 0;
-		while (isnum(*ip))
-			val[l++] = *(ip++);
-		SELECT_BANK0;
-		pos = ip;
-		if (l > 0) {
-			lbl = atoi(val);
-			if (last_lbl >= lbl)
-				error(E_LABEL_ORDER);
-			last_lbl = lbl;
-
-			val[l] = 0;
-			labels[label_count].pos = pos;
-			labels[label_count].label = lbl;
-			label_count++;
-		}
-		next_line();
-		SELECT_BANK1;
-	}
-	ip = prog;
-	SELECT_BANK0;
-} // void build_label_list()
 /******************************************************************************/
 void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 	int i;
@@ -159,13 +190,7 @@ void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 		if (!strcmp(varname, str_dvars[i].name))
 			break;
 	}
-	if (i < str_dvar_count) {
-		if (!vd1)
-			error(E_VAR_DIM_ERROR);
-		vd1--;
-		vd2--;
-		vd3--;
-
+	if (i < str_dvar_count && vd1 != -1) {
 		SELECT_BANK2;
 		sdvar = &str_dvars[i];
 		if (vd3)
@@ -248,17 +273,16 @@ void set_numvar(char *varname, struct s_num *value, int vd1, int vd2, int vd3) {
 	puts("set_numvar()");
 #endif
 
+//	if (value->isint)
+//		printf("set_numvar(%s, %d);\n", varname, value->ival);
+//	else
+//		printf("set_numvar(%s, %f);\n", varname, value->fval);
+//
 	for (i = 0; i < num_dvar_count; i++) {
 		if (!strcmp(varname, num_dvars[i].name))
 			break;
 	}
-	if (i < num_dvar_count) {
-		if (!vd1)
-			error(E_VAR_DIM_ERROR);
-		vd1--;
-		vd2--;
-		vd3--;
-
+	if (i < num_dvar_count && vd1 != -1) {
 		dvar = &num_dvars[i];
 		SELECT_BANK2;
 		if (vd3)
@@ -435,9 +459,9 @@ void get_next_token() {
 		}
 		return;
 		
-	} else if (*ip == '\r' || *ip == '\n') {
+	} else if (*ip == '\n') {
 		ip++;
-		if (*ip == '\n' || *ip == '\r')
+		if (*ip == '\n')
 			ip++;
 		SELECT_BANK0;
 		// end of line
@@ -491,13 +515,10 @@ void get_numvar(char *varname, struct s_num *result) {
 		if (!strcmp(varname, num_dvars[i].name))
 			break;
 	}
-	if (i < num_dvar_count) {
-		read_dimensions();
-		if (!dim1)
-			error(E_VAR_DIM_ERROR);
-		dim1--;
-		dim2--;
-		dim3--;
+
+	read_dimensions();
+
+	if (i < num_dvar_count && dim1 != -1) {
 
 		dvar = &num_dvars[i];
 		SELECT_BANK2;
@@ -552,14 +573,10 @@ void get_strvar(char *varname, char *result, int *l) {
 		if (!strcmp(varname, str_dvars[i].name))
 			break;
 	}
-	if (i < str_dvar_count) {
-		read_dimensions();
-		if (!dim1)
-			error(E_VAR_DIM_ERROR);
-		dim1--;
-		dim2--;
-		dim3--;
 
+	read_dimensions();
+
+	if (i < str_dvar_count && dim1 != -1) {
 		SELECT_BANK2;
 		sdvar = &str_dvars[i];
 		if (dim3)
@@ -629,13 +646,13 @@ void assign_numvar() {
 
 	if (token_str[0] != '=')
 		error(E_SYNTAX);
-	parse_expression();
+	parse_expression(1);
 	if (expr_res.type != VT_FLOAT && expr_res.type != VT_INT)
 		error(E_SYNTAX);
 
 	value.ival = expr_res.ival;
 	value.fval = expr_res.fval;
-	value.isint = expr_res.type = VT_INT ? 1 : 0;
+	value.isint = expr_res.type == VT_INT ? 1 : 0;
 	set_numvar(varname, &value, vd1, vd2, vd3);
 } // void assign_numvar()
 /******************************************************************************/
@@ -662,7 +679,7 @@ void assign_strvar() {
 
 	if (token_str[0] != '=')
 		error(E_SYNTAX);
-	parse_expression();
+	parse_expression(0);
 	if (expr_res.type != VT_STRING)
 		error(E_SYNTAX);
 
@@ -670,16 +687,24 @@ void assign_strvar() {
 } // void assign_strvar()
 /******************************************************************************/
 void start_basic() {
+	byte i;
 
+	// initialize stacks
+	for (i = 0; i < FOR_STACK_SIZE; i++)
+		for_stack[i].loop_start = 0;
+	for (i = 0; i < IF_STACK_SIZE; i++)
+    	if_starts[i] = 0;
+	for (i = 0; i < WHILE_STACK_SIZE; i++)
+    	while_stack[i] = 0;
+
+	// start
 	ip = prog;
-	build_label_list();
 
 	get_next_token();
 	while (token != T_EOP && token != T_END && token != T_STOP) {
 
-		while ((token == T_LINEEND || token == T_COLON) && (token != T_EOP)) {
+		while ((token == T_LINEEND || token == T_COLON) && token != T_EOP && token != T_END && token != T_STOP)
 			get_next_token();
-        }
 
 		switch (token) {
 			case T_STRVAR:
@@ -700,7 +725,7 @@ void start_basic() {
 			case T_DATA:
             	// falls through
 			case T_REM:
-            	next_line();
+				next_line();
 				break;
 				
 			case T_PRINT:
@@ -720,18 +745,27 @@ void start_basic() {
 				break;
 
 			case T_ELSE:
-				if (!if_count)
-                	error(E_ELSE_WITHOUT_IF);
-				if_count--;
+				if (if_pos > 0)
+					if_pos--;
+				else
+                	if_pos = IF_STACK_SIZE - 1;
+				if (!if_starts[if_pos])
+					error(E_ELSE_WITHOUT_IF);
+            	if_starts[if_pos] = 0;
+
 				goto_tokens(T_ENDIF, 0);
 				if (token != T_ENDIF)
 					error(E_ENDIF_MISSING);
 				break;
 
 			case T_ENDIF:
-				if (!if_count)
-                	error(E_ENDIF_WITHOUT_IF);
-            	if_count--;
+				if (if_pos > 0)
+					if_pos--;
+				else
+                	if_pos = IF_STACK_SIZE - 1;
+				if (!if_starts[if_pos])
+					error(E_ENDIF_WITHOUT_IF);
+            	if_starts[if_pos] = 0;
 				break;
 
 			case T_FOR:
@@ -802,8 +836,8 @@ void start_basic() {
 				error(E_SYNTAX);
 
 		}
-
-		get_next_token();
+		if (token != T_END && token != T_STOP)
+			get_next_token();
 	}
  }
 /******************************************************************************/
