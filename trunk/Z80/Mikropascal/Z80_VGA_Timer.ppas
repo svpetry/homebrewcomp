@@ -19,6 +19,7 @@ program Z80_VGA_Timer;
  * RC0-RC7: A4-A11 des Character-RAM
  * RD0-RD7: D0-D7 des Character-RAM
  * RE1: /EN_RAMACCESS
+ * RE3: GRFX_MODE
  *)
  
 uses Characters;
@@ -32,6 +33,8 @@ var
   next_trisb: byte;
   next_porte: byte;
   next_trise: byte;
+  
+  gmode: byte;
 
 (******************************************************************************)
 procedure Init;
@@ -124,29 +127,29 @@ begin
     for line := 0 to 15 do
     begin
       data := 0;
-      case line div 4 of
+      case line mod 4 of
         0: begin
-          if line.0 = 1 then
+          if char.0 = 1 then
             data := 15;
-          if line.1 = 1 then
+          if char.1 = 1 then
             data := data + 240;
         end;
         1: begin
-          if line.2 = 1 then
+          if char.2 = 1 then
             data := 15;
-          if line.3 = 1 then
+          if char.3 = 1 then
             data := data + 240;
         end;
         2: begin
-          if line.4 = 1 then
+          if char.4 = 1 then
             data := 15;
-          if line.5 = 1 then
+          if char.5 = 1 then
             data := data + 240;
         end;
         3: begin
-          if line.6 = 1 then
+          if char.6 = 1 then
             data := 15;
-          if line.7 = 1 then
+          if char.7 = 1 then
             data := data + 240;
         end;
       end;
@@ -383,19 +386,25 @@ end5:
 }
     // Bis hier 55 Instruktionen
     
-    MOVLW   52 // 1 Instruktion
-wait_loop: // 51 * 5 + 4 = 259 Instruktionen warten
+    MOVLW   51 // 1 Instruktion
+wait_loop: // 50 * 5 + 4 = 254 Instruktionen warten
     NOP
     NOP
     DECFSZ WREG, 0
     BRA    wait_loop
 
-    NOP // 5 Instruktionen
+    // 10 Instruktionen
+    MOVF   PORTE, 0, 0
+    ANDLW  8
+    RRNCF  WREG, 0, 0
+    RRNCF  WREG, 0, 0
+    RRNCF  WREG, 0, 0
+    XORWF  _gmode, 0, 0
+    BZ     weiter6
+    BRA    exitloop
+weiter6:
     NOP
     NOP
-    NOP
-    NOP
-
     // 320 Pixel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
     // 7 Pixel (der 8. kommt ganz oben)vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -407,30 +416,31 @@ wait_loop: // 51 * 5 + 4 = 259 Instruktionen warten
     goto loop;
     // 7 Pixel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+ exitloop:
+
   end;
 end;
 (******************************************************************************)
 begin
   WREG := line;
+  WREG := data_line;
   WREG := next_porta;
   WREG := next_portb;
   WREG := next_trisb;
   WREG := next_trise;
   WREG := next_porte;
-  WREG := data_line;
+  WREG := gmode;
+  
   Init;
   Delay_10us;
 
-  FillCharRam;
-
-{  while true do
+  while true do
   begin
-    PORTE.1 := 1;
-    Delay_ms(250);
-    PORTE.1 := 0;
-    Delay_ms(250);
+    gmode := PORTE.3;
+    if gmode = 1 then
+      FillCharRamGrfx
+    else
+      FillCharRam;
+    MainLoop;
   end;
-}
-
-  MainLoop;
 end.
