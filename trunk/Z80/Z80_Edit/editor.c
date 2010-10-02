@@ -18,7 +18,7 @@ static struct line_header *curr_line; // cursor line
 
 static byte edit_active;
 
-const char scOutOfMemory[] = "Out of memory. (Press key to continue.)";
+const char scOutOfMemory[] = "Out of memory. Press any key to continue.";
 
 /******************************************************************************/
 void init_editor() {
@@ -28,9 +28,7 @@ void init_editor() {
 
 	if (prog_paramcount) {
 		strcpy(file_name, prog_params[0]);
-		if (!load_file()) {
-			quit_app();
-		}
+		load_file();
 	} else {
 		file_name[0] = 0;
 		init_line_base();
@@ -395,8 +393,8 @@ void display() {
 		put_line("", i++);
 } // display
 /******************************************************************************/
-byte load_file() {
-	char c;
+void load_file() {
+	char c;        
 	byte i, col;
 	struct line_header *line, *new_line;
 
@@ -432,7 +430,7 @@ byte load_file() {
 					malloc_reset();
 					show_message(scOutOfMemory);
 					getchar();
-					return 0;
+					quit_app();
 				}
 				line->next = new_line;
 				new_line->prev = line;
@@ -447,11 +445,9 @@ byte load_file() {
 		line->next = NULL;
 
 		//IO_WRITE(5, #8);
-		return 1;
 	} else {
-		show_message("File not found! (Press key to continue.)");
+		show_message("File not found! Press any key to continue.");
 		getchar();
-		return 0;
 	}
 } // load_file
 /******************************************************************************/
@@ -498,7 +494,7 @@ void save_file() {
 			}
 
 		} else {
-			show_message("Error! (Press key to continue.)");
+			show_message("Error! Press any key to continue.");
 			getchar();
 		}
 	}
