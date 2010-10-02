@@ -36,7 +36,7 @@ void load_program(char *file_name) {
     	exit(1);
 	i = 0;
 #else // _DEBUG
-#define READ_CHAR io_read(163)
+#define READ_CHAR io_read(163); param1l--
 #define FILE_OK param1l > 0
 	strcpy(sparam, file_name);
 
@@ -66,16 +66,14 @@ void load_program(char *file_name) {
 		if (*ip != '\r') {
 			if (*ip == '\n' || i == 0) {
 
-				if (*ip == '\n')
+				if (*ip == '\n') {
 					*(++ip) = READ_CHAR;
+				}
 				
 				// skip white space
 				while (FILE_OK && i < MAX_PROG_FILE_SIZE && (iswhite(*ip) || *ip == '\n')) {
 					*ip = READ_CHAR;
 					i++;
-				#ifndef _DEBUG
-					param1l--;
-				#endif // _DEBUG
 				}
 
 				// read label value into string
@@ -86,9 +84,6 @@ void load_program(char *file_name) {
 					*ip = READ_CHAR;
 					i++;
 					l++;
-				#ifndef _DEBUG
-					param1l--;
-				#endif // _DEBUG
 				}
 				*s = 0;
 
@@ -96,13 +91,13 @@ void load_program(char *file_name) {
 				while (FILE_OK && i < MAX_PROG_FILE_SIZE && iswhite(*ip)) {
 					*ip = READ_CHAR;
 					i++;
-				#ifndef _DEBUG
-					param1l--;
-				#endif // _DEBUG
 				}
 
 				// create label
 				if (l > 0) {
+					SELECT_BANK0;
+					puts(val);
+					SELECT_BANK1;
 					lbl = atoi(val);
 					if (last_lbl >= lbl)
 						error(E_LABEL_ORDER);
@@ -121,9 +116,6 @@ void load_program(char *file_name) {
 			if (FILE_OK && i < MAX_PROG_FILE_SIZE) {
 				ip++;
 				i++;
-			#ifndef _DEBUG
-				param1l--;
-			#endif // _DEBUG
 			}
 		} // if (*ip != '\r') {
 	} // while (param1l > 0 && i < MAX_PROG_FILE_SIZE)
@@ -203,18 +195,14 @@ void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 		if (*s != NULL)
 			free(*s);
 		if (l > 0) {
-			*s = malloc(l);
+			*s = malloc(l + 1);
 			strcpy(*s, value);
 		}
 
 		SELECT_BANK0;
 	} else {
 
-	#ifdef _DEBUG
-    	l1 = ((l + 1 ) & 0xf8) + 8;
-	#else
-		l1 = ((l + 1) & 0b11111000) + 8;
-	#endif // _DEBUG
+		l1 = ((l + 1) & 0xf8) + 8;
 
 		SELECT_BANK2;
 		for (i = 0; i < str_var_count; i++) {

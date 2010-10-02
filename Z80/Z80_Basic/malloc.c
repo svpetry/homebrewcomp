@@ -29,38 +29,22 @@ void *malloc(unsigned int nbytes) {
 	Header *p, *prevp;
 	unsigned int nunits;
 
-//	printf("\nmalloc %u called\n", nbytes);
-
 	nunits = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1;
-
-//	printf("nunits: %u\n", nunits);
-
 	if ((prevp = freep) == NULL) {   /* no free list yet */
-//		printf("freep and prevp initialized\n");
-
 		freep = prevp = (Header *)HEAP_START;
 		freep->size = HEAP_SIZE;
 		freep->ptr = (Header *)HEAP_START;
 	}
 	for (p = prevp->ptr; ; prevp = p, p = p->ptr) {
-
-//		printf("p->ptr: %u\n", p->ptr);
-//		printf("p->size: %u\n", p->size);
-
 		if (p->size >= nunits) {  /* big enough */
 			if (p->size == nunits)  /* exactly */
 				prevp->ptr = p->ptr;
 			else {              /* allocate tail end */
-//				printf("p1: %u\n", p);
 				p->size -= nunits;
 				p += p->size;
 				p->size = nunits;
-//				printf("p1->size: %u\n", p->size);
 			}
 			freep = prevp;
-
-//			printf("p: %u\n", p);
-//			printf("malloc returned: %u\n", p + 1);
 
 			return (void *)(p + 1);
 		}
