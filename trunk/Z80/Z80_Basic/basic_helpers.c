@@ -232,7 +232,7 @@ void exec_print() {
 } // void exec_print()
 /******************************************************************************/
 void exec_input() {
-	char *s;
+	char *s, *s1;
 	char varname[MAX_VAR_NAME_LEN + 1];
 	char input[MAX_STRING_LEN + 1];
 	int l;
@@ -248,14 +248,9 @@ void exec_input() {
 		get_next_token();
 		if (token_str[0] != ';' && token_str[0] != ',')
 			error(E_SYNTAX);
-		get_next_token();
-	}
+	} else
+    	put_back();
 
-	if (token_type != TT_VARIABLE)
-		error(E_SYNTAX);
-	strcpy(varname, token_str);
-	var_token = token;
-	
 	putchar('?');
 	putchar(' ');
 	l = 0;
@@ -279,14 +274,43 @@ void exec_input() {
 	input[l] = 0;
 	putchar('\n');
 
-	read_dimensions();
-	if (var_token == T_STRVAR) {
-		varname[strlen(varname) - 1] = 0;
-		set_strvar(varname, input, dim1, dim2, dim3);
-	} else {
-		str2num(input, &value);
-		set_numvar(varname, &value, dim1, dim2, dim3);
-    }
+	s = input;
+
+	do {
+		s1 = s;
+		while (*s > 32)
+			s++;
+		*s = 0;
+		s++;
+		while (*s == ' ')
+			s++;
+
+		get_next_token();
+		if (token_str[0] == ',')
+			get_next_token();
+		if (token_type == TT_VARIABLE) {
+			strcpy(varname, token_str);
+			var_token = token;
+			read_dimensions();
+			if (var_token == T_STRVAR) {
+				varname[strlen(varname) - 1] = 0;
+				set_strvar(varname, s1, dim1, dim2, dim3);
+			} else {
+				str2num(s1, &value);
+				set_numvar(varname, &value, dim1, dim2, dim3);
+			}
+		} else
+			put_back();
+	} while (*s);
+
+	do {
+		get_next_token();
+		if (token_str[0] == ',')
+			get_next_token();
+		if (token_type != TT_VARIABLE)
+			put_back();
+	} while (token_type == TT_VARIABLE);
+
 } // void exec_input()
 /******************************************************************************/
 void exec_if() {
@@ -330,8 +354,6 @@ void exec_if() {
 } // void exec_if()
 /******************************************************************************/
 void exec_goto() {
-	char *lbl;
-
 	parse_expression(1);
 	if (expr_res.type != VT_INT)
 		error(E_INTEXP);
