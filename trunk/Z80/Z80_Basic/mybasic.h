@@ -9,7 +9,6 @@ void load_program(char *file_name);
 void error(byte errno);
 void next_line(void);
 void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3);
-struct s_num *find_numvar(char *varname);
 void set_numvar(char *varname, struct s_num *value, int vd1, int vd2, int vd3);
 void get_next_token(void);
 void get_numvar(char *varname, struct s_num *result);
