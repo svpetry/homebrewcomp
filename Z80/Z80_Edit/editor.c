@@ -423,9 +423,9 @@ void load_file() {
 				while ((i & 0x03) > 0 && i < MAX_LINE_LENGTH)
                 	line_buf[i++] = ' ';
 			}
-			if (param1l == 0 || i == MAX_LINE_LENGTH || c == '\n') {
+			if (i == MAX_LINE_LENGTH || c == '\n') {
 				line_buf[i++] = 0;
-				new_line = malloc(LINE_HEADER_SIZE + i);
+				new_line = malloc(LINE_HEADER_SIZE + i + 1);
 				if (new_line == NULL) {
 					malloc_reset();
 					show_message(scOutOfMemory);
@@ -442,7 +442,19 @@ void load_file() {
 			}
 		}
 
-		line->next = NULL;
+		line_buf[i++] = 0;
+		new_line = malloc(LINE_HEADER_SIZE + i + 1);
+		if (new_line == NULL) {
+			malloc_reset();
+			show_message(scOutOfMemory);
+			getchar();
+			quit_app();
+		}
+		line->next = new_line;
+		new_line->prev = line;
+		strcpy(new_line->line, line_buf);
+		new_line->size = i;
+		new_line->next = NULL;
 
 		//IO_WRITE(5, #8);
 	} else {
