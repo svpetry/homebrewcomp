@@ -38,5 +38,6 @@ byte eval_bool_1(void);
 byte eval_bool_expr(void);
 char *get_label(int lbl);
 void read_dimensions(void);
+struct s_num *find_numvar(char *varname);
 
 #endif // _BASIC_HELPERS_H

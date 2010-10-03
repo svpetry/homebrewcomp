@@ -15,7 +15,7 @@
 #include "ftoa.h"
 #include "video.h"
 
-//#pragma codeseg _CODE2
+#pragma codeseg _CODE2
 
 /******************************************************************************/
 void print_error_text(byte errno) {
@@ -1585,5 +1585,25 @@ void read_dimensions() {
 	dim2 = d2;
 	dim3 = d3;
 }
+/******************************************************************************/
+struct s_num *find_numvar(char *varname) {
+	int i;
+
+#ifdef DEBUG
+	puts("find_numvar()");
+#endif
+
+	for (i = 0; i < num_var_count; i++) {
+		if (!strcmp(varname, num_vars[i].name))
+			break;
+	}
+	if (i == num_var_count) {
+		if (num_var_count == MAX_NUM_VARS)
+			error(E_TOO_MANY_VARS);
+		num_var_count++;
+		strcpy(num_vars[i].name, varname);
+	}
+	return &num_vars[i].value;
+} //struct s_num *find_numvar(char *varname)
 /******************************************************************************/
 

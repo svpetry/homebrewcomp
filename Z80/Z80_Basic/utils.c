@@ -8,7 +8,7 @@
 #include "io.h"
 #include "bios_cmd.h"
 
-//#pragma codeseg _CODE2
+#pragma codeseg _CODE2
 
 static char *m_dest;
 static char *m_src;

@@ -29,12 +29,9 @@ void load_program(char *file_name) {
 #define FILE_OK !feof(fp)
 	FILE *fp;
 
-	ip = prog;
-
 	fp = fopen(file_name, "rb");
 	if (!fp)
-    	exit(1);
-	i = 0;
+		exit(1);
 #else // _DEBUG
 #define READ_CHAR io_read(163); param1l--
 #define FILE_OK param1l > 0
@@ -57,16 +54,17 @@ void load_program(char *file_name) {
 	puts("Loading...");
 
 	SELECT_BANK1;
+#endif // _DEBUG
 	i = 0;
 	ip = prog;
-#endif // _DEBUG
+
 	while (FILE_OK && i < MAX_PROG_FILE_SIZE) {
 		*ip = READ_CHAR;
 
 		if (*ip != '\r') {
 			if (*ip == '\n' || i == 0) {
 
-				if (*ip == '\n') {
+				if (*ip == '\n' && FILE_OK) {
 					*(++ip) = READ_CHAR;
 				}
 				
@@ -95,24 +93,22 @@ void load_program(char *file_name) {
 
 				// create label
 				if (l > 0) {
-					SELECT_BANK0;
-					puts(val);
-					SELECT_BANK1;
+					val[l] = 0;
 					lbl = atoi(val);
 					if (last_lbl >= lbl)
 						error(E_LABEL_ORDER);
 					last_lbl = lbl;
 
-					val[l] = 0;
+					SELECT_BANK0;
 					labels[label_count].pos = ip;
 					labels[label_count].label = lbl;
 					label_count++;
+					puts(val);
+					SELECT_BANK1;
 				}
 
 			} // if (*ip == '\n' || i == 0) {
-		} // if (*ip != '\r') {
 
-		if (*ip != '\r') {
 			if (FILE_OK && i < MAX_PROG_FILE_SIZE) {
 				ip++;
 				i++;
@@ -202,7 +198,7 @@ void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 		SELECT_BANK0;
 	} else {
 
-		l1 = ((l + 1) & 0xf8) + 8;
+		l1 = (l & 0xf8) + 8;
 
 		SELECT_BANK2;
 		for (i = 0; i < str_var_count; i++) {
@@ -210,7 +206,7 @@ void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 				svar = &(str_vars[i]);
 				if (svar->maxlen < l) {
 					free(svar->value);
-					if ((svar->value = malloc(l1)) == NULL)
+					if ((svar->value = malloc(l1 + 1)) == NULL)
 						error(E_OUT_OF_MEMORY);
 					svar->maxlen = l1;
 				}
@@ -223,7 +219,7 @@ void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 			str_var_count++;
 			svar = &(str_vars[i]);
 			strcpy(svar->name, varname);
-			if ((svar->value = malloc(l1)) == NULL)
+			if ((svar->value = malloc(l1 + 1)) == NULL)
 				error(E_OUT_OF_MEMORY);
 			svar->maxlen = l1;
 		}
@@ -231,26 +227,6 @@ void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 		SELECT_BANK0;
 	}
 } // void set_strvar(char *varname, char *value)
-/******************************************************************************/
-struct s_num *find_numvar(char *varname) {
-	int i;
-
-#ifdef DEBUG
-	puts("find_numvar()");
-#endif
-
-	for (i = 0; i < num_var_count; i++) {
-		if (!strcmp(varname, num_vars[i].name))
-			break;
-	}
-	if (i == num_var_count) {
-		if (num_var_count == MAX_NUM_VARS)
-			error(E_TOO_MANY_VARS);
-		num_var_count++;
-		strcpy(num_vars[i].name, varname);
-	}
-	return &num_vars[i].value;
-} //struct s_num *find_numvar(char *varname)
 /******************************************************************************/
 void set_numvar(char *varname, struct s_num *value, int vd1, int vd2, int vd3) {
 	struct s_num *var;
