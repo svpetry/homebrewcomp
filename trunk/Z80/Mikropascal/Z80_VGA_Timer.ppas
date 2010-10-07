@@ -74,6 +74,9 @@ var
   line: byte;
   
 begin
+  LATA := %00011110;
+  LATE := %00000010;
+
   LATA.5 := 1;
   TRISC := 0;
   TRISD := 0;
@@ -115,6 +118,9 @@ var
   data: byte;
 
 begin
+  LATA := %00011110;
+  LATE := %00000010;
+
   LATA.5 := 1;
   TRISC := 0;
   TRISD := 0;
@@ -127,7 +133,7 @@ begin
     for line := 0 to 15 do
     begin
       data := 0;
-      case line mod 4 of
+      case line div 4 of
         0: begin
           if char.0 = 1 then
             data := 15;
@@ -436,11 +442,15 @@ begin
 
   while true do
   begin
-    gmode := PORTE.3;
-    if gmode = 1 then
-      FillCharRamGrfx
-    else
+    if PORTE.3 = 1 then
+    begin
+      gmode := 1;
+      FillCharRamGrfx;
+    end
+    else begin
+      gmode := 0;
       FillCharRam;
+    end;
     MainLoop;
   end;
 end.
