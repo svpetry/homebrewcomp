@@ -104,21 +104,32 @@ $lbl01:
 */
 }
 /******************************************************************************/
-/*
+
 void memset_f(byte *dest, char value, word size) {
-	m_dest = dest;
-	m_value = value;
-	m_size = size;
-	_asm
-		ld hl, (_m_dest)
-		ld de, (_m_dest)
-		inc de
-		ld bc, (_m_size)
-		dec bc
-		ld hl, (_m_value)
-		ldir
-	_endasm;
+	register char *p;
+	register unsigned int i;
+
+	i = size;
+	p = dest;
+	while (i > 0) {
+        *(p++) = value;
+		i--;
+    }
+
+
+//	m_dest = dest;
+//	m_value = value;
+//	m_size = size;
+//	_asm
+//		ld hl, (_m_dest)
+//		ld de, (_m_dest)
+//		inc de
+//		ld bc, (_m_size)
+//		dec bc
+//		ld hl, (_m_value)
+//		ldir
+//	_endasm;
 }
-*/
+
 /******************************************************************************/
 

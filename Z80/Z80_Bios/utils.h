@@ -9,6 +9,6 @@ void itoa(int n, char s[]);
 void ltoa(long i, char* buf);
 void strtolower(char *s);
 void memcpy_f(byte *dest, byte *src, word size);
-//void memset_f(byte *dest, char value, word size);
+void memset_f(byte *dest, char value, word size);
 
 #endif /* UTILS_H_ */

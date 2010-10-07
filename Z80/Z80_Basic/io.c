@@ -12,6 +12,7 @@ static byte io_val;
 static word io_addr;
 static volatile byte at 0x0080 filebuf[0x200];
 #endif // _DEBUG
+static byte io_rand = 0;
 
 /******************************************************************************/
 void puts_nlb(char *s) {
@@ -26,6 +27,7 @@ void puts_nlb(char *s) {
 char getchar(void) {
 	byte result;
 	byte cnt = 0;
+	unsigned int r_val = 0;
 	do
 	{
 		if (cnt == 0)
@@ -38,8 +40,18 @@ char getchar(void) {
 			if (++cnt == 40)
 				cnt = 0;
 		}
+		r_val++;
 	} while (result == 255);
 	v_hidecursor();
+
+	if (io_rand == 0) {
+		srand(r_val);
+    	io_rand = 1;
+	}
+
+	if (result == 27)
+    	quit_app();
+
 	return result;
 }
 /******************************************************************************/

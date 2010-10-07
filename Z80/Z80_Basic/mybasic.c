@@ -103,7 +103,6 @@ void load_program(char *file_name) {
 					labels[label_count].pos = ip;
 					labels[label_count].label = lbl;
 					label_count++;
-					puts(val);
 					SELECT_BANK1;
 				}
 
@@ -116,18 +115,19 @@ void load_program(char *file_name) {
 		} // if (*ip != '\r') {
 	} // while (param1l > 0 && i < MAX_PROG_FILE_SIZE)
 
-	if (i == MAX_PROG_FILE_SIZE) {
-		puts("File too large! Press key to continue.");
-		getchar();
-		quit_app();
-	}
-
 	*ip = 0; // null terminate the program
 #ifdef _DEBUG
 	fclose(fp);
 #else // _DEBUG
 	SELECT_BANK0;
 #endif // _DEBUG
+
+	if (i == MAX_PROG_FILE_SIZE) {
+		puts("File too large! Press key to continue.");
+		getchar();
+		quit_app();
+	}
+
 }
 /******************************************************************************/
 void error(byte errno) {
