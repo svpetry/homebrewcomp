@@ -73,6 +73,8 @@ begin
   TRISB := 255; // data bus = input
   LATA.0 := 1; // read from address bus
 
+  Delay_10us;
+
   LATA.6 := 1; // release cpu reset line
 end;
 (******************************************************************************)
