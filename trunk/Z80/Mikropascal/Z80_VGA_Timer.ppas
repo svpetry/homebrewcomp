@@ -135,27 +135,27 @@ begin
       data := 0;
       case line div 4 of
         0: begin
-          if char.0 = 1 then
-            data := 15;
           if char.1 = 1 then
+            data := 15;
+          if char.0 = 1 then
             data := data + 240;
         end;
         1: begin
-          if char.2 = 1 then
-            data := 15;
           if char.3 = 1 then
+            data := 15;
+          if char.2 = 1 then
             data := data + 240;
         end;
         2: begin
-          if char.4 = 1 then
-            data := 15;
           if char.5 = 1 then
+            data := 15;
+          if char.4 = 1 then
             data := data + 240;
         end;
         3: begin
-          if char.6 = 1 then
-            data := 15;
           if char.7 = 1 then
+            data := 15;
+          if char.6 = 1 then
             data := data + 240;
         end;
       end;
