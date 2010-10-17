@@ -6,6 +6,7 @@ uses
 var
   io_buffer: array[0..511] of byte;
   disk_status: byte; // 0 = ok, >0 = error
+  mmc_changed: byte;
 
 const
   BUFFER_ADDR_LO = $80;
@@ -15,6 +16,27 @@ const
 
   PROGRAM_OFFSET = $0280;
 
+(******************************************************************************)
+procedure InitMmc;
+var
+  i: byte;
+  
+begin
+  Spi_Init_Advanced(Master_OSC_div64, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
+  disk_status := 0;
+  i := 0;
+  while (i < 5) and (disk_status = 0) do
+  begin
+    if Mmc_Init(PORTC, 2) = 0 then
+      disk_status := Fat16Dir_Init;
+    inc(i);
+    if disk_status = 0 then
+      Delay_ms(100);
+  end;
+  if disk_status = 1 then
+    Spi_Init_Advanced(Master_OSC_div4, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
+  mmc_changed := 0;
+end;
 (******************************************************************************)
 procedure ReadFile(var size: longint);
 var
