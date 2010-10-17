@@ -98,15 +98,27 @@ void cmdline(void) {
 					}
 				} else if (!strcmp(params[0], "dir")) {
 					list_dir();
+				} else if (!strcmp(params[0], "graphics")) {
+					if (paramcount != 2) {
+						puts(scWrongParameterCount);
+					} else {
+						if (params[1][0] == '1')
+							io_write(7, 3);
+						else
+							io_write(7, 1);
+						delay_ms(500);
+					}
 				} else if (!strcmp(params[0], "help")) {
 					puts("\nBEEP");
 					puts("CLS");
 					puts("COPY [src] [dest]");
 					puts("DEL [file]");
 					puts("DIR");
+					puts("GRAPHICS (0|1)");
 					puts("HELP");
 					puts("INITMMC");
 					puts("SETCOLOR [bg] [fg]");
+					puts("UPTIME");
 					puts("TYPE [file]");
 				} else if (!strcmp(params[0], "initmmc")) {
 					IO_WRITE(160, #0);
@@ -124,6 +136,8 @@ void cmdline(void) {
 						io_write(6, 53);
 					} else
 						puts(scWrongParameterCount);
+				} else if (!strcmp(params[0], "uptime")) {
+                	show_time();
 				} else if (!strcmp(params[0], "type")) {
 					if (paramcount == 2) {
                     	dump_file(params[1]);
@@ -197,3 +211,38 @@ void exec_program(void) {
 		puts("\nfile not found.");
 }
 /******************************************************************************/
+void show_time(void) {
+	unsigned long ticks;
+	int n;
+	char s[8];
+
+	ticks = io_read(130) + ((unsigned long)io_read(131) << 8) + ((unsigned long)io_read(132) << 16) + ((unsigned long)io_read(133) << 24);
+	ticks /= 10;
+
+	puts_nlb("\n    ");
+
+	n = ticks / 3600;
+	itoa(n, s);
+	if (s[1] == 0)
+		putchar('0');
+	puts_nlb(s);
+	ticks = ticks - n * 3600;
+
+	putchar(':');
+
+	n = ticks / 60;
+	itoa(n, s);
+	if (s[1] == 0)
+		putchar('0');
+	puts_nlb(s);
+	ticks = ticks - n * 60;
+
+	putchar(':');
+
+	itoa(ticks, s);
+	if (s[1] == 0)
+		putchar('0');
+	puts(s);
+}
+/******************************************************************************/
+
