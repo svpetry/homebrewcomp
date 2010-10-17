@@ -22,5 +22,6 @@ extern byte paramcount;
 void splitparams();
 void cmdline(void);
 void exec_program(void);
+void show_time(void);
 
 #endif /* CMDLINE_H_ */
