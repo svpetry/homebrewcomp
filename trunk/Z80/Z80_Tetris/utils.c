@@ -86,9 +86,6 @@ void quit_app() {
 	IO_WRITE(160, #29); // check if file exists
 	while (busy);
 
-	if (!out_paramb)
-		show_message("waiting for bios.bin...");
-
 	while (!out_paramb) {
     	delay_ms(1000);
 

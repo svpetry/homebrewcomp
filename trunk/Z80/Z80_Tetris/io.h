@@ -19,12 +19,9 @@ _endasm
 
 #define CURSOR_DELAY 20
 
-void puts_nlb(char *s);
 char getchar(void);
 void beep(void);
 byte io_read(byte addr);
 void io_write(byte addr, byte val);
-
-void delete_file(char *file_name);
 
 #endif /* IO_H_ */

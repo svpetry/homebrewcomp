@@ -6,174 +6,615 @@
 #include "defs.h"
 #include "utils.h"
 
-char cur_col = 0;
-char cur_row = 0;
 
-static volatile byte at VIDEO_BUFFER linebuf[V_ROWS][V_COLS];
-static volatile byte line_ptr = 0;
+char vbuf[0x0c80];
+
+const byte num[10][5 * 7] =
+{
+	{
+		0, 1, 1, 1, 0,  // 0, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 1, 1, 
+		1, 0, 1, 0, 1, 
+		1, 1, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0
+	}, {
+		0, 0, 1, 0, 0,  // 1, 
+		0, 1, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 1, 1, 1, 0
+	}, {
+		0, 1, 1, 1, 0,  // 2
+		1, 0, 0, 0, 1, 
+		0, 0, 0, 0, 1, 
+		0, 0, 0, 1, 0, 
+		0, 0, 1, 0, 0, 
+		0, 1, 0, 0, 0, 
+		1, 1, 1, 1, 1
+	}, {
+		1, 1, 1, 1, 1,  // 3
+		0, 0, 0, 1, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 0, 1, 0, 
+		0, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0
+	}, {
+		0, 0, 0, 1, 0,  // 4
+		0, 0, 1, 1, 0, 
+		0, 1, 0, 1, 0, 
+		1, 0, 0, 1, 0, 
+		1, 1, 1, 1, 1, 
+		0, 0, 0, 1, 0, 
+		0, 0, 0, 1, 0
+	}, {
+		1, 1, 1, 1, 1,  // 5
+		1, 0, 0, 0, 0, 
+		1, 1, 1, 1, 0, 
+		0, 0, 0, 0, 1, 
+		0, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0
+	}, {
+		0, 0, 1, 1, 0,  // 6
+		0, 1, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 1, 1, 1, 0, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0
+	}, {
+		1, 1, 1, 1, 1,  // 7
+		0, 0, 0, 0, 1, 
+		0, 0, 0, 1, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0
+	}, {
+		0, 1, 1, 1, 0,  // 8
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0
+	}, {
+		0, 1, 1, 1, 0,  // 9
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 1, 
+		0, 0, 0, 0, 1, 
+		0, 0, 0, 1, 0, 
+		0, 1, 1, 0, 0
+	}
+};
+
+const byte alpha[26][5 * 7] =
+{
+	{
+		0, 1, 1, 1, 0,  // A
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 1, 1, 1, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1 
+	}, {
+		1, 1, 1, 1, 0,  // B
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 1, 1, 1, 0, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 1, 1, 1, 0
+	}, {
+		0, 1, 1, 1, 0,  // C
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0 
+	}, {
+		1, 1, 1, 0, 0,  // D
+		1, 0, 0, 1, 0, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 1, 0, 
+		1, 1, 1, 0, 0 
+	}, {
+		1, 1, 1, 1, 1,  // E
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 1, 1, 1, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 1, 1, 1, 1 
+	}, {
+		1, 1, 1, 1, 1,  // F
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 1, 1, 1, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0 
+	}, {
+		0, 1, 1, 1, 0,  // G
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 0, 
+		1, 0, 1, 1, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 1 
+	}, {
+		1, 0, 0, 0, 1,  // H
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 1, 1, 1, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1 
+	}, {
+		0, 1, 1, 1, 0,  // I
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 1, 1, 1, 0 
+	}, {
+		0, 0, 1, 1, 1,  // J
+		0, 0, 0, 1, 0, 
+		0, 0, 0, 1, 0, 
+		0, 0, 0, 1, 0, 
+		0, 0, 0, 1, 0, 
+		1, 0, 0, 1, 0, 
+		0, 1, 1, 0, 0 
+	}, {
+		1, 0, 0, 0, 1,  // K
+		1, 0, 0, 1, 0, 
+		1, 0, 1, 0, 0, 
+		1, 1, 0, 0, 0, 
+		1, 0, 1, 0, 0, 
+		1, 0, 0, 1, 0, 
+		1, 0, 0, 0, 1 
+	}, {
+		1, 0, 0, 0, 0,  // L
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 1, 1, 1, 1 
+	}, {
+		1, 0, 0, 0, 1,  // M
+		1, 1, 0, 1, 1, 
+		1, 0, 1, 0, 1, 
+		1, 0, 1, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1 
+	}, {
+		1, 0, 0, 0, 1,  // N
+		1, 0, 0, 0, 1, 
+		1, 1, 0, 0, 1, 
+		1, 0, 1, 0, 1, 
+		1, 0, 0, 1, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1 
+	}, {
+		0, 1, 1, 1, 0,  // O
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0 
+	}, {
+		1, 1, 1, 1, 0,  // P
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 1, 1, 1, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0 
+	}, {
+		0, 1, 1, 1, 0,  // Q
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 1, 0, 1, 
+		1, 0, 0, 1, 0, 
+		0, 1, 1, 0, 1 
+	}, {
+		1, 1, 1, 1, 0,  // R
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 1, 1, 1, 0, 
+		1, 0, 1, 0, 0, 
+		1, 0, 0, 1, 0, 
+		1, 0, 0, 0, 1 
+	}, {
+		0, 1, 1, 1, 1,  // S
+		1, 0, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		0, 1, 1, 1, 0, 
+		0, 0, 0, 0, 1, 
+		0, 0, 0, 0, 1, 
+		1, 1, 1, 1, 0 
+	}, {
+		1, 1, 1, 1, 1,  // T
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0 
+	}, {
+		1, 0, 0, 0, 1,  // U
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 1, 1, 0 
+	}, {
+		1, 0, 0, 0, 1,  // V
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		0, 1, 0, 1, 0, 
+		0, 0, 1, 0, 0 
+	}, {
+		1, 0, 0, 0, 1,  // W
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1, 
+		1, 0, 1, 0, 1, 
+		1, 0, 1, 0, 1, 
+		1, 1, 0, 1, 1, 
+		1, 0, 0, 0, 1 
+	}, {
+		1, 0, 0, 0, 1,  // X
+		1, 0, 0, 0, 1, 
+		0, 1, 0, 1, 0, 
+		0, 0, 1, 0, 0, 
+		0, 1, 0, 1, 0, 
+		1, 0, 0, 0, 1, 
+		1, 0, 0, 0, 1 
+	}, {
+		1, 0, 0, 0, 1,  // Y
+		1, 0, 0, 0, 1, 
+		0, 1, 0, 1, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0, 
+		0, 0, 1, 0, 0 
+	}, {
+		1, 1, 1, 1, 1,  // Z
+		0, 0, 0, 0, 1, 
+		0, 0, 0, 1, 0, 
+		0, 0, 1, 0, 0, 
+		0, 1, 0, 0, 0, 
+		1, 0, 0, 0, 0, 
+		1, 1, 1, 1, 1
+	}
+};
 
 /******************************************************************************/
-void v_hidecursor() {
-	byte lidx;
-	byte *p;
-
-	lidx = line_ptr + cur_row;
-	if (lidx >= V_ROWS)
-		lidx -= V_ROWS;
-	p = (byte *)VIDEO_RAM + (cur_row << 7) + cur_col;
-	*p = linebuf[lidx][cur_col];
+void setpixel(byte x, byte y) {
+	register char *p;
+	p = vbuf + (x >> 1) + ((y & 0b11111100) << 5);
+	*p = *p | (((x & 1) + 1) << ((y & 3) << 1));
 }
 /******************************************************************************/
-void v_showcursor() {
-	byte lidx;
-	byte *p;
-
-	lidx = line_ptr + cur_row;
-	if (lidx >= V_ROWS)
-		lidx -= V_ROWS;
-	p = (byte *)VIDEO_RAM + (cur_row << 7) + cur_col;
-	*p = linebuf[lidx][cur_col] + 128;
+void clearpixel(byte x, byte y) {
+	register char *p;
+	p = vbuf + (x >> 1) + ((y & 0b11111100) << 5);
+	*p = *p & ~(((x & 1) + 1) << ((y & 3) << 1));
 }
 /******************************************************************************/
-void v_cls() {
-	memset(VIDEO_RAM, ' ', VRAM_SIZE);
-	memset(&linebuf[0][0], ' ', V_ROWS * V_COLS);
-	line_ptr = 0;
-	cur_col = 0;
-	cur_row = 0;
+byte getpixel(byte x, byte y) {
+	register char *p;
+	p = vbuf + (x >> 1) + ((y & 0b11111100) << 5);
+	return *p & (((x & 1) + 1) << ((y & 3) << 1)) > 0;
 }
 /******************************************************************************/
-void v_scrollup() {
-	byte i, lidx;
+void buf2screen() {
+	register char *src;
+	register char *dest;
+	register byte i;
 
-	memset(&linebuf[line_ptr][0], ' ', V_COLS);
-	if (++line_ptr == V_ROWS)
-		line_ptr = 0;
+	src = vbuf;
+	dest = (char *)0x1000;
 
-	lidx = line_ptr;
-	for (i = 0; i < V_ROWS; i++) {
-		memcpy_f((byte *)(VIDEO_RAM + (i << 7)), &linebuf[lidx][0], V_COLS);
-		if (++lidx == V_ROWS)
-			lidx = 0;
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
+	}
+	dest += 48;
+	src += 48;
+
+	i = 80;
+	while (i > 0) {
+		*(dest++) = *(src++);
+		i--;
 	}
 
-	if (cur_row > 0)
-		cur_row--;
 }
 /******************************************************************************/
-void v_scrolldown() {
-	byte i, lidx;
+void clrbuf() {
+	register byte i;
+	char *p;
 
-	if (line_ptr == 0)
-		line_ptr = V_ROWS - 1;
-	else
-    	line_ptr--;
-	memset(&linebuf[line_ptr][0], ' ', V_COLS);
-
-	lidx = line_ptr;
-	for (i = 0; i < V_ROWS; i++) {
-		memcpy_f((byte *)(VIDEO_RAM + (i << 7)), &linebuf[lidx][0], V_COLS);
-		if (++lidx == V_ROWS)
-			lidx = 0;
-	}
-
-	if (cur_row < V_ROWS - 1)
-		cur_row++;
-}
-/******************************************************************************/
-void v_backspace() {
-	byte lidx;
-
-	if (cur_col > 0) {
-        cur_col--;
-
-		V_SETCHAR(cur_col, cur_row, ' ');
-
-		lidx = line_ptr + cur_row;
-		if (lidx >= V_ROWS)
-			lidx -= V_ROWS;
-		linebuf[lidx][cur_col] = ' ';
+	p = vbuf;
+	for (i = 0; i < 25; i++) {
+		memset(p, 0, 80);
+		p += 0x80;
 	}
 }
 /******************************************************************************/
-void putchar(char c) {
-	byte lidx;
+void line(byte x0, byte y0, byte x1, byte y1) {
+	int dy = y1 - y0;
+	int dx = x1 - x0;
+	char stepx, stepy;
+	register char *p;
 
-	if (c == '\n') {
-		cur_col = 0;
-		if (++cur_row == V_ROWS)
-			v_scrollup();
-	} else if (c == '\t') {
-    	cur_col++;
-		while (cur_col & 3  > 0)
-			cur_col++;
-		if (cur_col >= V_COLS) {
-			cur_col = 0;
-			if (++cur_row == V_ROWS)
-				v_scrollup();
+	if (dy < 0) { dy = -dy;  stepy = -1; } else { stepy = 1; }
+	if (dx < 0) { dx = -dx;  stepx = -1; } else { stepx = 1; }
+	dy <<= 1;                                                  // dy is now 2*dy
+	dx <<= 1;                                                  // dx is now 2*dx
+
+	SET_PIXEL(x0, y0);
+	if (dx > dy) {
+		register int fraction = dy - (dx >> 1);                // same as 2*dy - dx
+		while (x0 != x1) {
+			if (fraction >= 0) {
+				y0 += stepy;
+				fraction -= dx;                                // same as fraction -= 2*dx
+			}
+			x0 += stepx;
+			fraction += dy;                                    // same as fraction -= 2*dy
+			SET_PIXEL(x0, y0);
 		}
 	} else {
-		if (c == '\r')
-			return;
-
-		V_SETCHAR(cur_col, cur_row, c);
-
-		lidx = line_ptr + cur_row;
-		if (lidx >= V_ROWS)
-			lidx -= V_ROWS;
-		linebuf[lidx][cur_col] = c;
-
-		cur_col++;
-		if (cur_col == V_COLS) {
-			cur_col = 0;
-			if (++cur_row == V_ROWS)
-				v_scrollup();
+		register int fraction = dx - (dy >> 1);
+		while (y0 != y1) {
+			if (fraction >= 0) {
+				x0 += stepx;
+				fraction -= dy;
+			}
+			y0 += stepy;
+			fraction += dx;
+			SET_PIXEL(x0, y0);
 		}
 	}
 }
 /******************************************************************************/
-void put_line(char *s, byte row) {
-	byte lidx, i;
-	char *p, *q;
+void vputchar(byte x, byte y, char c) {
+	byte *p;
+	register byte rowx;
+	register byte xc, yc;
 
-	lidx = line_ptr + row;
-	if (lidx >= V_ROWS)
-		lidx -= V_ROWS;
+	if (c >= '0' && c <= '9')
+		p = &num[c - '0'][0];
+	else if (c >= 'A' && c <= 'Z')
+		p = &alpha[c - 'A'][0];
+	else
+		return;
 
-	p = (char *)(VIDEO_RAM + (row << 7));
-	q = s;
-	i = 0;
-	while (*q && i < V_COLS) {
-		*(p++) = *(q++);
-		i++;
-	}
-	while (i < V_COLS) {
-		*(p++) = ' ';
-		i++;
-	}
-
-	p = (char *)&linebuf[lidx][0];
-	q = s;
-	i = 0;
-	while (*q && i < V_COLS) {
-		*(p++) = *(q++);
-		i++;
-	}
-	while (i < V_COLS) {
-		*(p++) = ' ';
-		i++;
+	for (yc = 0; yc < 7; yc++) {
+		rowx = x;
+		for (xc = 0; xc < 5; xc++) {
+			if (*p) {
+				setpixel(rowx, y);
+			} else {
+				clearpixel(rowx, y);
+            }
+			rowx++;
+			p++;
+		}
+		y++;
 	}
 }
 /******************************************************************************/
-void write_inverse(byte row, byte col, char *s) {
-	char *p = (char *)(0x1000 + (row << 7) + col);
-	while (*s)
-		*(p++) = *(s++) + 128;
-}
-/******************************************************************************/
-void show_message(char *msg) {
-	memset(0x1c00, ' ' + 128, 80);
-	write_inverse(24, 1, msg);
+void vputs(byte x, byte y, char *s) {
+	while (*s) {
+		vputchar(x, y, *s);
+		x += 6;
+		s++;
+	}
 }
 /******************************************************************************/
 

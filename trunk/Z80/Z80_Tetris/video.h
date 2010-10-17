@@ -1,37 +1,29 @@
-/*
- * video.h
- *
- *  Created on: 08.06.2010
- *      Author: Sven
- */
-
 #include "defs.h"
 
 #ifndef VIDEO_H_
 #define VIDEO_H_
 
-#define VIDEO_RAM 0x1080
-#define VRAM_SIZE 0x0b80
-#define VIDEO_BUFFER 0x4800
-#define V_ROWS 23
-#define V_COLS 80
-#define V_ROWSIZE 128
+#define SET_PIXEL(x, y) \
+p = vbuf + ((x) >> 1) + (((y) & 0b11111100) << 5); \
+*p = *p | ((((x) & 1) + 1) << (((y) & 3) << 1));
 
-#define V_SETCHAR(col, row, c) *((char *)VIDEO_RAM + (row << 7) + col) = c
+#define CLEAR_PIXEL(x, y) \
+p = vbuf + ((x) >> 1) + (((y) & 0b11111100) << 5); \
+*p = *p & ~((((x) & 1) + 1) << (((y) & 3) << 1));
 
-extern char cur_col;
-extern char cur_row;
+extern char vbuf[0x0c80];
 
-void v_hidecursor();
-void v_showcursor();
-void v_cls();
-void v_scrollup();
-void v_scrolldown();
-void v_backspace();
+void setpixel(byte x, byte y);
+void clearpixel(byte x, byte y);
+byte getpixel(byte x, byte y);
 
-void putchar(char c);
-void put_line(char *s, byte row);
-void write_inverse(byte row, byte col, char *s);
-void show_message(char *msg);
+void buf2screen(void);
+void clrbuf(void);
+
+void line(byte x0, byte y0, byte x1, byte y1);
+
+void vputchar(byte x, byte y, char c);
+void vputs(byte x, byte y, char *s);
 
 #endif /* VIDEO_H_ */
+
