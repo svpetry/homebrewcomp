@@ -14,7 +14,7 @@ program Z80_VGA_Timer;
  * RA4: /VRAM_BUSY: An die CPU: Bald kommt der Speicherzugriff! (aktiv = 0)
  * RA5: WR_CHARRAM: 1 = Char-RAM schreiben, 0 = normaler Betrieb
  * RA6: CNT_CLK
- * RA7: Oszillator
+ * RA7: Angeschlossen an Quarz-Oszillator
  * RB0-RB7, RE0: Zeilenzähler (0-399), RB0-RB3: A0-A3 des Character-RAM
  * RC0-RC7: A4-A11 des Character-RAM
  * RD0-RD7: D0-D7 des Character-RAM
@@ -74,9 +74,6 @@ var
   line: byte;
   
 begin
-  LATA := %00011110;
-  LATE := %00000010;
-
   LATA.5 := 1;
   TRISC := 0;
   TRISD := 0;
@@ -118,9 +115,6 @@ var
   data: byte;
 
 begin
-  LATA := %00011110;
-  LATE := %00000010;
-
   LATA.5 := 1;
   TRISC := 0;
   TRISD := 0;
@@ -406,7 +400,7 @@ wait_loop: // 50 * 5 + 4 = 254 Instruktionen warten
     RRNCF  WREG, 0, 0
     RRNCF  WREG, 0, 0
     XORWF  _gmode, 0, 0
-    BZ     weiter6
+    BTFSS  STATUS, Z
     BRA    exitloop
 weiter6:
     NOP
@@ -422,11 +416,14 @@ weiter6:
     goto loop;
     // 7 Pixel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- exitloop:
+exitloop:
 
   end;
 end;
 (******************************************************************************)
+var
+  i: byte;
+
 begin
   WREG := line;
   WREG := data_line;
@@ -442,15 +439,18 @@ begin
 
   while true do
   begin
-    if PORTE.3 = 1 then
-    begin
-      gmode := 1;
-      FillCharRamGrfx;
-    end
-    else begin
-      gmode := 0;
+    LATA := %00011110;
+    LATE := %00000010;
+    Delay_10ms;
+    
+    gmode := PORTE.3;
+
+    if gmode = 1 then
+      FillCharRamGrfx
+    else
       FillCharRam;
-    end;
+    Delay_10ms;
     MainLoop;
   end;
+
 end.

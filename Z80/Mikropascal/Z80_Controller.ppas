@@ -28,8 +28,26 @@ program Z80_Controller;
  * RE3: CTRL_RD (input)
  *)
 
-uses Boot, MainBios, Initializer, Keyboard;
+uses Boot, MainBios, Initializer, Keyboard, DiskIO;
 
+(******************************************************************************)
+procedure Interrupt;
+begin
+  TMR0H := $E6;
+  TMR0L := $D3;
+
+  inc(ticks);
+
+  if LATA.0 = 1 then
+  begin
+    TRISA.1 := 1;
+    if PORTA.1 = 0 then
+      mmc_changed := 1;
+    TRISA.1 := 0;
+  end;
+  
+  INTCON.TMR0IF := 0;
+end;
 (******************************************************************************)
 procedure Init;
 begin
@@ -39,7 +57,7 @@ begin
   ADCON1 := $0f;
   CMCON := $07; // disable comparator
 
-  INTCON := 0;
+  INTCON := %10100000; // Enable Timer0 interrupt
   PIE1 := 0;
   PIE2 := 0;
   RCON := 0;
@@ -47,7 +65,9 @@ begin
 //  ECCP1CON := 0;
   SSPCON1 := 0;
   SSPCON2 := 0;
-  T0CON := 0;
+  T0CON := %00000111; // Timer0: prescaler 256, 16 bit, disabled
+  TMR0H := $E6;
+  TMR0L := $D3;
 
   TRISA := %00001000;
   PORTA := %00100111;
@@ -74,6 +94,9 @@ begin
 
   // Init RS232
   Usart_Init(19200);
+  
+  mmc_changed := 0;
+  ticks := 0;
 end;
 (******************************************************************************)
 (*
@@ -162,6 +185,8 @@ begin
 //  Test;
 
   Boot;
+  
+  T0CON.TMR0ON := 1; // Enable Timer0
   MainLoop;
 
 end.

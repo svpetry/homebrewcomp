@@ -26,26 +26,27 @@ SimDebug=0
 [ProjectFiles]
 Count=0
 [OtherFiles]
-Count=7
+Count=4
 Value0=X:\Z80\Mikropascal\Z80_Controller.ppas
-Value1=X:\Z80\Mikropascal\DiskIO.ppas
+Value1=X:\Z80\Mikropascal\MainBios.ppas
 Value2=X:\Z80\Mikropascal\Keyboard.ppas
-Value3=X:\Z80\Mikropascal\Initializer.ppas
+Value3=X:\Z80\Mikropascal\DiskIO.ppas
 Value4=X:\Z80\Mikropascal\MainBios.ppas
 Value5=X:\Z80\Mikropascal\Memory.ppas
 Value6=X:\Z80\Mikropascal\Boot.ppas
 Value7=X:\Z80\Mikropascal\Boot.ppas
 Value8=X:\Z80\Mikropascal\Boot.ppas
 [TabIndex]
-Value=3
+Value=1
 [SearchPath]
-Count=7
+Count=8
 Value0=X:\PortableApps\mikroPascal8\Defs\
 Value1=X:\PortableApps\mikroPascal8\Uses\p18\
 Value2=X:\Z80\Mikropascal\
 Value3=C:\Program Files\mikroPascal8\Defs\
 Value4=C:\Program Files\mikroPascal8\Uses\p18\
-Value5=D:\Elektronik\mikroPascal\Z80\
-Value6=X:\Sven\Elektronik\mikroPascal\Z80\
+Value5=D:\Z80\Mikropascal\
+Value6=D:\Elektronik\mikroPascal\Z80\
+Value7=X:\Sven\Elektronik\mikroPascal\Z80\
 [EEPROMinfo]
 isused=0

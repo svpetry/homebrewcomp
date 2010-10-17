@@ -4,6 +4,7 @@ unit MainBios;
 
  var
    fsize: word;
+   ticks: dword;
 
  const
    BUSY_ADDR = $0044;
@@ -30,19 +31,7 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
-          Spi_Init_Advanced(Master_OSC_div64, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
-          disk_status := 0;
-          i := 0;
-          while (i < 5) and (disk_status = 0) do
-          begin
-            if Mmc_Init(PORTC, 2) = 0 then
-              disk_status := Fat16Dir_Init;
-            inc(i);
-            if disk_status = 0 then
-              Delay_ms(100);
-          end;
-          if disk_status = 1 then
-            Spi_Init_Advanced(Master_OSC_div4, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
+          InitMmc;
           MemWrite(BUSY_ADDR, 0);
          end;
 
@@ -51,6 +40,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           ReadSector;
           MemWrite(BUSY_ADDR, 0);
         end;
@@ -60,6 +51,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           WriteSector;
           MemWrite(BUSY_ADDR, 0);
         end;
@@ -69,6 +62,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           if FindFirst(dir_item) then
           begin
             Strcpy(bios_str, dir_item.FileName);
@@ -103,6 +98,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           ReadBiosStr;
 //          Usart_Write_Text(bios_str);
 //          Usart_Write_Text(#10+#13);
@@ -122,6 +119,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           ReadBiosStr;
           Usart_Write_Text(bios_str);
           Usart_Write_Text(#13+#10);
@@ -136,6 +135,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           ReadBiosStr;
           Mmc_Fat_Assign(bios_str, $A0);
           Mmc_Fat_Append;
@@ -174,6 +175,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           ReadBiosStr;
 
           MemWrite(BUSY_ADDR, 0);
@@ -184,6 +187,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           ReadVolumeName;
           WriteBiosStr;
           MemWrite(BUSY_ADDR, 0);
@@ -193,6 +198,8 @@ begin
     		27: begin
           LATA.4 := 0;
           LATA.4 := 1;
+          if mmc_changed = 1 then
+            InitMmc;
           ReadBiosStr;
           LoadProgram(bios_str);
     		end;
@@ -202,6 +209,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           ReadBiosStr;
           if Mmc_Fat_Assign(bios_str, 0) = 1 then
           begin
@@ -218,6 +227,8 @@ begin
           LATA.4 := 0;
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
+          if mmc_changed = 1 then
+            InitMmc;
           ReadBiosStr;
           WriteBiosOutparam(Mmc_Fat_Assign(bios_str, 0));
           MemWrite(BUSY_ADDR, 0);
@@ -233,14 +244,14 @@ begin
     
     // init RS2332
     170: begin
-           LATA.4 := 0;
-           LATA.4 := 1;
-           case value of
-              0: Usart_Init(4800);
-              1: Usart_Init(9600);
-              2: Usart_Init(19200);
-              3: Usart_Init(38400);
-           end;
+      LATA.4 := 0;
+      LATA.4 := 1;
+      case value of
+         0: Usart_Init(4800);
+         1: Usart_Init(9600);
+         2: Usart_Init(19200);
+         3: Usart_Init(38400);
+      end;
     end; // 170
     
     // write byte to RS232
@@ -279,6 +290,26 @@ begin
       KeybGetChar(data);
     end;
     
+    // read timer ticks (b0)
+    130: begin
+      data := Lo(ticks);
+    end;
+
+    // read timer ticks (b1)
+    131: begin
+      data := Hi(ticks);
+    end;
+
+    // read timer ticks (b2)
+    132: begin
+      data := Higher(ticks);
+    end;
+
+    // read timer ticks (b3)
+    133: begin
+      data := Highest(ticks);
+    end;
+
     // read disk status
     161: begin
       data := disk_status;
