@@ -12,31 +12,15 @@ static word io_addr;
 static volatile byte at 0x0080 filebuf[0x200];
 
 /******************************************************************************/
-void puts_nlb(char *s) {
-	char *p = s;
-	while (*p) {
-		putchar(*p);
-		p++;
-	}
-}
-/******************************************************************************/
 char getchar(void) {
 	byte result;
-	byte cnt = 0;
+	
 	do
 	{
-		if (cnt == 0)
-			v_showcursor();
 		result = io_read(128);
-		if (result == 255) {
-			delay_ms(15);
-			if (cnt == CURSOR_DELAY)
-				v_hidecursor();
-			if (++cnt == CURSOR_DELAY << 1)
-				cnt = 0;
-		}
+		delay_ms(20);
 	} while (result == 255);
-	v_hidecursor();
+
 	return result;
 }
 /******************************************************************************/
@@ -72,17 +56,6 @@ void io_write(byte addr, byte val) {
 		pop bc
 		pop af
 	_endasm;
-}
-/******************************************************************************/
-void delete_file(char *file_name) {
-	strcpy(sparam, file_name);
-
-	IO_WRITE(160, #28);
-	while (busy);
-	if (out_paramb == 1)
-		puts("ok.");
-	else
-		puts("file not found.");
 }
 /******************************************************************************/
 
