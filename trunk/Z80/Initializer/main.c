@@ -41,7 +41,9 @@ void delay_ms(unsigned int ms) {
 /******************************************************************************/
 main() {
 
-	_asm
+	delay_ms(250);
+
+	__asm
 		ld a, #1
 		out (0), a // RAM-Bank 0 aktivieren
 		out (7), a // enable VRAM
@@ -54,19 +56,17 @@ main() {
 		out (5), a // Hintergrundfarbe
 		ld a, #53
 		out (6), a // Vordergrundfarbe
-	_endasm;
-
-	delay_ms(250);
+	__endasm;
 
 	memset(0x1000, 32, 0x0C80);
 	strcpy(0x1000, "Zilog Z84C0020PEC CPU, 131.072 Bytes RAM. Loading bios.bin...");
 
 
-	_asm
+	__asm
 		xor a, a
 		out (7), a // disable VRAM
 
 		halt
-	_endasm;
+	__endasm;
 	return 0;
 }

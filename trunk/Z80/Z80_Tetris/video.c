@@ -323,7 +323,7 @@ void clearpixel(byte x, byte y) {
 byte getpixel(byte x, byte y) {
 	register char *p;
 	p = vbuf + (x >> 1) + ((y & 0b11111100) << 5);
-	return *p & (((x & 1) + 1) << ((y & 3) << 1)) > 0;
+	return (*p & (((x & 1) + 1) << ((y & 3) << 1))) > 0;
 }
 /******************************************************************************/
 void buf2screen() {

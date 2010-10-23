@@ -13,7 +13,7 @@
 #define MAX_PARAMS 8
 #define CMDLINE_MAXLEN 64
 
-extern const char *CMD_PROMPT;
+extern const char CMD_PROMPT[];
 extern char last_cmdbuf[CMDLINE_MAXLEN];
 extern char cmdbuf[CMDLINE_MAXLEN];
 extern char *params[MAX_PARAMS];

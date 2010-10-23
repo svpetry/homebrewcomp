@@ -277,14 +277,6 @@ void exec_input() {
 	s = input;
 
 	do {
-		s1 = s;
-		while (*s > 32)
-			s++;
-		*s = 0;
-		s++;
-		while (*s == ' ')
-			s++;
-
 		get_next_token();
 		if (token_str[0] == ',')
 			get_next_token();
@@ -292,6 +284,23 @@ void exec_input() {
 			strcpy(varname, token_str);
 			var_token = token;
 			read_dimensions();
+
+			s1 = s;
+
+			get_next_token();
+			if (token_str[0] == ',') {
+				while (*s > 32)
+					s++;
+				*s = 0;
+				s++;
+				while (*s == ' ')
+					s++;
+			} else {
+				while (*s)
+                	s++;
+            }
+			put_back();
+
 			if (var_token == T_STRVAR) {
 				varname[strlen(varname) - 1] = 0;
 				set_strvar(varname, s1, dim1, dim2, dim3);

@@ -14,7 +14,7 @@
 const char scError[] = "ERROR! PRESS ANY KEY TO CONTINUE";
 const char scFinished[] = "FINISHED! PRESS ANY KEY TO CONTINUE";
 const word icBanks[] = {0x2400, 0x8000, 0x8000};
-const char scTestBanks[][] = {" TESTING BANK 0+1", " TESTING BANK 2", " TESTING BANK 3"};
+const char scTestBanks[3][18] = {" TESTING BANK 0+1", " TESTING BANK 2  ", " TESTING BANK 3  "};
 
 /******************************************************************************/
 void init() {
@@ -160,7 +160,6 @@ void main() {
 				break;
 		}
 	}
-	return;
 }
 /******************************************************************************/
 

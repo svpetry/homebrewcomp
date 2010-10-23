@@ -10,6 +10,7 @@ void ltoa(long i, char* buf);
 void strtolower(char *s);
 void memcpy_f(byte *dest, byte *src, word size);
 
-void quit_app();
+void quit_app(void);
+void halt(void);
 
 #endif /* UTILS_H_ */

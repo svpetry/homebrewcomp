@@ -9,7 +9,7 @@
 char cur_col = 0;
 char cur_row = 0;
 
-static volatile byte at VIDEO_BUFFER linebuf[V_ROWS][V_COLS];
+static volatile byte __at VIDEO_BUFFER linebuf[V_ROWS][V_COLS];
 static volatile byte line_ptr = 0;
 
 /******************************************************************************/

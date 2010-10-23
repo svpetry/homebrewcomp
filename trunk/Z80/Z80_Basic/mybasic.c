@@ -37,12 +37,12 @@ void load_program(char *file_name) {
 #define FILE_OK param1l > 0
 	strcpy(sparam, file_name);
 
-	IO_WRITE(160, #20); // open file for reading
+	io_write(160, 20); // open file for reading
 	while (busy);
 
 	if (!out_paramb) {
 		strcat(sparam, ".bas");
-		IO_WRITE(160, #20); // open file for reading
+		io_write(160, 20); // open file for reading
 		while (busy);
 	}
 
@@ -160,6 +160,7 @@ void next_line() {
 	while (*ip == '\n' && *ip)
 		ip++;
 	SELECT_BANK0;
+	token = 255;
 } // void next_line()
 /******************************************************************************/
 void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {

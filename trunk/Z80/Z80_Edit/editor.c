@@ -403,7 +403,7 @@ void load_file() {
 
 	strcpy(sparam, file_name);
 
-	IO_WRITE(160, #20); // open file for reading
+	io_write(160, 20); // open file for reading
 	while (busy);
 	if (out_paramb) {
 		show_message("Loading...");
@@ -456,7 +456,7 @@ void load_file() {
 		new_line->size = i;
 		new_line->next = NULL;
 
-		//IO_WRITE(5, #8);
+		//io_write(5, 8);
 	} else {
 		show_message("File not found! Press any key to continue.");
 		getchar();
@@ -474,7 +474,7 @@ void save_file() {
 		show_message("Saving...");
 
 		strcpy(sparam, file_name);
-		IO_WRITE(160, #21); // open file for writing (create new)
+		io_write(160, 21); // open file for writing (create new)
 		while (busy);
 		if (io_read(161) == 1) {
 
@@ -485,7 +485,7 @@ void save_file() {
 				l = strlen(line->line);
 				if (bidx + l + 2 > 0x200) {
 					param1l = bidx;
-					IO_WRITE(160, #24); // write block
+					io_write(160, 24); // write block
 					while (busy);
 					bidx = 0;
 				}
@@ -501,7 +501,7 @@ void save_file() {
 			}
 			if (bidx > 0) {
 				param1l = bidx;
-				IO_WRITE(160, #24); // write block
+				io_write(160, 24); // write block
 				while (busy);
 			}
 
@@ -526,7 +526,7 @@ void prompt_load_file() {
 byte prompt_file_name() {
 	char s[13];
 	byte pos;
-	byte c;
+	char c;
 	byte cnt;
 
 	const byte pos_offset = 11;
@@ -548,14 +548,14 @@ byte prompt_file_name() {
 			if (cnt == 0)
 				*((char *)0x1c00 + pos + pos_offset) = ' ';
 			c = io_read(128);
-			if (c == 255) {
+			if (c == -128) {
 				delay_ms(15);
 				if (cnt == CURSOR_DELAY)
 					*((char *)0x1c00 + pos + pos_offset) = ' ' + 128;
 				if (++cnt == CURSOR_DELAY << 1)
 					cnt = 0;
 			}
-		} while (c == 255);
+		} while (c == -128);
 		*((char *)0x1c00 + pos + pos_offset) = ' ' + 128;
 		// getchar ^^^
 

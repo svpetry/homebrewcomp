@@ -3,7 +3,7 @@
 
 
 /******************************************************************************/
-void bios_cmd(void) interrupt
+void bios_cmd(void) __interrupt
 {
 
 }
