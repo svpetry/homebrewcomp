@@ -18,13 +18,13 @@
  * Video Buffer 0x7800-0x7fff (2k)
  */
 
-void isr (void) interrupt {
+void isr (void) __interrupt {
 	beep();
 }
 
 // Ports initialisieren etc.
 void init() {
-	_asm
+	__asm
 		push af
 		ld a, #1
 		out (7), a // enable VRAM
@@ -33,7 +33,7 @@ void init() {
 		ld a, #53
 		out (6), a // Vordergrundfarbe
 		pop af
-	_endasm;
+	__endasm;
 }
 
 main() {

@@ -10,7 +10,7 @@
 #include "io.h"
 #include "bios_cmd.h"
 
-const char *CMD_PROMPT = "CMD>";
+const char CMD_PROMPT[] = "CMD>";
 
 char last_cmdbuf[CMDLINE_MAXLEN];
 char cmdbuf[CMDLINE_MAXLEN];
@@ -121,7 +121,7 @@ void cmdline(void) {
 					puts("UPTIME");
 					puts("TYPE [file]");
 				} else if (!strcmp(params[0], "initmmc")) {
-					IO_WRITE(160, #0);
+					io_write(160, 0);
 					while (busy);
 					if (io_read(161))
 						puts("\nok.");
@@ -176,12 +176,12 @@ void exec_program(void) {
 	char *s;
 
 	strcpy(sparam, params[0]);
-	IO_WRITE(160, #29); // check if file exists
+	io_write(160, 29); // check if file exists
 	while (busy);
 
 	if (!out_paramb) {
 		strcat(sparam, ".bin");
-		IO_WRITE(160, #29); // check if file exists
+		io_write(160, 29); // check if file exists
 		while (busy);
 	}
 
@@ -190,7 +190,7 @@ void exec_program(void) {
 		strtolower(s);
 		l = strlen(s);
 		found = 0;
-		if (l > 4) {
+		if (l > 4) { 
 			 if (s[l - 4] == '.' && s[l - 3] == 'b' && s[l - 2] == 'i' && s[l - 1] == 'n')
 				found = 1;
 		}
@@ -201,10 +201,10 @@ void exec_program(void) {
 			for (i = 0; i < prog_paramcount; i++)
 				strcpy(prog_params[i], params[i + 1]);
 			DISABLE_VRAM;
-			IO_WRITE(160, #27); // load program
-			_asm
-            	halt
-			_endasm;
+			io_write(160, 27); // load program
+			__asm
+				halt
+			__endasm;
 		} else
         	puts("\nno bin file.");
 	} else
@@ -216,7 +216,10 @@ void show_time(void) {
 	int n;
 	char s[8];
 
-	ticks = io_read(130) + ((unsigned long)io_read(131) << 8) + ((unsigned long)io_read(132) << 16) + ((unsigned long)io_read(133) << 24);
+	ticks = io_read(130) +
+		((unsigned long)io_read(131) << 8) +
+		((unsigned long)io_read(132) << 16) +
+		((unsigned long)io_read(133) << 24);
 	ticks /= 10;
 
 	puts_nlb("\n    ");

@@ -1,7 +1,7 @@
 @echo off
 del *.rel *.lst *.rst *.ihx *.hex *.map *.o *.sym *.lnk
 
-as-z80 -o crt0.o crt0.s
+sdasz80 -o crt0.s
 
 call compile tetris.c
 call compile io.c
@@ -10,7 +10,7 @@ call compile video.c
 call compile tmain.c
 call compile utils3d.c
 
-sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x9d70 --data-loc 0xA000 crt0.o io.o utils.o video.o tmain.o utils3d.o tetris.o
+sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x9d70 --data-loc 0xA000 crt0.rel io.rel utils.rel video.rel tmain.rel utils3d.rel tetris.rel
 
 ren crt0.ihx tetris.ihx
 

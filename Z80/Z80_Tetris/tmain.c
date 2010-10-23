@@ -59,17 +59,61 @@ char curr_x, curr_y;
 /******************************************************************************/
 void tetris(void) {
 //	byte n;
+	char stop, part;
 
 	draw_playfield();
 
 
-
-
 //	n = 0;
-	curr_x = 5;
-	curr_y = 1;
 
-	select_part(5);
+
+
+
+
+   	vputs(100, 5, "OK");
+
+
+	while (io_read(128) != 27)
+		delay_ms(100);
+
+
+
+
+
+
+
+	part = 0;
+	while (io_read(128) != 27) {
+
+		stop = 0;
+		curr_x = 5;
+		curr_y = 1;
+
+		select_part(part);
+		draw_curr_part();
+		buf2screen();
+
+		while (io_read(128) != 27 && stop == 0) {
+			stop = move_down();
+			buf2screen();
+			delay_ms(500);
+		}
+
+		if (curr_y == 2) {
+			delay_ms(500);
+			clear_playfield();
+			buf2screen();
+		}
+
+		if (part == 6)
+			part = 0;
+		else
+        	part++;
+
+	}
+
+
+	select_part(6);
 	draw_curr_part();
 	
 	while (io_read(128) != 27) {
@@ -141,7 +185,6 @@ byte move_down(void) {
 			draw_curr_part();
 			return 1;
 		}
-
 	}
 
 	draw_curr_part();
@@ -212,11 +255,13 @@ void select_part(byte n) {
 }
 /******************************************************************************/
 void rotate_curr_part() {
-	char *x, *y;
-	char tmp;
+	register char *x, *y;
+	char tmp, yd;
 	byte i;
 
 	clear_curr_part();
+
+	yd = -1;
 
 	x = curr_part.x;
 	y = curr_part.y;
@@ -224,7 +269,18 @@ void rotate_curr_part() {
 		tmp = *x;
 		*x = -*y;
 		*y = tmp;
+
+		if (*y > yd)
+			yd = *y;
+
 		x++;
+		y++;
+	}
+
+	yd = 1 - yd;
+	y = curr_part.y;
+	for (i = 0; i < 4; i++) {
+		*y += yd;
 		y++;
 	}
 
@@ -274,6 +330,14 @@ void draw_block(char x, char y) {
 	}
 
 	setpixel(x_start + 2, y_start + 2);
+}
+/******************************************************************************/
+void clear_playfield(void) {
+	register byte x, y;
+
+	for (y = PLAYF_Y; y < PLAYF_Y + PLAYF_HEIGHT * BLOCK_SIZE; y++)
+		for (x = PLAYF_X; x < PLAYF_X + PLAYF_WIDTH * BLOCK_SIZE; x++)
+			clearpixel(x, y);
 }
 /******************************************************************************/
 

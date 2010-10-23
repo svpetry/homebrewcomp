@@ -84,30 +84,27 @@ void quit_app() {
 	exit(0);
 #else
 	strcpy(sparam, "bios.bin");
-	IO_WRITE(160, #29); // check if file exists
+	io_write(160, 29); // check if file exists
 	while (busy);
 
-//	if (!out_paramb)
-//		show_message("waiting for bios.bin...");
-
 	while (!out_paramb) {
-    	delay_ms(1000);
+		delay_ms(1000);
 
-		IO_WRITE(160, #0); // init mmc
+		io_write(160, 0); // init mmc
 		while (busy);
 
 		if (io_read(161) == 0) { // check disk status
-			IO_WRITE(160, #29); // check if file exists
+			io_write(160, 29); // check if file exists
 			while (busy);
 		}
 	}
 
-	DISABLE_VRAM;
-	IO_WRITE(160, #27); // load program
+	io_write(7, 0); // disable VRAM
+	io_write(160, 27); // load program
 
-	_asm
+	__asm
 		halt
-	_endasm;
+	__endasm;
 #endif // _DEBUG
 }
 /******************************************************************************/

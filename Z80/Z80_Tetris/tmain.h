@@ -7,6 +7,7 @@ void tetris(void);
 
 void move_right(void);
 void move_left(void);
+byte move_down(void);
 byte is_block_set(char x, char y);
 
 void draw_playfield(void);
@@ -18,6 +19,7 @@ void rotate_curr_part();
 
 void clear_block(char x, char y);
 void draw_block(char x, char y);
+void clear_playfield(void);
 
 #endif /* TMAIN_H_ */
 

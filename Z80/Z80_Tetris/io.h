@@ -4,18 +4,18 @@
 #include "defs.h"
 
 #define IO_WRITE(addr, val) \
-_asm \
+__asm \
 	push af \
 	ld a, val \
 	out (addr), a \
 	pop af \
-_endasm
+__endasm
 
-#define ENABLE_VRAM IO_WRITE(7, #1)
-#define DISABLE_VRAM IO_WRITE(7, #0)
-#define SELECT_BANK0 IO_WRITE(0, #1)
-#define SELECT_BANK1 IO_WRITE(0, #2)
-#define SELECT_BANK2 IO_WRITE(0, #3)
+#define ENABLE_VRAM io_write(7, 1)
+#define DISABLE_VRAM io_write(7, 0)
+#define SELECT_BANK0 io_write(0, 1)
+#define SELECT_BANK1 io_write(0, 2)
+#define SELECT_BANK2 io_write(0, 3)
 
 #define CURSOR_DELAY 20
 

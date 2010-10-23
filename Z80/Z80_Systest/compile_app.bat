@@ -1,14 +1,14 @@
 @echo off
 del *.rel *.lst *.rst *.ihx *.hex *.map *.o *.sym *.lnk
 
-as-z80 -o crt0.o crt0.s
+sdasz80 -o crt0.s
 
 call compile systest.c
 call compile io.c
 call compile utils.c
 call compile video.c
 
-sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x5d70 --data-loc 0x6000 crt0.o io.o utils.o video.o systest.o
+sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x5d70 --data-loc 0x6000 crt0.rel io.rel utils.rel video.rel systest.rel
 
 ren crt0.ihx systest.ihx
 

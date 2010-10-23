@@ -1,7 +1,7 @@
 @echo off
 del *.rel *.lst *.rst *.ihx *.hex *.map *.o *.sym *.lnk
 
-as-z80 -o crt0.o crt0.s
+sdasz80 -o crt0.s
 
 call compile basic.c
 call compile io.c
@@ -14,7 +14,7 @@ call compile basic_helpers.c
 call compile vars.c
 call compile ftoa.c
 
-sdcc -mz80 "-Wl -b _CODE2 = 0x8000" --no-std-crt0 --code-loc 0x0290 --code-size 0x6170 --data-loc 0x6400 crt0.o io.o utils.o video.o malloc.o mybasic.o basic_helpers.o vars.o ftoa.o utils_b0.o basic.o
+sdcc -mz80 "-Wl -b _CODE2 = 0x8000" --no-std-crt0 --code-loc 0x0290 --code-size 0x6170 --data-loc 0x6400 crt0.rel io.rel utils.rel video.rel malloc.rel mybasic.rel basic_helpers.rel vars.rel ftoa.rel utils_b0.rel basic.rel
 
 ren crt0.ihx basic.ihx
 

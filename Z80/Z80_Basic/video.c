@@ -12,7 +12,7 @@ byte cur_col = 0;
 byte cur_row = 0;
 //static byte show_cursor = 1;
 
-static volatile byte at VIDEO_BUFFER linebuf[V_ROWS][V_COLS];
+static volatile byte __at VIDEO_BUFFER linebuf[V_ROWS][V_COLS];
 static volatile byte line_ptr = 0;
 
 /******************************************************************************/

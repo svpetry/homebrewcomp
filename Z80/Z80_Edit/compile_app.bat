@@ -1,7 +1,7 @@
 @echo off
 del *.rel *.lst *.rst *.ihx *.hex *.map *.o *.sym *.lnk
 
-as-z80 -o crt0.o crt0.s
+sdasz80 -o crt0.s
 
 call compile edit.c
 call compile io.c
@@ -10,7 +10,7 @@ call compile video.c
 call compile malloc.c
 call compile editor.c
 
-sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x2d70 --data-loc 0x3000 crt0.o io.o utils.o video.o malloc.o editor.o edit.o
+sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x2d70 --data-loc 0x3000 crt0.rel io.rel utils.rel video.rel malloc.rel editor.rel edit.rel
 
 ren crt0.ihx edit.ihx
 

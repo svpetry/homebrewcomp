@@ -15,14 +15,13 @@
 
 /******************************************************************************/
 void init() {
-	ENABLE_VRAM;
-	IO_WRITE(5, #2);
-	IO_WRITE(6, #5);
+	IO_WRITE(5, #42);
+	IO_WRITE(6, #15);
 
-	clrbuf();
-	buf2screen();
+//	buf2screen();
 	IO_WRITE(7, #3);
-	delay_ms(500);
+	delay_ms(400);
+	clrbuf();
 }
 /******************************************************************************/
 void main() {
@@ -33,8 +32,8 @@ void main() {
 
 	clrbuf();
 	buf2screen();
-	IO_WRITE(7, #1);
-	delay_ms(500);
+	io_write(7, 1);
+	delay_ms(400);
 
 	quit_app();
 	return;

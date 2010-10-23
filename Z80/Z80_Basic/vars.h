@@ -17,7 +17,7 @@ extern const struct s_name_token num_func_names[];
 #ifdef _DEBUG
 extern volatile char prog[32768];
 #else
-extern volatile char at 0x8000 prog[32768];
+extern volatile char __at 0x8000 prog[32768];
 #endif // _DEBUG
 
 extern char *ip;
@@ -45,7 +45,7 @@ extern int num_dvar_count;
 #ifdef _DEBUG
 extern struct s_label_stack_entry labels[LABEL_STACK_SIZE];
 #else
-extern struct s_label_stack_entry at 0xe000 labels[LABEL_STACK_SIZE];
+extern struct s_label_stack_entry __at 0xe000 labels[LABEL_STACK_SIZE];
 #endif // _DEBUG
 extern int label_count;
 
