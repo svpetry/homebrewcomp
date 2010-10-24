@@ -59,28 +59,13 @@ char curr_x, curr_y;
 /******************************************************************************/
 void tetris(void) {
 //	byte n;
-	char stop, part;
+	char c, stop, part;
+	byte i;
 
 	draw_playfield();
 
 
 //	n = 0;
-
-
-
-
-
-   	vputs(100, 5, "OK");
-
-
-	while (io_read(128) != 27)
-		delay_ms(100);
-
-
-
-
-
-
 
 	part = 0;
 	while (io_read(128) != 27) {
@@ -93,10 +78,37 @@ void tetris(void) {
 		draw_curr_part();
 		buf2screen();
 
-		while (io_read(128) != 27 && stop == 0) {
-			stop = move_down();
-			buf2screen();
-			delay_ms(500);
+		while (!stop) {
+
+			for (i = 0; i < 25; i++) {
+				delay_ms(20);
+				if (!stop) {
+					c = io_read(128);
+					if (c == ' ') { // rotate part
+						rotate_curr_part();
+						buf2screen();
+					} else if (c == 0) { // left, right, down
+						c = io_read(128);
+						if (c == 75) { // left
+							move_left();
+							buf2screen();
+						} else if (c == 77) { // right
+							move_right();
+							buf2screen();
+						} else if (c == 80) { // down
+							while (!move_down())
+								buf2screen();
+							buf2screen();
+							stop = 1;
+						}
+					}
+				} // if (!stop)
+			}
+
+			if (!stop) {
+				stop = move_down();
+				buf2screen();
+			}
 		}
 
 		if (curr_y == 2) {
@@ -151,6 +163,12 @@ void move_left(void) {
 
 	clear_curr_part();
 	curr_x--;
+	for (i = 0; i < 4; i++) {
+		if (is_block_set(curr_part.x[i] + curr_x, curr_part.y[i] + curr_y)) {
+			curr_x++;
+			break;
+		}
+	}
 	draw_curr_part();
 }
 /******************************************************************************/
@@ -164,6 +182,12 @@ void move_right(void) {
 
 	clear_curr_part();
 	curr_x++;
+	for (i = 0; i < 4; i++) {
+		if (is_block_set(curr_part.x[i] + curr_x, curr_part.y[i] + curr_y)) {
+			curr_x--;
+			break;
+		}
+	}
 	draw_curr_part();
 }
 /******************************************************************************/
@@ -198,21 +222,21 @@ byte is_block_set(char x, char y) {
 void draw_playfield(void) {
 	byte x, y;
 
-	for (y = PLAYF_Y - 2; y < PLAYF_Y + PLAYF_HEIGHT * BLOCK_SIZE + 2; y++) {
+	for (y = PLAYF_Y - 2; y < PLAYF_Y + PLAYF_HEIGHT * BLOCK_SIZE + 1; y++) {
 		if (y & 1) {
 			setpixel(PLAYF_X - 1, y);
-			setpixel(PLAYF_X + PLAYF_WIDTH * BLOCK_SIZE + 1, y);
+			setpixel(PLAYF_X + PLAYF_WIDTH * BLOCK_SIZE, y);
 		} else {
 			setpixel(PLAYF_X - 2, y);
-			setpixel(PLAYF_X + PLAYF_WIDTH * BLOCK_SIZE + 2, y);
+			setpixel(PLAYF_X + PLAYF_WIDTH * BLOCK_SIZE + 1, y);
 		}
 	}
 
-	for (x = PLAYF_X - 2; x < PLAYF_X + PLAYF_WIDTH * BLOCK_SIZE + 3; x++) {
+	for (x = PLAYF_X - 2; x < PLAYF_X + PLAYF_WIDTH * BLOCK_SIZE + 2; x++) {
 		if (x & 1) {
-			setpixel(x, PLAYF_Y + PLAYF_HEIGHT * BLOCK_SIZE + 1);
+			setpixel(x, PLAYF_Y + PLAYF_HEIGHT * BLOCK_SIZE);
 		} else {
-			setpixel(x, PLAYF_Y + PLAYF_HEIGHT * BLOCK_SIZE + 2);
+			setpixel(x, PLAYF_Y + PLAYF_HEIGHT * BLOCK_SIZE + 1);
 		}
 	}
 
@@ -254,12 +278,16 @@ void select_part(byte n) {
 	}
 }
 /******************************************************************************/
-void rotate_curr_part() {
+byte rotate_curr_part() {
 	register char *x, *y;
-	char tmp, yd;
+	char tmp, yd, ori_x;
 	byte i;
+	struct part temp_part;
 
 	clear_curr_part();
+
+	memcpy(&temp_part, &curr_part, sizeof(temp_part));
+	ori_x = curr_x;
 
 	yd = -1;
 
@@ -273,6 +301,11 @@ void rotate_curr_part() {
 		if (*y > yd)
 			yd = *y;
 
+		while (curr_x + *x > PLAYF_WIDTH - 1)
+			curr_x--;
+		while (curr_x + *x < 0)
+			curr_x++;
+
 		x++;
 		y++;
 	}
@@ -284,7 +317,18 @@ void rotate_curr_part() {
 		y++;
 	}
 
+	// rotation allowed?
+	for (i = 0; i < 4; i++) {
+		if (is_block_set(curr_part.x[i] + curr_x, curr_part.y[i] + curr_y)) {
+            // undo rotation
+			memcpy(&curr_part, &temp_part, sizeof(temp_part));
+			curr_x = ori_x;
+			break;
+		}
+	}
+
 	draw_curr_part();
+	return 0;
 }
 /******************************************************************************/
 void clear_block(char x, char y) {

@@ -15,7 +15,7 @@ void draw_playfield(void);
 void draw_curr_part(void);
 void clear_curr_part(void);
 void select_part(byte n);
-void rotate_curr_part();
+byte rotate_curr_part();
 
 void clear_block(char x, char y);
 void draw_block(char x, char y);
