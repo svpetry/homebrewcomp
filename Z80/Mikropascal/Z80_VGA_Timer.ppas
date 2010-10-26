@@ -396,13 +396,13 @@ wait_loop: // 50 * 5 + 4 = 254 Instruktionen warten
     // 10 Instruktionen
     MOVF   PORTE, 0, 0
     ANDLW  8
-    RRNCF  WREG, 0, 0
-    RRNCF  WREG, 0, 0
-    RRNCF  WREG, 0, 0
     XORWF  _gmode, 0, 0
-    BTFSS  STATUS, Z
+    BZ     weiter6
     BRA    exitloop
 weiter6:
+    NOP
+    NOP
+    NOP
     NOP
     NOP
     // 320 Pixel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -443,12 +443,13 @@ begin
     LATE := %00000010;
     Delay_10ms;
     
-    gmode := PORTE.3;
+    gmode := PORTE.3 shl 3;
 
-    if gmode = 1 then
+    if gmode > 0 then
       FillCharRamGrfx
     else
       FillCharRam;
+
     Delay_10ms;
     MainLoop;
   end;
