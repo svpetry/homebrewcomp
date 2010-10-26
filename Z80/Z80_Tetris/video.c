@@ -591,7 +591,17 @@ void vputchar(byte x, byte y, char c) {
 		p = &num[c - '0'][0];
 	else if (c >= 'A' && c <= 'Z')
 		p = &alpha[c - 'A'][0];
-	else
+	else if (c == ' ') {
+		for (yc = 0; yc < 7; yc++) {
+			rowx = x;
+			for (xc = 0; xc < 5; xc++) {
+				clearpixel(rowx, y);
+				rowx++;
+			}
+			y++;
+		}
+		return;
+	} else
 		return;
 
 	for (yc = 0; yc < 7; yc++) {
@@ -601,7 +611,7 @@ void vputchar(byte x, byte y, char c) {
 				setpixel(rowx, y);
 			} else {
 				clearpixel(rowx, y);
-            }
+			}
 			rowx++;
 			p++;
 		}

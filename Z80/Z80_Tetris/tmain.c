@@ -15,6 +15,8 @@
 #define PLAYF_HEIGHT 18
 #define PLAYF_X 20
 #define PLAYF_Y 4
+#define PREVIEW_X 102
+#define PREVIEW_Y 20
 
 
 struct part {
@@ -25,7 +27,7 @@ struct part {
 const struct part parts[7] = {
 	{
 		{-1, -1, -1, -1},
-		{-2, -1, 0, 1}
+		{-1, 0, 1, 2}
 	},
 	{
 		{-1, 0, -1, 0},
@@ -55,33 +57,71 @@ const struct part parts[7] = {
 
 struct part curr_part;
 char curr_x, curr_y;
+char next_part_no;
+int lines;
 
 /******************************************************************************/
 void tetris(void) {
-//	byte n;
-	char c, stop, part;
-	byte i;
+	char c, part_no;
+	byte i, stop, start;
+
+//	show_splashscreen();
 
 	draw_playfield();
+	start = 1;
 
+	while (1) {
 
-//	n = 0;
+		if (start) {
+			next_part_no = rand() % 7;
+			lines = 0;
+			curr_y = 10;
+			remove_complete_lines();
+			clear_next_part();
 
-	part = 0;
-	while (io_read(128) != 27) {
+			while (io_read(128) != 255);
+
+			do {
+				vputs(90, 70, "GET READY");
+				buf2screen();
+                delay_ms(300);
+
+				vputs(90, 70, "         ");
+				buf2screen();
+                delay_ms(300);
+			} while (io_read(128) == 255);
+				  
+
+			start = 0;
+		}
 
 		stop = 0;
 		curr_x = 5;
 		curr_y = 1;
 
-		select_part(part);
+    	clear_next_part();
+		part_no = next_part_no;
+		next_part_no = rand() % 7;
+		draw_next_part();
+
+		select_part(part_no);
 		draw_curr_part();
 		buf2screen();
 
 		while (!stop) {
 
-			for (i = 0; i < 25; i++) {
-				delay_ms(20);
+			for (i = 0; i < 20; i++) {
+				if (lines < 10)
+					delay_ms(25);
+				else if (lines < 30)
+					delay_ms(15);
+				else if (lines < 50)
+					delay_ms(12);
+				else if (lines < 70)
+					delay_ms(9);
+				else
+					delay_ms(6);
+
 				if (!stop) {
 					c = io_read(128);
 					if (c == ' ') { // rotate part
@@ -101,7 +141,8 @@ void tetris(void) {
 							buf2screen();
 							stop = 1;
 						}
-					}
+					} else if (c == 27)
+						return;
 				} // if (!stop)
 			}
 
@@ -111,46 +152,19 @@ void tetris(void) {
 			}
 		}
 
-		if (curr_y == 2) {
-			delay_ms(500);
+        remove_complete_lines();
+
+		if (curr_y <= 2) {
 			clear_playfield();
+			vputs(90, 70, "GAME OVER");
 			buf2screen();
+
+			getchar();
+			vputs(90, 70, "         ");
+			start = 1;
 		}
 
-		if (part == 6)
-			part = 0;
-		else
-        	part++;
-
 	}
-
-
-	select_part(6);
-	draw_curr_part();
-	
-	while (io_read(128) != 27) {
-		buf2screen();
-		rotate_curr_part();
-		delay_ms(500);
-    }
-
-
-
-//	while (io_read(128) != 27) {
-//		select_part(n);
-//		draw_curr_part();
-//		buf2screen();
-//
-//		clear_curr_part();
-//
-//		if (n == 6)
-//			n = 0;
-//		else
-//        	n++;
-//    }
-
-	getchar();
-
 }
 /******************************************************************************/
 void move_left(void) {
@@ -192,26 +206,28 @@ void move_right(void) {
 }
 /******************************************************************************/
 byte move_down(void) {
-	byte i;
+	byte pg;
 
 	clear_curr_part();
-	curr_y++;
+	if (!part_on_ground())
+		curr_y++;
 
-	for (i = 0; i < 4; i++) {
-		if (curr_y + curr_part.y[i] == PLAYF_HEIGHT - 1) {
-			draw_curr_part();
-			return 1;
-		}
-	}
-
-	for (i = 0; i < 4; i++) {
-		if (is_block_set(curr_part.x[i] + curr_x, curr_part.y[i] + curr_y + 1)) {
-			draw_curr_part();
-			return 1;
-		}
-	}
-
+	pg = part_on_ground();
 	draw_curr_part();
+	return pg;
+}
+/******************************************************************************/
+byte part_on_ground(void) {
+	byte i;
+
+	for (i = 0; i < 4; i++) {
+		if (curr_y + curr_part.y[i] == PLAYF_HEIGHT - 1)
+			return 1;
+	}
+	for (i = 0; i < 4; i++) {
+		if (is_block_set(curr_part.x[i] + curr_x, curr_part.y[i] + curr_y + 1))
+			return 1;
+	}
 	return 0;
 }
 /******************************************************************************/
@@ -241,6 +257,12 @@ void draw_playfield(void) {
 	}
 
 	vputs(100, 5, "TETRIS");
+
+	line(PREVIEW_X, PREVIEW_Y, PREVIEW_X + 30, PREVIEW_Y);
+	line(PREVIEW_X, PREVIEW_Y + 30, PREVIEW_X + 30, PREVIEW_Y + 30);
+	line(PREVIEW_X, PREVIEW_Y, PREVIEW_X, PREVIEW_Y + 30);
+	line(PREVIEW_X + 30, PREVIEW_Y, PREVIEW_X + 30, PREVIEW_Y + 30);
+
 	buf2screen();
 }
 /******************************************************************************/
@@ -255,6 +277,20 @@ void draw_curr_part(void) {
 	}
 }
 /******************************************************************************/
+void draw_next_part(void) {
+	byte i;
+	char x, y;
+	struct part *p;
+
+	p = &parts[next_part_no];
+
+	for (i = 0; i < 4; i++) {
+		x = p->x[i];
+		y = p->y[i];
+		draw_preview_block(x + 2, y + 2);
+	}
+}
+/******************************************************************************/
 void clear_curr_part(void) {
 	byte i;
 	char x, y;
@@ -263,6 +299,15 @@ void clear_curr_part(void) {
 		x = curr_part.x[i];
 		y = curr_part.y[i];
 		clear_block(x + curr_x, y + curr_y);
+	}
+}
+/******************************************************************************/
+void clear_next_part(void) {
+	byte x, y;
+
+	for (x = PREVIEW_X + 5; x < PREVIEW_X + 25; x++) {
+		for (y = PREVIEW_Y + 5; y < PREVIEW_Y + 25; y++)
+        	clearpixel(x, y);
 	}
 }
 /******************************************************************************/
@@ -376,12 +421,73 @@ void draw_block(char x, char y) {
 	setpixel(x_start + 2, y_start + 2);
 }
 /******************************************************************************/
+void draw_preview_block(char x, char y) {
+	byte x_start, y_start, x1, y1;
+	byte i;
+
+	x_start = PREVIEW_X + BLOCK_SIZE * x;
+	y_start = PREVIEW_Y + BLOCK_SIZE * y;
+
+	x1 = x_start;
+	y1 = y_start + BLOCK_SIZE - 1;
+	for (i = 0; i < BLOCK_SIZE; i++) {
+		setpixel(x1, y_start);
+		setpixel(x1, y1);
+		x1++;
+	}
+
+	x1 = x_start + BLOCK_SIZE - 1;
+	y1 = y_start + 1;
+	for (i = 0; i < BLOCK_SIZE - 2; i++) {
+		setpixel(x_start, y1);
+		setpixel(x1, y1);
+		y1++;
+	}
+
+	setpixel(x_start + 2, y_start + 2);
+}
+/******************************************************************************/
 void clear_playfield(void) {
 	register byte x, y;
 
 	for (y = PLAYF_Y; y < PLAYF_Y + PLAYF_HEIGHT * BLOCK_SIZE; y++)
 		for (x = PLAYF_X; x < PLAYF_X + PLAYF_WIDTH * BLOCK_SIZE; x++)
 			clearpixel(x, y);
+}
+/******************************************************************************/
+void remove_complete_lines(void) {
+	char s[8];
+    byte row, x, y, complete;
+
+//	itoa(curr_y, s);
+//	vputs(100, 90, "   ");
+//	vputs(100, 90, s);
+
+	for (row = curr_y - 1; row < curr_y + 3 && row < PLAYF_HEIGHT; row++) {
+		complete = 1;
+		for (x = 0; x < PLAYF_WIDTH && complete; x++) {
+			if (!is_block_set(x, row))
+				complete = 0;
+		}
+
+		if (complete) {
+			for (y = row; y > 0; y--) {
+				for (x = 0; x < PLAYF_WIDTH; x++) {
+					if (is_block_set(x, y - 1))
+						draw_block(x, y);
+					else
+                    	clear_block(x, y);
+				}
+            }
+			lines++;
+			buf2screen();
+		}
+	}
+
+	itoa(lines, s);
+	vputs(100, 80, "LINES     ");
+	vputs(133, 80, s);
+
 }
 /******************************************************************************/
 
