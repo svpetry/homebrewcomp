@@ -19,55 +19,6 @@ void strtolower(char *s) {
     }
 }
 /******************************************************************************/
-void memcpy_f(byte *dest, byte *src, word size) {
-	while (size-- > 0)
-		*(dest++) = *(src++);
-/*
-	m_dest = dest;
-	m_src = src;
-	m_size = size;
-	_asm
-		push de
-		push hl
-		push bc
-
-		ld de, (_m_dest)
-		ld hl, (_m_src)
-		ld bc, (_m_size)
-
-$lbl01:
-		ld a, (hl)
-		ld (de), a
-		inc de
-		inc hl
-		dec bc
-		jr NZ, $lbl01
-
-		pop bc
-		pop hl
-		pop de
-//		ldir
-	_endasm;
-*/
-}
-/******************************************************************************/
-/*
-void memset_f(byte *dest, char value, word size) {
-	m_dest = dest;
-	m_value = value;
-	m_size = size;
-	_asm
-		ld hl, (_m_dest)
-		ld de, (_m_dest)
-		inc de
-		ld bc, (_m_size)
-		dec bc
-		ld hl, (_m_value)
-		ldir
-	_endasm;
-}
-*/
-/******************************************************************************/
 byte iswhite(char c) {
 	return c == ' ' || c == '\t' || c == '\r';
 }
