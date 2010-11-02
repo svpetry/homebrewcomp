@@ -9,8 +9,9 @@ call compile utils.c
 call compile video.c
 call compile tmain.c
 call compile utils3d.c
+call compile splashscreen.c
 
-sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x9d70 --data-loc 0xA000 crt0.rel io.rel utils.rel video.rel tmain.rel utils3d.rel tetris.rel
+sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x9d70 --data-loc 0xA000 crt0.rel io.rel utils.rel video.rel tmain.rel utils3d.rel tetris.rel splashscreen.rel
 
 ren crt0.ihx tetris.ihx
 

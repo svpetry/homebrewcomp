@@ -8,6 +8,7 @@
 #include "bios_cmd.h"
 #include "io.h"
 #include "defs.h"
+#include "splashscreen.h"
 
 
 #define BLOCK_SIZE 5
@@ -65,8 +66,16 @@ void tetris(void) {
 	char c, part_no;
 	byte i, stop, start;
 
+<<<<<<< .mine
+	show_splashscreen();
+
+	io_write(5, 42);
+	io_write(6, 15);
+
+=======
 //	show_splashscreen();
 
+>>>>>>> .r63
 	draw_playfield();
 	start = 1;
 
@@ -81,6 +90,22 @@ void tetris(void) {
 
 			while (io_read(128) != 255);
 
+<<<<<<< .mine
+			do {
+				vputs(95, 65, "GET READY");
+				buf2screen();
+				delay_ms(300);
+
+				vputs(95, 65, "         ");
+				buf2screen();
+                delay_ms(300);
+			} while (io_read(128) == 255);
+				  
+
+			start = 0;
+		}
+
+=======
 			do {
 				vputs(90, 70, "GET READY");
 				buf2screen();
@@ -95,6 +120,7 @@ void tetris(void) {
 			start = 0;
 		}
 
+>>>>>>> .r63
 		stop = 0;
 		curr_x = 5;
 		curr_y = 1;
@@ -110,6 +136,20 @@ void tetris(void) {
 
 		while (!stop) {
 
+<<<<<<< .mine
+			for (i = 0; i < 20 && !stop; i++) {
+				if (lines < 20)
+					delay_ms(35);
+				else if (lines < 50)
+					delay_ms(25);
+				else if (lines < 70)
+					delay_ms(18);
+				else if (lines < 100)
+					delay_ms(12);
+				else
+					delay_ms(8);
+
+=======
 			for (i = 0; i < 20; i++) {
 				if (lines < 10)
 					delay_ms(25);
@@ -122,6 +162,7 @@ void tetris(void) {
 				else
 					delay_ms(6);
 
+>>>>>>> .r63
 				if (!stop) {
 					c = io_read(128);
 					if (c == ' ') { // rotate part
@@ -156,12 +197,23 @@ void tetris(void) {
 
 		if (curr_y <= 2) {
 			clear_playfield();
+<<<<<<< .mine
+			vputs(95, 65, "GAME OVER");
+=======
 			vputs(90, 70, "GAME OVER");
+>>>>>>> .r63
 			buf2screen();
+<<<<<<< .mine
+
+			getchar();
+			vputs(95, 65, "         ");
+			start = 1;
+=======
 
 			getchar();
 			vputs(90, 70, "         ");
 			start = 1;
+>>>>>>> .r63
 		}
 
 	}
@@ -459,6 +511,36 @@ void remove_complete_lines(void) {
 	char s[8];
     byte row, x, y, complete;
 
+<<<<<<< .mine
+	for (row = curr_y - 1; row < curr_y + 3 && row < PLAYF_HEIGHT; row++) {
+		complete = 1;
+		for (x = 0; x < PLAYF_WIDTH && complete; x++) {
+			if (!is_block_set(x, row))
+				complete = 0;
+		}
+
+		if (complete) {
+			for (y = row; y > 0; y--) {
+				for (x = 0; x < PLAYF_WIDTH; x++) {
+					if (is_block_set(x, y - 1))
+						draw_block(x, y);
+					else
+                    	clear_block(x, y);
+				}
+            }
+			lines++;
+			buf2screen();
+		}
+	}
+
+	itoa(lines, s);
+	vputs(100, 80, "LINES     ");
+	vputs(135, 80, s);
+
+}
+/******************************************************************************/
+
+=======
 //	itoa(curr_y, s);
 //	vputs(100, 90, "   ");
 //	vputs(100, 90, s);
@@ -491,3 +573,4 @@ void remove_complete_lines(void) {
 }
 /******************************************************************************/
 
+>>>>>>> .r63
