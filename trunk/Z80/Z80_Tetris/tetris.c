@@ -17,17 +17,10 @@
 void init() {
 	int time;
 
-<<<<<<< .mine
-	io_write(5, 0);
-	io_write(6, 0);
-
-	io_write(7, 3);
-=======
 	io_write(5, 42);
 	io_write(6, 15);
 
 	io_write(7, 3);
->>>>>>> .r63
 	delay_ms(400);
 	clrbuf();
 
