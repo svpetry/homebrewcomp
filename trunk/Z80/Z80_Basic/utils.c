@@ -11,18 +11,14 @@
 #pragma codeseg _CODE2
 
 static char *m_dest;
-static char *m_src;
+static char *m_src;    
 static word m_size;
 static char m_value;
 
 /******************************************************************************/
 void putn(int n) {
 	char s[20];
-#ifdef _DEBUG
-	itoa(n, s, 10);
-#else
-	itoa(n, s);
-#endif
+	itoa_(n, s);
 	puts(s);
 }
 /******************************************************************************/
@@ -33,7 +29,6 @@ void delay_ms(word ms) {
 	}
 }
 /******************************************************************************/
-#ifndef _DEBUG
 void reverse(char s[]) {
 	int i, j;
 	char c;
@@ -45,7 +40,7 @@ void reverse(char s[]) {
 	}
 }
 /******************************************************************************/
-void itoa(int n, char s[]) {
+void itoa_(int n, char s[]) {
 	 int i, sign;
 
 	 if ((sign = n) < 0)  /* record sign */
@@ -60,7 +55,7 @@ void itoa(int n, char s[]) {
 	 reverse(s);
 }
 /******************************************************************************/
-void ltoa(long i, char* buf) {
+void ltoa_(long i, char* buf) {
 	char reverse[14];
 	char* s;
 	char sign = i < 0;
@@ -77,7 +72,6 @@ void ltoa(long i, char* buf) {
 		*--s = '-';
 	strcpy(buf, s);
 }
-#endif // _DEBUG
 /******************************************************************************/
 void quit_app() {
 #ifdef _DEBUG
@@ -102,9 +96,7 @@ void quit_app() {
 	io_write(7, 0); // disable VRAM
 	io_write(160, 27); // load program
 
-	__asm
-		halt
-	__endasm;
+	while (1);
 #endif // _DEBUG
 }
 /******************************************************************************/

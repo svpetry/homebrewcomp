@@ -178,21 +178,13 @@ void exec_print() {
 			case VT_INT:
 				if (last_sc && !last_num)
 					putchar(' ');
-			#ifdef _DEBUG
-				sprintf(expr_res.sval, "%d", expr_res.ival);
-			#else
-				itoa(expr_res.ival, expr_res.sval);
-			#endif // _DEBUG
+				itoa_(expr_res.ival, expr_res.sval);
 				last_num = 1;
 				break;
 			case VT_FLOAT:
 				if (last_sc && !last_num)
 					putchar(' ');
-			#ifdef _DEBUG
-				sprintf(expr_res.sval, "%f", expr_res.fval);
-			#else
-				ftoa(expr_res.fval, expr_res.sval);
-			#endif // _DEBUG
+				ftoa_(expr_res.fval, expr_res.sval);
 				last_num = 1;
 				break;
 			default:
@@ -823,18 +815,10 @@ void eval_strfunc(char *result, int *l) {
 		case T_STR:
 			parse_expression(1);
 			if (expr_res.type == VT_INT) {
-			#ifdef _DEBUG
-				sprintf(s, "%d", expr_res.ival);
-			#else
-				itoa(expr_res.ival, s);
-			#endif // _DEBUG
+				itoa_(expr_res.ival, s);
 			} else if (expr_res.type == VT_FLOAT) {
-			#ifdef _DEBUG
-				sprintf(s, "%f", expr_res.fval);
-			#else
-				ftoa(expr_res.fval, s);
-			#endif // _DEBUG
-	   		} else
+				ftoa_(expr_res.fval, s);
+			} else
 				error(E_SYNTAX);
 			(*l) += strlen(s);
 			if (*l >= MAX_STRING_LEN)
@@ -904,6 +888,8 @@ void eval_numfunc(struct s_num *result) {
 	char *s1, *s2, *q;
 	byte i;
 
+	float x;
+
 	get_next_token();
 	if (token_str[0] != '(')
 		error(E_SYNTAX);
@@ -955,7 +941,8 @@ void eval_numfunc(struct s_num *result) {
 			#ifdef _DEBUG
 				(*result).fval = sin(expr_res.ival);
 			#else
-				(*result).fval = sinf(expr_res.ival);
+				x = expr_res.ival;
+				(*result).fval = sinf(x);
 			#endif
 			} else
 				error(E_SYNTAX);
@@ -974,7 +961,8 @@ void eval_numfunc(struct s_num *result) {
 			#ifdef _DEBUG
 				(*result).fval = cos(expr_res.ival);
 			#else
-				(*result).fval = cosf(expr_res.ival);
+				x = expr_res.ival;
+				(*result).fval = cosf(x);
 			#endif
 			} else
 				error(E_SYNTAX);
@@ -1004,7 +992,9 @@ void eval_numfunc(struct s_num *result) {
 			#ifdef _DEBUG
 				(*result).fval = sqrt(expr_res.ival);
 			#else
-				(*result).fval = sqrtf(expr_res.ival);
+				x = expr_res.ival;
+				x = sqrtf(x);
+				(*result).fval = x;
 			#endif
 			} else
 				error(E_SYNTAX);
@@ -1033,7 +1023,8 @@ void eval_numfunc(struct s_num *result) {
 			#ifdef _DEBUG
 				(*result).fval = tan(expr_res.ival);
 			#else
-				(*result).fval = tanf(expr_res.ival);
+            	x = expr_res.ival;
+				(*result).fval = tanf(x);
 			#endif
 			} else
 				error(E_SYNTAX);
@@ -1052,7 +1043,8 @@ void eval_numfunc(struct s_num *result) {
 			#ifdef _DEBUG
 				(*result).fval = log(expr_res.ival);
 			#else
-				(*result).fval = logf(expr_res.ival);
+				x = expr_res.ival;
+				(*result).fval = logf(x);
 			#endif
 			} else
 				error(E_SYNTAX);
@@ -1111,7 +1103,8 @@ void eval_numfunc(struct s_num *result) {
 			#ifdef _DEBUG
 				(*result).fval = exp(expr_res.ival);
 			#else
-				(*result).fval = expf(expr_res.ival);
+				x = expr_res.ival;
+				(*result).fval = expf(x);
 			#endif
 			} else
 				error(E_SYNTAX);

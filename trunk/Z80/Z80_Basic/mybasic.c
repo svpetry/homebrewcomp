@@ -15,8 +15,6 @@
 #include "io.h"
 #include "bios_cmd.h"
 
-//#define DEBUG
-
 /******************************************************************************/
 void load_program(char *file_name) {
 	word i = 0;
@@ -56,7 +54,7 @@ void load_program(char *file_name) {
 	SELECT_BANK1;
 #endif // _DEBUG
 	i = 0;
-	ip = prog;
+	ip = (char *)prog;
 
 	while (FILE_OK && i < MAX_PROG_FILE_SIZE) {
 		*ip = READ_CHAR;
@@ -663,7 +661,7 @@ void start_basic() {
     	while_stack[i] = 0;
 
 	// start
-	ip = prog;
+	ip = (char *)prog;
 
 	get_next_token();
 	while (token != T_EOP && token != T_END && token != T_STOP) {
@@ -811,7 +809,7 @@ void *malloc_checked(unsigned int size) {
 //	char s[10];
 
 //	puts_nlb("malloc_checked(");
-//	itoa(size, s);
+//	itoa_(size, s);
 //	puts_nlb(s);
 //	puts(")");
 

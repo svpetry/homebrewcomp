@@ -29,9 +29,9 @@ __endasm
 void puts_nlb(char *s);
 #ifndef _DEBUG
 char getchar(void);
+#endif
 byte io_read(byte addr);
 void io_write(byte addr, byte val);
-#endif
 void beep(void);
 
 #endif /* IO_H_ */

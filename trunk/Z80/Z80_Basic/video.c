@@ -39,7 +39,14 @@ void v_showcursor() {
 }
 /******************************************************************************/
 void v_cls() {
-	memset(VIDEO_RAM, ' ', VRAM_SIZE);
+	register byte i;
+	register char *dest;
+
+	dest = (char *)VIDEO_RAM;
+	for (i = 0; i < V_ROWS; i++) {
+		memset(dest, ' ', V_COLS);
+		dest += V_ROWSIZE;
+	}
 	memset(&linebuf[0][0], ' ', V_ROWS * V_COLS);
 	line_ptr = 0;
 	cur_col = 0;
@@ -55,7 +62,7 @@ void v_scrollup() {
 
 	lidx = line_ptr;
 	for (i = 0; i < V_ROWS; i++) {
-		memcpy_f((byte *)(VIDEO_RAM + (i << 7)), &linebuf[lidx][0], V_COLS);
+		memcpy((byte *)(VIDEO_RAM + (i << 7)), &linebuf[lidx][0], V_COLS);
 		if (++lidx == V_ROWS)
 			lidx = 0;
 	}

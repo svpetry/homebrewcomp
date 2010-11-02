@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "ftoa.h"
 #include "utils.h"
@@ -8,7 +9,6 @@
 #pragma codeseg _CODE2
 
 /******************************************************************************/
-#ifndef _DEBUG
 
 typedef union {
 	long	L;
@@ -16,23 +16,22 @@ typedef union {
 } LF_t;
 
 /******************************************************************************/
-char *ftoa(float f, char outbuf[]) {
+char *ftoa_(float f, char outbuf[]) {
 	long mantissa, int_part, frac_part;
 	short exp2;
 	LF_t x;
 	char *p;
 
-//	*status = 0;
-	if (f < 0.00001) {
-		outbuf[0] = '0';
-		outbuf[1] = '.';
-		outbuf[2] = '0';
-		outbuf[3] = 0;
-		return outbuf;
-	}
+//	if (f < 0.0000001) {
+//		outbuf[0] = '0';
+//		outbuf[1] = '.';
+//		outbuf[2] = '0';
+//		outbuf[3] = 0;
+//		return outbuf;
+//	}
 
-	f += 0.00001;
-	
+	f += 0.0000005;
+
 	x.F = f;
 
 	exp2 = (unsigned char)(x.L >> 23) - 127;
@@ -41,10 +40,12 @@ char *ftoa(float f, char outbuf[]) {
 	int_part = 0;
 
 	if (exp2 >= 31) {
-//		*status = _FTOA_TOO_LARGE;
+		outbuf[0] = '#';
+		outbuf[1] = 0;
 		return 0;
 	} else if (exp2 < -23) {
-//		*status = _FTOA_TOO_SMALL;
+		outbuf[0] = '#';
+		outbuf[1] = 0;
 		return 0;
 	} else if (exp2 >= 23)
 		int_part = mantissa << (exp2 - 23);
@@ -62,7 +63,7 @@ char *ftoa(float f, char outbuf[]) {
 	if (int_part == 0)
 		*p++ = '0';
 	else {
-		ltoa(int_part, p);
+		ltoa_(int_part, p);
 		while (*p)
 			p++;
 	}
@@ -74,8 +75,8 @@ char *ftoa(float f, char outbuf[]) {
 		char m, max;
 
 		max = BUFFER_MAX - (p - outbuf) - 1;
-		if (max > 5)
-			max = 5;
+		if (max > 6)
+			max = 6;
 		/* print BCD */
 		for (m = 0; m < max; m++) {
 			/* frac_part *= 10;	*/
@@ -92,5 +93,5 @@ char *ftoa(float f, char outbuf[]) {
 
 	return outbuf;
 }
-#endif // _DEBUG
 /******************************************************************************/
+

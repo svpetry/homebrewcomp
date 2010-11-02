@@ -54,8 +54,12 @@ char getchar(void) {
 
 	return result;
 }
+#endif
 /******************************************************************************/
 byte io_read(byte addr) {
+#ifdef _DEBUG
+	return 0;
+#else
 	io_addr = addr;
 	__asm
 		push af
@@ -67,9 +71,12 @@ byte io_read(byte addr) {
 		pop af
 	__endasm;
 	return io_val;
+#endif
 }
 /******************************************************************************/
 void io_write(byte addr, byte val) {
+#ifdef _DEBUG
+#else
 	io_addr = addr;
 	io_val = val;
 	__asm
@@ -81,8 +88,8 @@ void io_write(byte addr, byte val) {
 		pop bc
 		pop af
 	__endasm;
-}
 #endif
+}
 /******************************************************************************/
 void beep(void) {
 	IO_WRITE(4, #1);
