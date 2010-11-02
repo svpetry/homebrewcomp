@@ -8,7 +8,6 @@
 
 byte cur_col = 0;
 byte cur_row = 0;
-//static byte show_cursor = 1;
 
 static volatile byte __at VIDEO_BUFFER linebuf[V_ROWS][V_COLS];
 static volatile byte line_ptr = 0;
@@ -37,8 +36,15 @@ void v_showcursor() {
 }
 /******************************************************************************/
 void v_cls() {
-	memset_f(VIDEO_RAM, ' ', VRAM_SIZE);
-	memset_f(&linebuf[0][0], ' ', V_ROWS * V_COLS);
+	register byte i;
+    register char *dest;
+
+	dest = (char *)VIDEO_RAM;
+	for (i = 0; i < V_ROWS; i++) {
+		memset(dest, ' ', V_COLS);
+		dest += V_ROWSIZE;
+	}
+	memset(&linebuf[0][0], ' ', V_ROWS * V_COLS);
 	line_ptr = 0;
 	cur_col = 0;
 	cur_row = 0;
@@ -47,13 +53,13 @@ void v_cls() {
 void v_scrollup() {
 	byte i, lidx;
 
-	memset_f(&linebuf[line_ptr][0], ' ', V_COLS);
+	memset(&linebuf[line_ptr][0], ' ', V_COLS);
 	if (++line_ptr == V_ROWS)
 		line_ptr = 0;
 
 	lidx = line_ptr;
 	for (i = 0; i < V_ROWS; i++) {
-		memcpy_f((byte *)(VIDEO_RAM + (i << 7)), &linebuf[lidx][0], V_COLS);
+		memcpy((byte *)(VIDEO_RAM + (i << 7)), &linebuf[lidx][0], V_COLS);
 		if (++lidx == V_ROWS)
 			lidx = 0;
 	}

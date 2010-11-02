@@ -8,7 +8,6 @@ void reverse(char s[]);
 void itoa(int n, char s[]);
 void ltoa(long i, char* buf);
 void strtolower(char *s);
-void memcpy_f(byte *dest, byte *src, word size);
 
 void quit_app(void);
 

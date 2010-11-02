@@ -36,6 +36,7 @@
             this.bnCreateBinPpas = new System.Windows.Forms.Button();
             this.tbBinFile = new System.Windows.Forms.TextBox();
             this.bnOpenBinFile = new System.Windows.Forms.Button();
+            this.bnCreateBitmap = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // bnOpenFontBmp
@@ -102,11 +103,22 @@
             this.bnOpenBinFile.UseVisualStyleBackColor = true;
             this.bnOpenBinFile.Click += new System.EventHandler(this.bnOpenBinFile_Click);
             // 
+            // bnCreateBitmap
+            // 
+            this.bnCreateBitmap.Location = new System.Drawing.Point(93, 38);
+            this.bnCreateBitmap.Name = "bnCreateBitmap";
+            this.bnCreateBitmap.Size = new System.Drawing.Size(114, 23);
+            this.bnCreateBitmap.TabIndex = 6;
+            this.bnCreateBitmap.Text = "Convert Bitmap";
+            this.bnCreateBitmap.UseVisualStyleBackColor = true;
+            this.bnCreateBitmap.Click += new System.EventHandler(this.bnCreateBitmap_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(366, 146);
+            this.Controls.Add(this.bnCreateBitmap);
             this.Controls.Add(this.bnCreateBinPpas);
             this.Controls.Add(this.tbBinFile);
             this.Controls.Add(this.bnOpenBinFile);
@@ -131,6 +143,7 @@
         private System.Windows.Forms.Button bnCreateBinPpas;
         private System.Windows.Forms.TextBox tbBinFile;
         private System.Windows.Forms.Button bnOpenBinFile;
+        private System.Windows.Forms.Button bnCreateBitmap;
     }
 }
 

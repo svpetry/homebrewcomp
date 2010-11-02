@@ -11,7 +11,7 @@ unsigned int malloc_free_ram() {
 
 	size = freep->size;
 	p = freep->ptr;
-	
+	     
 	while (p != freep) {
 		size += p->size;
 		p = p->ptr;

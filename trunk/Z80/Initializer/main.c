@@ -41,12 +41,15 @@ void delay_ms(unsigned int ms) {
 /******************************************************************************/
 main() {
 
-	delay_ms(250);
-
 	__asm
 		ld a, #1
 		out (0), a // RAM-Bank 0 aktivieren
-		out (7), a // enable VRAM
+		out (7), a // enable VRAM & activate textmode
+	__endasm;
+
+	delay_ms(250);
+
+	__asm
 		xor a, a
 		out (1), a // ext. Port = 0
 		out (2), a // ext. Port = 0

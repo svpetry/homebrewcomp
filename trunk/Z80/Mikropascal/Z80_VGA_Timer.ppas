@@ -34,7 +34,7 @@ var
   next_porte: byte;
   next_trise: byte;
   
-  gmode: byte;
+  gmode, gm: byte;
 
 (******************************************************************************)
 procedure Init;
@@ -106,6 +106,8 @@ begin
   TRISC := 255;
   TRISD := 255;
   LATA.5 := 0;
+
+  gm := 0;
 end;
 (******************************************************************************)
 procedure FillCharRamGrfx;
@@ -162,6 +164,8 @@ begin
   TRISC := 255;
   TRISD := 255;
   LATA.5 := 0;
+  
+  gm := 8;
 end;
 (******************************************************************************)
 procedure MainLoop;
@@ -396,8 +400,13 @@ wait_loop: // 50 * 5 + 4 = 254 Instruktionen warten
     // 10 Instruktionen
     MOVF   PORTE, 0, 0
     ANDLW  8
+<<<<<<< .mine
+    XORWF  _gm, 0, 0
+    BZ     weiter6
+=======
     XORWF  _gmode, 0, 0
     BZ     weiter6
+>>>>>>> .r63
     BRA    exitloop
 weiter6:
     NOP
@@ -422,7 +431,7 @@ exitloop:
 end;
 (******************************************************************************)
 var
-  i: byte;
+  i: word;
 
 begin
   WREG := line;
@@ -433,6 +442,7 @@ begin
   WREG := next_trise;
   WREG := next_porte;
   WREG := gmode;
+  WREG := gm;
   
   Init;
   Delay_10us;
@@ -442,13 +452,37 @@ begin
     LATA := %00011110;
     LATE := %00000010;
     Delay_10ms;
+<<<<<<< .mine
+=======
     
     gmode := PORTE.3 shl 3;
+>>>>>>> .r63
+
+<<<<<<< .mine
+    // wait until PORTE.3 is stable for 80 ms
+    gmode := PORTE.3 shl 3;
+    i := 0;
+    while i < 800 do
+    begin
+      Delay_us(100);
+      if gmode <> PORTE.3 shl 3 then
+      begin
+        gmode := PORTE.3 shl 3;
+        i := 0;
+      end
+      else
+        inc(i);
+    end;
 
     if gmode > 0 then
+      FillCharRamGrfx // ca. 20 ms
+=======
+    if gmode > 0 then
       FillCharRamGrfx
+>>>>>>> .r63
     else
-      FillCharRam;
+      FillCharRam; // ca. 30 ms
+
 
     Delay_10ms;
     MainLoop;

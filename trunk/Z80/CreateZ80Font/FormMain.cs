@@ -120,5 +120,52 @@ namespace CreateZ80Font
                 binstr.Close();
             }
         }
+
+        private void bnCreateBitmap_Click(object sender, EventArgs e)
+        {
+            string file_name = tbFontFile.Text;
+            if (File.Exists(file_name))
+            {
+                Bitmap bmp = new Bitmap(file_name);
+                byte[,] chars = new byte[80, 25];
+
+                for (byte y = 0; y < 100; y++)
+                {
+                    for (byte x = 0; x < 160; x++)
+                    {
+                        if (bmp.GetPixel(x, y).G == 0)
+                            chars[x / 2, y / 4] |= (byte)(((x & 1) + 1) << ((y & 3) << 1));
+                    }
+                }
+
+                TextWriter tw = new StreamWriter(Path.ChangeExtension(file_name, ".c"));
+                tw.WriteLine("const char picture[25][80] = {");
+                for (int row = 0; row < 25; row++)
+                {
+                    if (row == 0)
+                        tw.WriteLine("\t{");
+                    else
+                        tw.WriteLine("\t}, {");
+                    tw.Write("\t\t");
+                    for (int col = 0; col < 80; col++)
+                    {
+                        tw.Write(chars[col, row]);
+                        if (col < 79)
+                        {
+                            tw.Write(",");
+                            if (col % 10 == 9)
+                                tw.Write("\n\t\t");
+                            else
+                                tw.Write(" ");
+                        }
+                    }
+                    tw.WriteLine();
+                    if (row == 24)
+                        tw.WriteLine("\t}");
+                }
+                tw.WriteLine("};");
+                tw.Close();
+            }
+        }
     }
 }

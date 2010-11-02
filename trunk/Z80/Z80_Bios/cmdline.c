@@ -202,9 +202,7 @@ void exec_program(void) {
 				strcpy(prog_params[i], params[i + 1]);
 			DISABLE_VRAM;
 			io_write(160, 27); // load program
-			__asm
-				halt
-			__endasm;
+			while (1); // better: halt
 		} else
         	puts("\nno bin file.");
 	} else
