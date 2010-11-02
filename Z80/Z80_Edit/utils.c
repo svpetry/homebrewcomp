@@ -75,11 +75,6 @@ void strtolower(char *s) {
     }
 }
 /******************************************************************************/
-void memcpy_f(byte *dest, byte *src, word size) {
-	while (size-- > 0)
-		*(dest++) = *(src++);
-}
-/******************************************************************************/
 void quit_app(void) {
 
 	strcpy(sparam, "bios.bin");
@@ -104,9 +99,7 @@ void quit_app(void) {
 	DISABLE_VRAM;
 	io_write(160, 27); // load program
 
-	__asm
-		halt
-	__endasm;
+	while (1);
 }
 /******************************************************************************/
 
