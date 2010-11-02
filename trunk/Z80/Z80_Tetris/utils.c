@@ -75,11 +75,6 @@ void strtolower(char *s) {
     }
 }
 /******************************************************************************/
-void memcpy_f(byte *dest, byte *src, word size) {
-	while (size-- > 0)
-		*(dest++) = *(src++);
-}
-/******************************************************************************/
 void quit_app(void) {
 
 	strcpy(sparam, "bios.bin");

@@ -334,204 +334,11 @@ void buf2screen() {
 	src = vbuf;
 	dest = (char *)0x1000;
 
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
+	for (i = 0; i < 25; i++) {
+		memcpy(dest, src, 80);
+		dest += 128;
+		src += 128;        
 	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-	dest += 48;
-	src += 48;
-
-	i = 80;
-	while (i > 0) {
-		*(dest++) = *(src++);
-		i--;
-	}
-
 }
 /******************************************************************************/
 void clrbuf() {
@@ -591,6 +398,17 @@ void vputchar(byte x, byte y, char c) {
 		p = &num[c - '0'][0];
 	else if (c >= 'A' && c <= 'Z')
 		p = &alpha[c - 'A'][0];
+<<<<<<< .mine
+	else if (c == ' ') {
+		for (yc = 0; yc < 7; yc++) {
+			rowx = x;
+			for (xc = 0; xc < 6; xc++) {
+				clearpixel(rowx, y);
+				rowx++;
+			}
+			y++;
+		}
+=======
 	else if (c == ' ') {
 		for (yc = 0; yc < 7; yc++) {
 			rowx = x;
@@ -600,6 +418,7 @@ void vputchar(byte x, byte y, char c) {
 			}
 			y++;
 		}
+>>>>>>> .r63
 		return;
 	} else
 		return;
