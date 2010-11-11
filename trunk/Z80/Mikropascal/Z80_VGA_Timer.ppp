@@ -27,19 +27,19 @@ SimDebug=0
 Count=0
 [OtherFiles]
 Count=1
-Value0=X:\Z80\Mikropascal\Z80_VGA_Timer.ppas
+Value0=D:\Z80\Mikropascal\Z80_VGA_Timer.ppas
 Value1=X:\Z80\Mikropascal\Z80_VGA_Timer.asm
 Value2=X:\Sven\Elektronik\mikroPascal\Z80\Memory.ppas
 [TabIndex]
 Value=0
 [SearchPath]
 Count=6
-Value0=X:\PortableApps\mikroPascal8\Defs\
-Value1=X:\Z80\Mikropascal\
-Value2=X:\PortableApps\mikroPascal8\Uses\p18\
-Value3=C:\Program Files\mikroPascal8\Defs\
-Value4=C:\Program Files\mikroPascal8\Uses\p18\
-Value5=D:\Z80\Mikropascal\
+Value0=C:\Program Files\mikroPascal8\Defs\
+Value1=C:\Program Files\mikroPascal8\Uses\p18\
+Value2=D:\Z80\Mikropascal\
+Value3=X:\PortableApps\mikroPascal8\Defs\
+Value4=X:\Z80\Mikropascal\
+Value5=X:\PortableApps\mikroPascal8\Uses\p18\
 Value6=X:\Sven\Elektronik\mikroPascal\Z80\
 Value7=V:\PortableApps\mikroPascal8\Uses\p18\
 Value8=V:\Elektronik\mikroPascal\Z80\
