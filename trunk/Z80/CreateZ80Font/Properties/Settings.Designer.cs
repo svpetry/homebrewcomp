@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace WindowsFormsApplication1.Properties {
+namespace CreateZ80Font.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
