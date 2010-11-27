@@ -22,10 +22,10 @@ namespace WindowsFormsApplication1
             TextWriter tw = new StreamWriter("sintable.txt");
 
             int i;
-            for (i = 0; i < 256; i++)
+            for (i = 0; i < 1024; i++)
             {
-                tw.Write((int)(127 * Math.Sin(i * 2 * Math.PI / 256)));
-                if (i < 255)
+                tw.Write((int)(32767 * Math.Sin(i * 2 * Math.PI / 1024)));
+                if (i < 1023)
                     tw.Write(", ");
                 if (i % 10 == 0)
                     tw.WriteLine();
