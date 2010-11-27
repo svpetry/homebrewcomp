@@ -178,6 +178,11 @@ begin
   data_line := 0;
   line := 0;
 
+  if gm > 0 then
+    next_porte.2 := 1
+  else
+    next_porte.2 := 0;
+
   asm
 loop:
     MOVF   _next_porta, 0 // dafür unten 1 Pixel weniger!
@@ -402,6 +407,7 @@ wait_loop: // 50 * 5 + 4 = 254 Instruktionen warten
     ANDLW  8
     XORWF  _gm, 0, 0
     BZ     weiter6
+    BRA    exitloop
 weiter6:
     NOP
     NOP
@@ -443,47 +449,24 @@ begin
 
   while true do
   begin
-    LATA := %00011110;
+    LATA := %00011100;
     LATE := %00000010;
-    Delay_10ms;
+    nop;
+    LATA.1 := 1;
+    LATB := 0;
+    Delay_10us;
 
-    // wait until PORTE.3 is stable for 80 ms
     gmode := PORTE.3 shl 3;
-    i := 0;
-    while i < 800 do
-    begin
-      Delay_us(100);
-      if gmode <> PORTE.3 shl 3 then
-      begin
-        gmode := PORTE.3 shl 3;
-        i := 0;
-      end
-      else
-        inc(i);
-    end;
-
-    // wait until PORTE.3 is stable for 80 ms
-    gmode := PORTE.3 shl 3;
-    i := 0;
-    while i < 800 do
-    begin
-      Delay_us(100);
-      if gmode <> PORTE.3 shl 3 then
-      begin
-        gmode := PORTE.3 shl 3;
-        i := 0;
-      end
-      else
-        inc(i);
-    end;
 
     if gmode > 0 then
-      FillCharRamGrfx // ca. 20 ms
-    else
+    begin
+      FillCharRamGrfx; // ca. 20 ms
+    end
+    else begin
       FillCharRam; // ca. 30 ms
+    end;
 
-
-    Delay_10ms;
+    Delay_8ms;
     MainLoop;
   end;
 
