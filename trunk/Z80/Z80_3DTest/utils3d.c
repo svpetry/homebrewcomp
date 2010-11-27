@@ -1,4 +1,5 @@
 #include "utils3d.h"
+#include "video.h"
 
 const int sintable[1024] = {
 	0,
@@ -119,33 +120,67 @@ int cosinus(int angle) {
 	return sintable[(angle + 256) & 1023];
 }
 /******************************************************************************/
-void init_rotation(int ax, int ay, int az) {
-	m11 = 32767 + cosinus(ay) + cosinus(az);
-	m12 = - sinus(az);
-	m13 = sinus(ay);
-	m21 = sinus(az);
-	m22 = 32767 + cosinus(ax) + cosinus(az);
-	m23 = - sinus(ax);
-	m31 = - sinus(ay);
-	m32 = sinus(ax);
-	m33 = 32767 + cosinus(ax) + cosinus(ay); 
+void init_rotation(int alpha, int beta, int gamma) {
+	m11 = 32768;
+	m12 = 0;
+	m13 = 0;
+	m21 = 0;
+	m22 = 32768;
+	m23 = 0;
+	m31 = 0;
+	m32 = 0;
+	m33 = 32768;
+//	m11 = (cosinus(alpha) * cosinus(beta)) / 32768;
+//
+//	m12 = (((cosinus(alpha) * sinus(beta)) / 32768) * sinus(gamma)) / 32768 -
+//		(sinus(alpha) * cosinus(gamma)) / 32768;
+//
+//	m13 = (((cosinus(alpha) * sinus(beta)) / 32768) * cosinus(gamma)) / 32768 +
+//		(sinus(alpha) * sinus(gamma)) / 32768;
+//
+//	m21 = (sinus(alpha) * cosinus(beta)) / 32768;
+//
+//	m22 = (((sinus(alpha) * sinus(beta)) / 32768) * sinus(gamma)) / 32768 +
+//		(cosinus(alpha) * cosinus(gamma)) / 32768;
+//
+//	m23 = (((sinus(alpha) * sinus(beta)) / 32768) * cosinus(gamma)) / 32768 -
+//		(cosinus(alpha) * sinus(gamma)) / 32768;
+//
+//	m31 = - sinus(beta);
+//
+//	m32 = (cosinus(beta) * sinus(gamma)) / 32768;
+//
+//	m33 = (cosinus(beta) * cosinus(gamma)) / 32768;
 }
 /******************************************************************************/
 void rotate(struct vector *v) {
 	long x, y, z;
 
-	x = (v->x * m11 + v->y * m12 + v->z * m13 + 1024 * 32768) >> 15;
-	y = (v->x * m21 + v->y * m22 + v->z * m23 + 1024 * 32768) >> 15;
-	z = (v->x * m31 + v->y * m32 + v->z * m33 + 1024 * 32768) >> 15;
+	x = (v->x * m11 + v->y * m12 + v->z * m13) / 32768;
+	y = (v->x * m21 + v->y * m22 + v->z * m23) / 32768;
+	z = (v->x * m31 + v->y * m32 + v->z * m33) / 32768;
 
-	v->x = x - 1024;
-	v->y = y - 1024;
-	v->z = z - 1024;
+	v->x = x;
+	v->y = y;
+	v->z = z;
 }
 /******************************************************************************/
 void vec2point(struct vector *v, struct point *p) {
-	
-
+	if (v->z >= -50) {
+		p->x = (v->x << 6) / ((1 << 6) + v->z + 50);
+		p->y = (v->y << 6) / ((1 << 6) + v->z + 50);
+	} else {
+		p->x = 0x7fff;
+		p->y = 0x7fff;
+    }
+}
+/******************************************************************************/
+void setpoint(struct point *p) {
+	register int x, y;
+	x = p->x + 80;
+	y = p->y + 50;
+	if (x >= 0 && x <= 159 && y >= 0 && y <= 99)
+    	setpixel(x, y);
 }
 /******************************************************************************/
 

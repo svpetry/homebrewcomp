@@ -106,7 +106,7 @@ void cmdline(void) {
 							io_write(7, 3);
 						else
 							io_write(7, 1);
-						delay_ms(500);
+						delay_ms(200);
 					}
 				} else if (!strcmp(params[0], "help")) {
 					puts("\nBEEP");

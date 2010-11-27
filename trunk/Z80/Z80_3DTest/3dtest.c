@@ -21,7 +21,7 @@ void init() {
 	io_write(6, 21);
 
 	io_write(7, 3);
-	delay_ms(400);
+	delay_ms(200);
 
 	time = io_read(130) + ((int)io_read(131)) << 8;
 	srand(time);
@@ -31,10 +31,12 @@ void main() {
 
 	init();
 
+	clrbuf();
+	buf2screen();
 	start3d();
 
 	io_write(7, 1);
-	delay_ms(400);
+	delay_ms(200);
 
 	quit_app();
 	return;
