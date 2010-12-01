@@ -1,0 +1,107 @@
+program Z80_Sound;
+
+(*
+ * SID Sound card
+ * Clock: 10 MHz ext. = 2.5 MHz int.
+ *
+ * pin layout:
+ * RA0-RA4: SID A0-A4
+ * RE3: /RESET
+ * RA5: SID /CS
+ * RA6: LED
+ * RC0-RC7: SID D0-D7
+ * RB0-RB7: DATA0-DATA7
+ *)
+
+const
+  icNoteCount = 1200;
+  icWaveNoise = 128;
+  icWaveRectangle = 64;
+  icWaveSawtooth = 32;
+  icWaveTriangle = 16;
+
+var
+  WaveForms: array[3] of byte;
+  NotesV1: array[icNoteCount] of byte;
+  NotesV2: array[icNoteCount] of byte;
+  NotesV3: array[icNoteCount] of byte;
+
+(******************************************************************************)
+procedure Init;
+begin
+//  OSCCON := %01110000;
+
+  ADCON0 := 0; // disable A/D Converter
+  ADCON1 := $0f;
+  CMCON := $07; // disable comparator
+
+  INTCON := 0;
+  PIE1 := 0;
+  PIE2 := 0;
+  RCON := 0;
+  CCP1CON := 0;
+  SSPCON1 := 0;
+  SSPCON2 := 0;
+  T0CON := 0;
+
+  TRISA := 0;
+  PORTA := %00100000;
+  TRISB := 255;
+  PORTB := 0;
+  TRISC := 0;
+  PORTC := 0;
+
+end;
+(******************************************************************************)
+procedure SidWrite(_addr: byte; _value: byte);
+begin
+
+end;
+(******************************************************************************)
+procedure SetWaveForm(_voice: byte; _wave_form: byte);
+begin
+  WaveForms[_voice] := _wave_form;
+  SidWrite(7 * _voice + 4, _wave_form);
+end;
+(******************************************************************************)
+procedure PlayNote(_voice: byte; _frequency: word);
+begin
+  SidWrite(7 * _voice, Lo(_frequency));
+  SidWrite(7 * _voice + 1, Hi(_frequency));
+  SidWrite(7 * _voice + 4, WaveForms[_voice] + 1);
+end;
+(******************************************************************************)
+procedure SetAtkDcy(_voice: byte; _value: byte);
+begin
+  SidWrite(7 * _voice + 5, _value);
+end;
+(******************************************************************************)
+procedure SetStnRls(_voice: byte; _value: byte);
+begin
+  SidWrite(7 * _voice + 6, _value);
+end;
+(******************************************************************************)
+procedure SetVolume(_value: byte);
+begin
+  SidWrite($18, _value and $0f);
+end;
+(******************************************************************************)
+procedure InitSID;
+begin
+  SetVolume($0f);
+end;
+(******************************************************************************)
+begin
+  Init;
+  
+  InitSID;
+  
+  while true do
+  begin
+    Delay_ms(500);
+    LATA.6 := 1;
+    Delay_ms(500);
+    LATA.6 := 0;
+  end;
+
+end.
