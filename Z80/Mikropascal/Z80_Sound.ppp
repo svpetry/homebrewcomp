@@ -1,0 +1,35 @@
+[DeviceName]
+Value=P18F2525
+[DeviceClock]
+Value=10
+[MainUnit]
+Value=Z80_Sound.ppas
+[DeviceFlags]
+Count=10
+Value0=_OSC_ECIO6_1H = $00F5
+Value1=_PWRT_ON_2L = $00FE
+Value2=_BOREN_OFF_2L = $00F9
+Value3=_WDT_OFF_2H = $00FE
+Value4=_MCLRE_ON_3H = $00FF
+Value5=_PBADEN_OFF_3H = $00FD
+Value6=_STVREN_OFF_4L = $00FE
+Value7=_LVP_OFF_4L = $00FB
+Value8=_ENHCPU_OFF_4L = $009F
+Value9=_DEBUG_OFF_4L = $00FF
+[BuildSimDebug]
+Build=0
+SimDebug=0
+[ProjectFiles]
+Count=0
+[OtherFiles]
+Count=1
+Value0=X:\Z80\Mikropascal\Z80_Sound.ppas
+[TabIndex]
+Value=0
+[SearchPath]
+Count=3
+Value0=X:\PortableApps\mikroPascal8\Defs\
+Value1=X:\PortableApps\mikroPascal8\Uses\p18\
+Value2=X:\Z80\Mikropascal\
+[EEPROMinfo]
+isused=0
