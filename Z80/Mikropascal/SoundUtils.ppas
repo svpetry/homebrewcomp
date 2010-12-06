@@ -1,0 +1,70 @@
+unit SoundUtils;
+
+const
+  icNoteCount = 600;
+  icWaveNoise = 128;
+  icWaveRectangle = 64;
+  icWaveSawtooth = 32;
+  icWaveTriangle = 16;
+
+var
+  WaveForms: array[3] of byte;
+  NotesV1: array[icNoteCount] of word;
+  NotesV2: array[icNoteCount] of word;
+  NotesV3: array[icNoteCount] of word;
+
+(******************************************************************************)
+procedure SidWrite(_addr: byte; _value: byte);
+begin
+  LATA := (_addr and 31) + 32;
+  LATC := _value;
+  LATA.5 := 0;
+  nop;
+  nop;
+  nop;
+  nop;
+  nop;
+  nop;
+  nop;
+  LATA.5 := 1;
+end;
+(******************************************************************************)
+procedure SetWaveForm(_voice: byte; _wave_form: byte);
+begin
+  WaveForms[_voice] := _wave_form;
+end;
+(******************************************************************************)
+procedure SetPulseWidth(_voice: byte; _value: word);
+begin
+  SidWrite(7 * _voice + 2, Lo(_value));
+  SidWrite(7 * _voice + 3, Hi(_value));
+end;
+(******************************************************************************)
+procedure PlayNote(_voice: byte; _frequency: word);
+begin
+  SidWrite(7 * _voice, Lo(_frequency));
+  SidWrite(7 * _voice + 1, Hi(_frequency));
+  SidWrite(7 * _voice + 4, WaveForms[_voice] + 1);
+end;
+(******************************************************************************)
+procedure StopNote(_voice: byte);
+begin
+  SidWrite(7 * _voice + 4, WaveForms[_voice]);
+end;
+(******************************************************************************)
+procedure SetAtkDcy(_voice: byte; _value: byte);
+begin
+  SidWrite(7 * _voice + 5, _value);
+end;
+(******************************************************************************)
+procedure SetStnRls(_voice: byte; _value: byte);
+begin
+  SidWrite(7 * _voice + 6, _value);
+end;
+(******************************************************************************)
+procedure SetVolume(_value: byte);
+begin
+  SidWrite($18, _value and $0f);
+end;
+(******************************************************************************)
+end.
