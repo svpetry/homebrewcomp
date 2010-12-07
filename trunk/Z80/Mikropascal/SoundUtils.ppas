@@ -9,14 +9,11 @@ const
 
 var
   WaveForms: array[3] of byte;
-  NotesV1: array[icNoteCount] of word;
-  NotesV2: array[icNoteCount] of word;
-  NotesV3: array[icNoteCount] of word;
 
 (******************************************************************************)
 procedure SidWrite(_addr: byte; _value: byte);
 begin
-  LATA := (_addr and 31) + 32;
+  LATA := (_addr and 31) + 32 + (LATA and %01000000);
   LATC := _value;
   LATA.5 := 0;
   nop;
