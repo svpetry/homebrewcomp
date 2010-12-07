@@ -28,9 +28,12 @@ Value1=X:\Z80\Mikropascal\SoundUtils.ppas
 [TabIndex]
 Value=0
 [SearchPath]
-Count=3
+Count=6
 Value0=X:\PortableApps\mikroPascal8\Defs\
 Value1=X:\PortableApps\mikroPascal8\Uses\p18\
 Value2=X:\Z80\Mikropascal\
+Value3=C:\Program Files\mikroPascal8\Defs\
+Value4=C:\Program Files\mikroPascal8\Uses\p18\
+Value5=D:\Z80\Mikropascal\
 [EEPROMinfo]
 isused=0

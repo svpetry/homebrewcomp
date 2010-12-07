@@ -2,7 +2,7 @@ program Z80_Sound;
 
 (*
  * SID Sound card
- * Clock: 10 MHz ext. = 2.5 MHz int.
+ * Clock: 50 MHz ext. = 12.5 MHz int.
  *
  * pin layout:
  * RA0-RA4: SID A0-A4
@@ -16,20 +16,35 @@ program Z80_Sound;
 uses
   SoundUtils;
 
+const
+  TMR0H_Value = $EC; // values for 25 msec
+  TMR0L_Value = $ED;
+
+var
+  Sustain: array[3] of byte; // duration of sustain in 20 msec.
+  NotesV1: array[icNoteCount] of word;
+  NotesV2: array[icNoteCount] of word;
+  NotesV3: array[icNoteCount] of word;
+  NoteCounts: array[3] of word;
+
+  curr_stn: array[3] of byte;
+  curr_period: array[3] of byte;
+  curr_note: array[3] of word;
+  play: byte;
+  
 (******************************************************************************)
 procedure Interrupt;
 begin
-  TMR0H := $E6;
-  TMR0L := $D3;
+  // triggered every 25 msec
+  TMR0H := TMR0H_Value;
+  TMR0L := TMR0L_Value;
 
-  inc(ticks);
-
-  if LATA.0 = 1 then
+  if play = 1 then
   begin
-    TRISA.1 := 1;
-    if PORTA.1 = 0 then
-      mmc_changed := 1;
-    TRISA.1 := 0;
+  
+  
+  
+    LATA.6 := 1 - LATA.6;
   end;
 
   INTCON.TMR0IF := 0;
@@ -43,14 +58,16 @@ begin
   ADCON1 := $0f;
   CMCON := $07; // disable comparator
 
-  INTCON := 0;
+  INTCON := %10100000; // Enable Timer0 interrupt
   PIE1 := 0;
   PIE2 := 0;
   RCON := 0;
   CCP1CON := 0;
   SSPCON1 := 0;
   SSPCON2 := 0;
-  T0CON := 0;
+  T0CON := %00000101; // Timer0: prescaler 64, 16 bit, disabled
+  TMR0H := TMR0H_Value;
+  TMR0L := TMR0L_Value;
 
   TRISA := 0;
   PORTA := %00100000;
@@ -58,12 +75,16 @@ begin
   PORTB := 0;
   TRISC := 0;
   PORTC := 0;
-
 end;
 (******************************************************************************)
 procedure InitSID;
 begin
   SetVolume($0f);
+end;
+(******************************************************************************)
+procedure ExecuteCommand(var _cmd: string[8]);
+begin
+
 end;
 (******************************************************************************)
 procedure TestSID;
@@ -120,21 +141,33 @@ begin
   end;
 end;
 (******************************************************************************)
+var
+  cmd: string[8];
+  i: byte;
+  ch: byte;
+
 begin
   Init;
   
   Delay_ms(50);
 
   InitSID;
-  
+  T0CON.TMR0ON := 1; // Enable Timer0
+
 //  TestSID;
-  
+
   while true do
   begin
-//    Delay_ms(500);
-//    LATA.6 := 1;
-//    Delay_ms(500);
-//    LATA.6 := 0;
+    i := 0;
+    repeat
+      while PORTB.7 = 0 do
+        nop;
+      ch := PORTB or %01111111;
+      cmd[i] := ch;
+      inc(i);
+      while PORTB.7 = 1 do
+        nop;
+    until ch = 0;
+    ExecuteCommand(cmd);
   end;
-
 end.
