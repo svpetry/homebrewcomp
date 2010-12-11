@@ -16,21 +16,26 @@ program Z80_Sound;
 uses
   SoundUtils;
 
+type
+  TNoteRec = record
+    code: byte; // midi note code
+    duration: byte; // 0 = 1/1, 1 = 1/2, 2 = 1/4, 3 = 1/8, 4 = 1/16
+  end;
+
 const
   TMR0H_Value = $EC; // values for 25 msec
   TMR0L_Value = $ED;
 
 var
   Sustain: array[3] of byte; // duration of sustain in 20 msec.
-  NotesV1: array[icNoteCount] of word;
-  NotesV2: array[icNoteCount] of word;
-  NotesV3: array[icNoteCount] of word;
+  Notes: array[3] of array[icNoteCount] of TNoteRec;
   NoteCounts: array[3] of word;
 
   curr_stn: array[3] of byte;
   curr_period: array[3] of byte;
   curr_note: array[3] of word;
   play: byte;
+  curr_input_voice: byte;
   
 (******************************************************************************)
 procedure Interrupt;
@@ -45,7 +50,9 @@ begin
   
   
     LATA.6 := 1 - LATA.6;
-  end;
+  end // if play = 1 then
+  else
+    LATA.6 := 0;
 
   INTCON.TMR0IF := 0;
 end;
@@ -82,8 +89,119 @@ begin
   SetVolume($0f);
 end;
 (******************************************************************************)
-procedure ExecuteCommand(var _cmd: string[8]);
+function Hex2Byte(ch1, ch2: char): byte;
 begin
+  if (ch1 >= 'a') and (ch1 <= 'f') then
+    Result := (10 + ch1 - 'a') * 16
+  else if (ch1 >= '0') and (ch1 <= '9') then
+    Result := (ch1 - '0') * 16
+  else
+    Result := 0;
+
+  if (ch2 >= 'a') and (ch2 <= 'f') then
+    Result := Result + 10 + ch2 - 'a'
+  else if (ch2 >= '0') and (ch2 <= '9') then
+    Result := Result + ch2 - '0';
+end;
+(******************************************************************************)
+procedure ExecuteCommand(var _cmd: string[8]);
+var
+  c1, c2: char;
+  value, i: byte;
+  ncount: word;
+  note: TNoteRec;
+  
+begin
+  c1 := _cmd[0];
+  c2 := _cmd[1];
+  
+  if (c1 = 'V') and (c2 = 'O') then
+  begin
+    // VOx - set global volume (x = value)
+    SetVolume(Hex2Byte('0', _cmd[2]));
+  end
+  else if (c1 = 'A') and (c2 = 'D') then
+  begin
+    // ADvxx - set attack time/decay time (v = voice, xx = value)
+    SetAtkDcy(_cmd[2] - '0', Hex2Byte(_cmd[3], _cmd[4]));
+  end
+  else if (c1 = 'S') and (c2 = 'R') then
+  begin
+    // SRvxx - set sustain level/release time (v = voice, xx = value)
+    SetStnRls(_cmd[2] - '0', Hex2Byte(_cmd[3], _cmd[4]));
+  end
+  else if (c1 = 'S') and (c2 = 'T') then
+  begin
+    // STvxx - set sustain duration
+    Sustain[_cmd[2] - '0'] := Hex2Byte(_cmd[3], _cmd[4]);
+  end
+  else if (c1 = 'W') and (c2 = 'F') then
+  begin
+    // WFvx - set waveform (v = voice, x = waveform: 0 = off, 1 = triangle, 2 = sawtooth, 3 = rectangle, 4 = noise)
+    case _cmd[3] of
+      '0': value := 0;
+      '1': value := icWaveTriangle;
+      '2': value := icWaveSawtooth;
+      '3': value := icWaveRectangle;
+      '4': value := icWaveNoise;
+    end;
+    SetWaveForm(_cmd[2] - '0', value);
+  end
+  else if (c1 = 'P') and (c2 = 'W') then
+  begin
+    // PWvxxx - set rectangle pulse width (v = voice, xxx = value)
+    SetPulseWidth(_cmd[2] - '0', Hex2Byte(_cmd[3], _cmd[4]));
+  end
+  else if (c1 = 'S') and (c2 = 'N') then
+  begin
+    // SNv - start input of notes (v = voice)
+    curr_input_voice := _cmd[2] - '0';
+    NoteCounts[curr_input_voice] := 0;
+  end
+  else if (c1 = 'E') and (c2 = 'N') then
+  begin
+    // EN - end input of notes
+
+  end
+  else if (c1 = 'N') and (c2 = 'O') then
+  begin
+    // NOnnnd - input note nnn, duration d (0 = 1/1, 1 = 1/2, 2 = 1/4, 3 = 1/8, 4 = 1/16)
+    ncount := NoteCounts[curr_input_voice];
+    note.code := StrToMidiNote(_cmd[2], _cmd[3], _cmd[4]);
+    note.duration := cmd[5] - '0';
+    Notes[curr_input_voice][ncount] = note;
+    NoteCounts[curr_input_voice] := ncount + 1;
+  end
+  else if (c1 = 'P') and (c2 = 'L') then
+  begin
+    // PL - start playing
+    for i := 0 to 2 do
+    begin
+      curr_note[i] := 0;
+      curr_stn[i] := 0;
+      curr_period[i] := 0;
+    end;
+    play := 1;
+  end
+  else if (c1 = 'S') and (c2 = 'T') then
+  begin
+    // ST - stop playing
+    play := 0;
+    StopAll;
+  end
+  else if (c1 = 'L') and (c2 = 'D') then
+  begin
+    // LDx - LED, x: 1 = on, 0 = off
+    if _cmd[2] = '0' then
+      LATA.6 := 0
+    else
+      LATA.6 := 1;
+  end
+  else if (c1 = 'P') and (c2 = 'N') then
+  begin
+    // PNvnnnd - play note nnn, voice v, duration d
+
+  end;
 
 end;
 (******************************************************************************)

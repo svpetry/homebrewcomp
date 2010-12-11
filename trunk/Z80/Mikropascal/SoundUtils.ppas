@@ -7,9 +7,48 @@ const
   icWaveSawtooth = 32;
   icWaveTriangle = 16;
 
+  frq: array[12] of word =
+    (35115, 372023, 39415, 41759, 44242, 46873,
+    49660, 52613, 55741, 59056, 62567, 752);
+
 var
   WaveForms: array[3] of byte;
 
+(******************************************************************************)
+function StrToMidiNote(c1, c2, c3: char): byte;
+begin
+  Result := 12 * (c2 - '0' + 1);
+  case c1 of
+    'C': Result := Result + 0;
+    'D': Result := Result + 2;
+    'E': Result := Result + 4;
+    'F': Result := Result + 5;
+    'G': Result := Result + 7;
+    'A': Result := Result + 9;
+    'B': Result := Result + 11;
+  end;
+  if c3 = '#' then
+    inc(Result);
+end;
+(******************************************************************************)
+function MidiNoteToFreq(_value: byte): word;
+var
+  note, shift_right: byte;
+
+begin
+  note := _value mod 12;
+  shift_right := 7 - (_value div 12);
+  
+  Result := frq[note];
+  if shift_right > 0 then
+  begin
+    Result := Result shr 1;
+    if note = 11 then
+      Result := Result + 32768;
+  end;
+  if shift_right > 1 then
+    Result := Result shr (shift_right - 1);
+end;
 (******************************************************************************)
 procedure SidWrite(_addr: byte; _value: byte);
 begin
@@ -47,6 +86,13 @@ end;
 procedure StopNote(_voice: byte);
 begin
   SidWrite(7 * _voice + 4, WaveForms[_voice]);
+end;
+(******************************************************************************)
+procedure StopAll;
+begin
+  SidWrite(4, 0);
+  SidWrite(11, 0);
+  SidWrite(18, 0);
 end;
 (******************************************************************************)
 procedure SetAtkDcy(_voice: byte; _value: byte);
