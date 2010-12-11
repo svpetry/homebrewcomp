@@ -18,7 +18,7 @@ Value8=_ENHCPU_OFF_4L = $009F
 Value9=_DEBUG_OFF_4L = $00FF
 [BuildSimDebug]
 Build=0
-SimDebug=0
+SimDebug=1
 [ProjectFiles]
 Count=0
 [OtherFiles]
