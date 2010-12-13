@@ -8,7 +8,7 @@ const
   icWaveTriangle = 16;
 
   frq: array[12] of word =
-    (35115, 372023, 39415, 41759, 44242, 46873,
+    (35115, 37203, 39415, 41759, 44242, 46873,
     49660, 52613, 55741, 59056, 62567, 752);
 
 var
@@ -43,11 +43,27 @@ begin
   if shift_right > 0 then
   begin
     Result := Result shr 1;
+    dec(shift_right);
     if note = 11 then
       Result := Result + 32768;
   end;
-  if shift_right > 1 then
-    Result := Result shr (shift_right - 1);
+  if shift_right > 0 then
+    Result := Result shr shift_right;
+end;
+(******************************************************************************)
+procedure SidWrite_i(_addr: byte; _value: byte);
+begin
+  LATA := (_addr and 31) + 32 + (LATA and %01000000);
+  LATC := _value;
+  LATA.5 := 0;
+  nop;
+  nop;
+  nop;
+  nop;
+  nop;
+  nop;
+  nop;
+  LATA.5 := 1;
 end;
 (******************************************************************************)
 procedure SidWrite(_addr: byte; _value: byte);
@@ -83,9 +99,21 @@ begin
   SidWrite(7 * _voice + 4, WaveForms[_voice] + 1);
 end;
 (******************************************************************************)
+procedure PlayNote_i(_voice: byte; _frequency: word);
+begin
+  SidWrite_i(7 * _voice, Lo(_frequency));
+  SidWrite_i(7 * _voice + 1, Hi(_frequency));
+  SidWrite_i(7 * _voice + 4, WaveForms[_voice] + 1);
+end;
+(******************************************************************************)
 procedure StopNote(_voice: byte);
 begin
   SidWrite(7 * _voice + 4, WaveForms[_voice]);
+end;
+(******************************************************************************)
+procedure StopNote_i(_voice: byte);
+begin
+  SidWrite_i(7 * _voice + 4, WaveForms[_voice]);
 end;
 (******************************************************************************)
 procedure StopAll;

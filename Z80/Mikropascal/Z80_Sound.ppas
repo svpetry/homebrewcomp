@@ -19,15 +19,17 @@ uses
 type
   TNoteRec = record
     code: byte; // midi note code
-    duration: byte; // 0 = 1/1, 1 = 1/2, 2 = 1/4, 3 = 1/8, 4 = 1/16
+    duration: byte;
   end;
 
 const
-  TMR0H_Value = $EC; // values for 25 msec
-  TMR0L_Value = $ED;
+//  TMR0H_Value = $EC; // values for 25 msec
+//  TMR0L_Value = $ED; // values for 25 msec
+  TMR0H_Value = $E1; // values for 40 msec
+  TMR0L_Value = $7C; // values for 40 msec
 
 var
-  Sustain: array[3] of byte; // duration of sustain in 20 msec.
+  Sustain: array[3] of byte; // duration of sustain in 25 msec.
   Notes: array[3] of array[icNoteCount] of TNoteRec;
   NoteCounts: array[3] of word;
 
@@ -39,21 +41,59 @@ var
   
 (******************************************************************************)
 procedure Interrupt;
+var
+  v: byte;
+  stn, per: byte;
+  n: ^TNoteRec;
+  note_no: word;
 begin
-  // triggered every 25 msec
+  // triggered every xx msec
   TMR0H := TMR0H_Value;
   TMR0L := TMR0L_Value;
 
-  if play = 1 then
+  for v := 0 to 2 do
   begin
-  
-  
-  
-    LATA.6 := 1 - LATA.6;
-  end // if play = 1 then
+    // stop note if sustain period is over
+    stn := curr_stn[v];
+    if stn > 0 then
+    begin
+      dec(stn);
+      curr_stn[v] := stn;
+      if stn = 0 then
+        StopNote_i(v);
+    end;
+    
+    per := curr_period[v];
+    if per > 0 then
+      dec(per);
+    if (per = 0) and (play = 1) and (NoteCounts[v] > 0) then
+    begin
+      // next note
+      note_no := curr_note[v];
+      inc(note_no);
+      if note_no >= NoteCounts[v] then
+        note_no := 0;
+      curr_note[v] := note_no;
+
+      n := @(Notes[v][note_no]);
+
+      per := n^.duration;
+      stn := Sustain[v];
+      if stn > per then
+        stn := per;
+      curr_stn[v] := stn;
+      
+      PlayNote_i(v, MidiNoteToFreq(n^.code));
+    end; // if (per = 0) and (play = 1) then
+    curr_period[v] := per;
+    
+  end; // for v := 0 to 2 do
+
+{  if play = 1 then
+    LATA.6 := 1 - LATA.6
   else
     LATA.6 := 0;
-
+}
   INTCON.TMR0IF := 0;
 end;
 (******************************************************************************)
@@ -85,8 +125,19 @@ begin
 end;
 (******************************************************************************)
 procedure InitSID;
+var
+  v: byte;
 begin
-  SetVolume($0f);
+  SetVolume($00);
+  
+  play := 0;
+  for v := 0 to 2 do
+  begin
+    NoteCounts[v] := 0;
+    curr_stn[v] := 0;
+    curr_period[v] := 0;
+    curr_note[v] := 0;
+  end;
 end;
 (******************************************************************************)
 function Hex2Byte(ch1, ch2: char): byte;
@@ -109,8 +160,7 @@ var
   c1, c2: char;
   value, i: byte;
   ncount: word;
-  note: TNoteRec;
-  
+  note: ^TNoteRec;
 begin
   c1 := _cmd[0];
   c2 := _cmd[1];
@@ -165,11 +215,11 @@ begin
   end
   else if (c1 = 'N') and (c2 = 'O') then
   begin
-    // NOnnnd - input note nnn, duration d (0 = 1/1, 1 = 1/2, 2 = 1/4, 3 = 1/8, 4 = 1/16)
+    // NOnnndd - input note nnn, duration dd (1 - 20)
     ncount := NoteCounts[curr_input_voice];
-    note.code := StrToMidiNote(_cmd[2], _cmd[3], _cmd[4]);
-    note.duration := cmd[5] - '0';
-    Notes[curr_input_voice][ncount] = note;
+    note := @(Notes[curr_input_voice][ncount]);
+    note^.code := StrToMidiNote(_cmd[2], _cmd[3], _cmd[4]);
+    note^.duration := Hex2Byte(_cmd[5], _cmd[6]);
     NoteCounts[curr_input_voice] := ncount + 1;
   end
   else if (c1 = 'P') and (c2 = 'L') then
@@ -177,7 +227,7 @@ begin
     // PL - start playing
     for i := 0 to 2 do
     begin
-      curr_note[i] := 0;
+      curr_note[i] := NoteCounts[i] - 1;
       curr_stn[i] := 0;
       curr_period[i] := 0;
     end;
@@ -203,17 +253,156 @@ begin
 
   end;
 
-end;
+end; // ExecuteCommand
 (******************************************************************************)
 procedure TestSID;
 begin
-  SetWaveForm(0, icWaveTriangle);
+  ExecuteCommand('VO8');
 
-  SetPulseWidth(0, 1024);
+  ExecuteCommand('WF02');
+  ExecuteCommand('AD015');
+  ExecuteCommand('SR000');
+  ExecuteCommand('ST006');
+  ExecuteCommand('PW0800');
 
-  SetAtkDcy(0, $15);
-  SetStnRls(0, $44);
+  ExecuteCommand('WF11');
+  ExecuteCommand('AD114');
+  ExecuteCommand('SR134');
+  ExecuteCommand('ST107');
 
+  ExecuteCommand('WF21');
+  ExecuteCommand('AD215');
+  ExecuteCommand('SR232');
+  ExecuteCommand('ST209');
+
+
+  ExecuteCommand('SN0');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOB4 08');
+  ExecuteCommand('NOC5 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOD5 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOC5 0c');
+  ExecuteCommand('NOB4 0c');
+  ExecuteCommand('NOC5 08');
+  ExecuteCommand('NOC5 08');
+  ExecuteCommand('NOD5 08');
+  ExecuteCommand('NOE5 10');
+  ExecuteCommand('NOC5 08');
+  ExecuteCommand('NOB4 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOA4 0c');
+  ExecuteCommand('NOA4 0c');
+
+  ExecuteCommand('NOE5 08');
+  ExecuteCommand('NOE5 08');
+  ExecuteCommand('NOE5 08');
+  ExecuteCommand('NOE5 10');
+  ExecuteCommand('NOC5 08');
+  ExecuteCommand('NOF5 10');
+  ExecuteCommand('NOC5 08');
+  ExecuteCommand('NOE5 0c');
+  ExecuteCommand('NOC5 0c');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOB4 08');
+  ExecuteCommand('NOC5 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOB4 10');
+  ExecuteCommand('NOB4 08');
+  ExecuteCommand('NOA4 0c');
+  ExecuteCommand('NOA4 0c');
+  ExecuteCommand('EN');
+
+  ExecuteCommand('SN1');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOF4 08');
+  ExecuteCommand('NOG4 08');
+  ExecuteCommand('NOA4 10');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOA4 10');
+  ExecuteCommand('NOF4 08');
+  ExecuteCommand('NOA4 0c');
+  ExecuteCommand('NOG4 0c');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOB4 08');
+  ExecuteCommand('NOC5 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOG4 10');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOE4 0c');
+  ExecuteCommand('NOE4 0c');
+
+  ExecuteCommand('NOC5 08');
+  ExecuteCommand('NOC5 08');
+  ExecuteCommand('NOC5 08');
+  ExecuteCommand('NOC5 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOF5 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOC5 0c');
+  ExecuteCommand('NOA4 0c');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOA4 10');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOE4 10');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOE4 0c');
+  ExecuteCommand('NOE4 0c');
+  ExecuteCommand('EN');
+
+  ExecuteCommand('SN2');
+  ExecuteCommand('NOC3 08');
+  ExecuteCommand('NOD3 08');
+  ExecuteCommand('NOE3 08');
+  ExecuteCommand('NOE3 10');
+  ExecuteCommand('NOC3 08');
+  ExecuteCommand('NOF3 10');
+  ExecuteCommand('NOD3 08');
+  ExecuteCommand('NOE3 0c');
+  ExecuteCommand('NOE3 0c');
+  ExecuteCommand('NOE3 08');
+  ExecuteCommand('NOF3 08');
+  ExecuteCommand('NOG3 08');
+  ExecuteCommand('NOA3 10');
+  ExecuteCommand('NOF3 08');
+  ExecuteCommand('NOE3 10');
+  ExecuteCommand('NOD3 08');
+  ExecuteCommand('NOC3 0c');
+  ExecuteCommand('NOC3 0c');
+
+  ExecuteCommand('NOA3 08');
+  ExecuteCommand('NOA3 08');
+  ExecuteCommand('NOA3 08');
+  ExecuteCommand('NOA3 10');
+  ExecuteCommand('NOA3 08');
+  ExecuteCommand('NOA3 10');
+  ExecuteCommand('NOA3 08');
+  ExecuteCommand('NOA3 0c');
+  ExecuteCommand('NOE3 0c');
+  ExecuteCommand('NOC3 08');
+  ExecuteCommand('NOC3 08');
+  ExecuteCommand('NOD3 08');
+  ExecuteCommand('NOE3 10');
+  ExecuteCommand('NOC3 08');
+  ExecuteCommand('NOD3 10');
+  ExecuteCommand('NOD3 08');
+  ExecuteCommand('NOC3 0c');
+  ExecuteCommand('NOC3 0c');
+  ExecuteCommand('EN');
+
+
+  ExecuteCommand('PL');
+
+
+  while true do
+    nop;
+    
   while true do
   begin
     PlayNote(0, 4387);
@@ -272,7 +461,7 @@ begin
   InitSID;
   T0CON.TMR0ON := 1; // Enable Timer0
 
-//  TestSID;
+  TestSID;
 
   while true do
   begin
