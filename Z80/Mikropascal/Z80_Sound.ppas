@@ -259,21 +259,22 @@ procedure TestSID;
 begin
   ExecuteCommand('VO8');
 
-  ExecuteCommand('WF02');
+  ExecuteCommand('WF03');
+  ExecuteCommand('PW800');
   ExecuteCommand('AD015');
-  ExecuteCommand('SR000');
-  ExecuteCommand('ST006');
+  ExecuteCommand('SR080');
+  ExecuteCommand('ST004');
   ExecuteCommand('PW0800');
 
   ExecuteCommand('WF11');
-  ExecuteCommand('AD114');
+  ExecuteCommand('AD124');
   ExecuteCommand('SR134');
-  ExecuteCommand('ST107');
+  ExecuteCommand('ST108');
 
   ExecuteCommand('WF21');
-  ExecuteCommand('AD215');
-  ExecuteCommand('SR232');
-  ExecuteCommand('ST209');
+  ExecuteCommand('AD225');
+  ExecuteCommand('SR233');
+  ExecuteCommand('ST208');
 
 
   ExecuteCommand('SN0');
@@ -357,43 +358,43 @@ begin
   ExecuteCommand('EN');
 
   ExecuteCommand('SN2');
-  ExecuteCommand('NOC3 08');
-  ExecuteCommand('NOD3 08');
-  ExecuteCommand('NOE3 08');
-  ExecuteCommand('NOE3 10');
-  ExecuteCommand('NOC3 08');
-  ExecuteCommand('NOF3 10');
-  ExecuteCommand('NOD3 08');
-  ExecuteCommand('NOE3 0c');
-  ExecuteCommand('NOE3 0c');
-  ExecuteCommand('NOE3 08');
-  ExecuteCommand('NOF3 08');
-  ExecuteCommand('NOG3 08');
-  ExecuteCommand('NOA3 10');
-  ExecuteCommand('NOF3 08');
-  ExecuteCommand('NOE3 10');
-  ExecuteCommand('NOD3 08');
-  ExecuteCommand('NOC3 0c');
-  ExecuteCommand('NOC3 0c');
+  ExecuteCommand('NOC4 08');
+  ExecuteCommand('NOD4 08');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOE4 10');
+  ExecuteCommand('NOC4 08');
+  ExecuteCommand('NOF4 10');
+  ExecuteCommand('NOD4 08');
+  ExecuteCommand('NOE4 0c');
+  ExecuteCommand('NOE4 0c');
+  ExecuteCommand('NOE4 08');
+  ExecuteCommand('NOF4 08');
+  ExecuteCommand('NOG4 08');
+  ExecuteCommand('NOA4 10');
+  ExecuteCommand('NOF4 08');
+  ExecuteCommand('NOE4 10');
+  ExecuteCommand('NOD4 08');
+  ExecuteCommand('NOC4 0c');
+  ExecuteCommand('NOC4 0c');
 
-  ExecuteCommand('NOA3 08');
-  ExecuteCommand('NOA3 08');
-  ExecuteCommand('NOA3 08');
-  ExecuteCommand('NOA3 10');
-  ExecuteCommand('NOA3 08');
-  ExecuteCommand('NOA3 10');
-  ExecuteCommand('NOA3 08');
-  ExecuteCommand('NOA3 0c');
-  ExecuteCommand('NOE3 0c');
-  ExecuteCommand('NOC3 08');
-  ExecuteCommand('NOC3 08');
-  ExecuteCommand('NOD3 08');
-  ExecuteCommand('NOE3 10');
-  ExecuteCommand('NOC3 08');
-  ExecuteCommand('NOD3 10');
-  ExecuteCommand('NOD3 08');
-  ExecuteCommand('NOC3 0c');
-  ExecuteCommand('NOC3 0c');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOA4 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOA4 10');
+  ExecuteCommand('NOA4 08');
+  ExecuteCommand('NOA4 0c');
+  ExecuteCommand('NOE4 0c');
+  ExecuteCommand('NOC4 08');
+  ExecuteCommand('NOC4 08');
+  ExecuteCommand('NOD4 08');
+  ExecuteCommand('NOE4 10');
+  ExecuteCommand('NOC4 08');
+  ExecuteCommand('NOD4 10');
+  ExecuteCommand('NOD4 08');
+  ExecuteCommand('NOC4 0c');
+  ExecuteCommand('NOC4 0c');
   ExecuteCommand('EN');
 
 
