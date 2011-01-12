@@ -72,6 +72,7 @@ void tetris(void) {
 	io_write(6, 15);
 
 	draw_playfield();
+	start_song();
 	start = 1;
 
 	while (1) {
@@ -167,8 +168,8 @@ void tetris(void) {
 			vputs(95, 65, "         ");
 			start = 1;
 		}
-
 	}
+	send_sound_cmd("ST");
 }
 /******************************************************************************/
 void move_left(void) {

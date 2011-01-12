@@ -8,6 +8,7 @@
 #include "bios_cmd.h"
 #include "malloc.h"
 #include "io.h"
+#include "sound.h"
 
 static char line_buf[MAX_LINE_LENGTH + 1];
 static char file_name[13];
@@ -24,7 +25,7 @@ const char scOutOfMemory[] = "Out of memory. Press any key to continue.";
 void init_editor() {
 	memset(0x1000, ' ' + 128, 80);
 	memset(0x1c00, ' ' + 128, 80);
-	write_inverse(0, 0, " F2: SAVE   F3: LOAD   F8: DELETE   F10: QUIT");
+	write_inverse(0, 0, " F2: SAVE   F3: LOAD   F5: PLAY   F6: STOP   F8: DELETE   F10: QUIT");
 
 	if (prog_paramcount) {
 		strcpy(file_name, prog_params[0]);
@@ -122,8 +123,11 @@ void start_editor() {
 				case 62: // F4
 					break;
 				case 63: // F5
+					stop_sound();
+					send_to_soundcard();
 					break;
 				case 64: // F6
+					stop_sound();
 					break;
 				case 65: // F7
 					break;
@@ -145,7 +149,7 @@ void start_editor() {
 				case 67: // F9
 					break;
 				case 68: // F10
-                	quit_app();
+					quit_app();
 					break;
 					
 				case 72: // up
@@ -585,5 +589,22 @@ byte prompt_file_name() {
 	strcpy(file_name, s);
     return 1;
 } // prompt_file_name
+/******************************************************************************/
+void send_to_soundcard() {
+	struct line_header *line;
+
+	line = line_base->next;
+
+	while (line) {
+		if (line->line[0] && line->line[0] != '#')
+			send_sound_cmd(line->line);
+		line = line->next;
+    }
+
+} // send_to_soundcard
+/******************************************************************************/
+void stop_sound() {
+	send_sound_cmd("ST");
+}
 /******************************************************************************/
 
