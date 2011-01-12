@@ -80,24 +80,36 @@ void cmdline(void) {
 			splitparams();
 
 			if (paramcount > 0) {
+
+				// BEEP
 				if (!strcmp(params[0], "beep")) {
 					beep();
+
+				// CLS
 				} else if (!strcmp(params[0], "cls")) {
 					v_cls();
+
+				// COPY
 				} else if (!strcmp(params[0], "copy")) {
 					if (paramcount != 3) {
 						puts(scWrongParameterCount);
 					} else {
 
 					}
+
+				// DEL
 				} else if (!strcmp(params[0], "del")) {
 					if (paramcount != 2) {
 						puts(scWrongParameterCount);
 					} else {
-                        delete_file(params[1]);
+						delete_file(params[1]);
 					}
+
+				// DIR
 				} else if (!strcmp(params[0], "dir")) {
 					list_dir();
+
+				// GRAPHCIS
 				} else if (!strcmp(params[0], "graphics")) {
 					if (paramcount != 2) {
 						puts(scWrongParameterCount);
@@ -108,6 +120,8 @@ void cmdline(void) {
 							io_write(7, 1);
 						delay_ms(200);
 					}
+
+				// HELP
 				} else if (!strcmp(params[0], "help")) {
 					puts("\nBEEP");
 					puts("CLS");
@@ -117,9 +131,12 @@ void cmdline(void) {
 					puts("GRAPHICS (0|1)");
 					puts("HELP");
 					puts("INITMMC");
+					puts("IOWRITE [port] [value]");
 					puts("SETCOLOR [bg] [fg]");
 					puts("UPTIME");
 					puts("TYPE [file]");
+
+				// INITMMC
 				} else if (!strcmp(params[0], "initmmc")) {
 					io_write(160, 0);
 					while (busy);
@@ -127,6 +144,15 @@ void cmdline(void) {
 						puts("\nok.");
 					else
 						puts("\nerror.");
+
+				// IOWRITE
+				} else if (!strcmp(params[0], "iowrite")) {
+					if (paramcount == 3)
+						io_write(atoi(params[1]), atoi(params[2]));
+					else
+						puts(scWrongParameterCount);
+
+				// SETCOLOR
 				} else if (!strcmp(params[0], "setcolor")) {
 					if (paramcount == 3) {
 						io_write(5, atoi(params[1]));
@@ -136,15 +162,20 @@ void cmdline(void) {
 						io_write(6, 53);
 					} else
 						puts(scWrongParameterCount);
+
+				// UPTIME
 				} else if (!strcmp(params[0], "uptime")) {
-                	show_time();
+					show_time();
+
+				// TYPE
 				} else if (!strcmp(params[0], "type")) {
 					if (paramcount == 2) {
-                    	dump_file(params[1]);
+						dump_file(params[1]);
 					} else
 						puts(scWrongParameterCount);
+
+				// execute program
 				} else {
-					// execute program
 					exec_program();
 				}
 			} else {

@@ -1,10 +1,3 @@
-/*
- * video.h
- *
- *  Created on: 08.06.2010
- *      Author: Sven
- */
-
 #include "defs.h"
 
 #ifndef VIDEO_H_
@@ -35,3 +28,4 @@ void write_inverse(byte row, byte col, char *s);
 void show_message(char *msg);
 
 #endif /* VIDEO_H_ */
+

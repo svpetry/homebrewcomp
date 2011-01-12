@@ -189,7 +189,9 @@
         <FILE FILENAME="malloc.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="malloc" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="malloc.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="editor.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="editor" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="editor.h" CONTAINERID="" LOCALCOMMAND=""/>
+        <FILE FILENAME="editor.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="sound.c" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="sound" FORMNAME="" DESIGNCLASS=""/>
+        <FILE FILENAME="sound.h" CONTAINERID="" LOCALCOMMAND=""/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>
@@ -239,6 +241,11 @@
           <Parameters Name="LoadAllSymbols">True</Parameters>
           <Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
         </Parameters>
+        <Language>
+          <Language Name="ActiveLang"></Language>
+          <Language Name="ProjectLang">$00000000</Language>
+          <Language Name="RootDir"></Language>
+        </Language>
         <Linker>
           <Linker Name="LibPrefix"></Linker>
           <Linker Name="LibSuffix"></Linker>

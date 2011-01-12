@@ -25,6 +25,8 @@ void load_file();
 void save_file();
 void prompt_load_file();
 byte prompt_file_name();
+void send_to_soundcard();
+void stop_sound();
 
 #endif /* EDITOR_H_ */
 
