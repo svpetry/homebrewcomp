@@ -30,7 +30,8 @@ void beep(void);
 byte io_read(byte addr);
 void io_write(byte addr, byte val);
 
-void list_dir();
+void list_dir(char *wildcard);
+byte matches(char *file_name, char *wildcard);
 void dump_file(char *file_name);
 void delete_file(char *file_name);
 

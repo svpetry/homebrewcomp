@@ -74,9 +74,17 @@ void io_write(byte addr, byte val) {
 	__endasm;
 }
 /******************************************************************************/
-void list_dir() {
+void list_dir(char *wildcard) {
 	char s[12], c;
 	byte i;
+	char *p;
+
+	p = wildcard;
+	while (*p) {
+		*p = (*p >= 'a' && *p <= 'z') ? (*p - 'a' + 'A') : *p;
+		p++;
+	}
+
 
 //	puts("\n directory listing");
 	puts_nlb("\n volume name: ");
@@ -95,7 +103,7 @@ void list_dir() {
 		// param1w + param2: file size (dword)
 		// outparam: attributes (only 1st byte), 'RHSVDA' (R = bit0)
 
-		if ((out_paramb & 0x08) == 0) {
+		if (matches(sparam, wildcard) && (out_paramb & 0x08) == 0) {
 			putchar(' ');
 			puts_nlb(sparam);
 
@@ -130,6 +138,23 @@ void list_dir() {
 	}
 	putchar('\n');
 }
+/******************************************************************************/
+byte matches(char *file_name, char *wildcard) {
+	char *p1, *p2;
+
+	if (wildcard[0] == '*' && wildcard[1] == '.') {
+		p1 = file_name + strlen(file_name) - 1;
+		p2 = wildcard + strlen(wildcard) - 1;
+		while (*p1 != '.' || *p2 != '.') {
+			if (*p1 != *p2)
+				return 0;
+			p1--;
+			p2--;
+		}
+	}
+
+	return 1;	
+} // char matches(char *file_name, char *wildcard)
 /******************************************************************************/
 void dump_file(char *file_name) {
 	char c;

@@ -1,7 +1,7 @@
 [DeviceName]
 Value=P18F2525
 [DeviceClock]
-Value=50
+Value=60
 [MainUnit]
 Value=Z80_Sound.ppas
 [DeviceFlags]
@@ -23,8 +23,8 @@ SimDebug=1
 Count=0
 [OtherFiles]
 Count=2
-Value0=X:\Z80\Mikropascal\Z80_Sound.ppas
-Value1=X:\Z80\Mikropascal\SoundUtils.ppas
+Value0=X:\Z80\Mikropascal\SoundUtils.ppas
+Value1=X:\Z80\Mikropascal\Z80_Sound.ppas
 [TabIndex]
 Value=0
 [SearchPath]
