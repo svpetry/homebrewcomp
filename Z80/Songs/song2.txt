@@ -1,0 +1,47 @@
+# set volume
+VO8
+
+# setup voice 1
+WF03
+PW0800
+AD000
+SR0f0
+SD0ff
+
+# setup voice 2
+WF12
+AD100
+SR1f0
+SD1ff
+
+# setup voice 3
+WF21
+AD200
+SR240
+SD2ff
+
+
+# notes
+SN0
+NOC4 10
+NOD4 10
+NOE4 10
+EN
+
+SN1
+NOC0 08
+NOC1 08
+NOD0 08
+NOD1 08
+NOE0 08
+NOE1 08
+EN
+
+SN2
+NOC6 10
+NOD6 10
+NOE6 10
+EN
+
+# start playing
+PL01

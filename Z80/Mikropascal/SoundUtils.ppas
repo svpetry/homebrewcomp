@@ -38,7 +38,7 @@ var
 begin
   note := _value mod 12;
   shift_right := 7 - (_value div 12);
-  
+
   Result := frq[note];
   if shift_right > 0 then
   begin
@@ -63,6 +63,9 @@ begin
   nop;
   nop;
   nop;
+  nop;
+  nop;
+  nop;
   LATA.5 := 1;
 end;
 (******************************************************************************)
@@ -71,6 +74,9 @@ begin
   LATA := (_addr and 31) + 32 + (LATA and %01000000);
   LATC := _value;
   LATA.5 := 0;
+  nop;
+  nop;
+  nop;
   nop;
   nop;
   nop;

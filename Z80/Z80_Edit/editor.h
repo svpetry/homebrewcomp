@@ -14,6 +14,7 @@ struct line_header {
 };
 
 void init_editor();
+void init_empty_file();
 void init_line_base();
 void start_lineedit();
 void finish_lineedit();

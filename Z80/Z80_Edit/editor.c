@@ -32,15 +32,20 @@ void init_editor() {
 		load_file();
 	} else {
 		file_name[0] = 0;
-		init_line_base();
-		start_line = curr_line = malloc(LINE_HEADER_SIZE + 1);
-		curr_line->next = NULL;
-		curr_line->prev = line_base;
-		line_base->next = curr_line;
-		curr_line->size = 0;
-		curr_line->line[0] = 0;
+		init_empty_file();
 	}
 	show_status();
+}
+/******************************************************************************/
+void init_empty_file() {
+	init_line_base();
+	start_line = curr_line = malloc(LINE_HEADER_SIZE + 1);
+	curr_line->next = NULL;
+	curr_line->prev = line_base;
+	line_base->next = curr_line;
+	curr_line->size = 0;
+	curr_line->line[0] = 0;
+
 }
 /******************************************************************************/
 void init_line_base() {
@@ -123,6 +128,7 @@ void start_editor() {
 				case 62: // F4
 					break;
 				case 63: // F5
+					finish_lineedit();
 					stop_sound();
 					send_to_soundcard();
 					break;
@@ -462,6 +468,7 @@ void load_file() {
 
 		//io_write(5, 8);
 	} else {
+		init_empty_file();
 		show_message("File not found! Press any key to continue.");
 		getchar();
 	}

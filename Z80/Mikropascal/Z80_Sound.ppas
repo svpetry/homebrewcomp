@@ -23,10 +23,13 @@ type
   end;
 
 const
+  TMR0H_Value = $E0;
+  TMR0L_Value = $00;
+
 //  TMR0H_Value = $EC; // values for 25 msec
 //  TMR0L_Value = $ED; // values for 25 msec
-  TMR0H_Value = $E1; // values for 40 msec
-  TMR0L_Value = $7C; // values for 40 msec
+//  TMR0H_Value = $E1; // values for 40 msec
+//  TMR0L_Value = $7C; // values for 40 msec
 
 var
   Sustain: array[3] of byte; // duration of sustain in 25 msec.
@@ -66,34 +69,43 @@ begin
     per := curr_period[v];
     if per > 0 then
       dec(per);
-    if (per = 0) and (play = 1) and (NoteCounts[v] > 0) then
+    if (per = 0) and (play > 0) and (NoteCounts[v] > 0) then
     begin
       // next note
       note_no := curr_note[v];
       inc(note_no);
       if note_no >= NoteCounts[v] then
+      begin
         note_no := 0;
-      curr_note[v] := note_no;
+        if (v = 0) and (play <> 255) and (play > 0) then
+          dec(play);
+      end; // if note_no >= NoteCounts[v] then
 
-      n := @(Notes[v][note_no]);
+      if play > 0 then
+      begin
+        curr_note[v] := note_no;
 
-      per := n^.duration;
-      stn := Sustain[v];
-      if stn > per then
-        stn := per;
-      curr_stn[v] := stn;
-      
-      PlayNote_i(v, MidiNoteToFreq(n^.code));
-    end; // if (per = 0) and (play = 1) then
+        n := @(Notes[v][note_no]);
+
+        per := n^.duration;
+        stn := Sustain[v];
+        if stn > per then
+          stn := per;
+        curr_stn[v] := stn;
+
+        if n^.code < 128 then
+          PlayNote_i(v, MidiNoteToFreq(n^.code));
+      end; // if play > 0 then
+    end; // if (per = 0) and (play > 0) then
     curr_period[v] := per;
     
   end; // for v := 0 to 2 do
 
-{  if play = 1 then
+  if play > 0 then
     LATA.6 := 1 - LATA.6
   else
     LATA.6 := 0;
-}
+
   INTCON.TMR0IF := 0;
 end;
 (******************************************************************************)
@@ -180,9 +192,9 @@ begin
     // SRvxx - set sustain level/release time (v = voice, xx = value)
     SetStnRls(_cmd[2] - '0', Hex2Byte(_cmd[3], _cmd[4]));
   end
-  else if (c1 = 'S') and (c2 = 'T') then
+  else if (c1 = 'S') and (c2 = 'D') then
   begin
-    // STvxx - set sustain duration
+    // SDvxx - set sustain duration
     Sustain[_cmd[2] - '0'] := Hex2Byte(_cmd[3], _cmd[4]);
   end
   else if (c1 = 'W') and (c2 = 'F') then
@@ -200,7 +212,7 @@ begin
   else if (c1 = 'P') and (c2 = 'W') then
   begin
     // PWvxxx - set rectangle pulse width (v = voice, xxx = value)
-    SetPulseWidth(_cmd[2] - '0', Hex2Byte(_cmd[3], _cmd[4]));
+    SetPulseWidth(_cmd[2] - '0', ((_cmd[3] - '0') shl 8) + Hex2Byte(_cmd[4], _cmd[5]));
   end
   else if (c1 = 'S') and (c2 = 'N') then
   begin
@@ -218,20 +230,27 @@ begin
     // NOnnndd - input note nnn, duration dd (1 - 20)
     ncount := NoteCounts[curr_input_voice];
     note := @(Notes[curr_input_voice][ncount]);
-    note^.code := StrToMidiNote(_cmd[2], _cmd[3], _cmd[4]);
+    if _cmd[2] = '-' then
+      note^.code := 128
+    else
+      note^.code := StrToMidiNote(_cmd[2], _cmd[3], _cmd[4]);
     note^.duration := Hex2Byte(_cmd[5], _cmd[6]);
     NoteCounts[curr_input_voice] := ncount + 1;
   end
   else if (c1 = 'P') and (c2 = 'L') then
   begin
-    // PL - start playing
+    // PLxx - start playing (xx times, 0 = infinite)
     for i := 0 to 2 do
     begin
       curr_note[i] := NoteCounts[i] - 1;
       curr_stn[i] := 0;
       curr_period[i] := 0;
     end;
-    play := 1;
+    play := Hex2Byte(_cmd[2], _cmd[3]);
+    if play = 0 then
+      play := 255
+    else
+      inc(play);
   end
   else if (c1 = 'S') and (c2 = 'T') then
   begin
@@ -462,7 +481,7 @@ begin
   InitSID;
   T0CON.TMR0ON := 1; // Enable Timer0
 
-  TestSID;
+  //TestSID;
 
   while true do
   begin
@@ -470,12 +489,16 @@ begin
     repeat
       while PORTB.7 = 0 do
         nop;
-      ch := PORTB or %01111111;
+
+      ch := PORTB and %01111111;
       cmd[i] := ch;
       inc(i);
+      
       while PORTB.7 = 1 do
         nop;
-    until ch = 0;
+    until (ch = 0) or (i = 8);
+
     ExecuteCommand(cmd);
+
   end;
 end.

@@ -12,12 +12,12 @@ void send_sound_cmd(char *cmd) {
 
 	do {
 		io_write(1, *cmd | 128);
-		for (i = 0; i < 10; i++);
+		for (i = 0; i < 5; i++);
 		io_write(1, 0);
-		for (i = 0; i < 10; i++);
+		for (i = 0; i < 5; i++);
 	} while (*(cmd++));
 
-	delay_ms(10);
+	delay_ms(1);
 }
 /******************************************************************************/
 

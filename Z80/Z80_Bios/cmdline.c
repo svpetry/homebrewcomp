@@ -107,7 +107,9 @@ void cmdline(void) {
 
 				// DIR
 				} else if (!strcmp(params[0], "dir")) {
-					list_dir();
+					list_dir(params[1]);
+
+				// GRAPHCIS
 
 				// GRAPHCIS
 				} else if (!strcmp(params[0], "graphics")) {
