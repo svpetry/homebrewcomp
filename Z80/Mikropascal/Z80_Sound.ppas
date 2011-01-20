@@ -2,7 +2,7 @@ program Z80_Sound;
 
 (*
  * SID Sound card
- * Clock: 50 MHz ext. = 12.5 MHz int.
+ * Clock: 60 MHz ext. = 15 MHz int.
  *
  * pin layout:
  * RA0-RA4: SID A0-A4
@@ -18,18 +18,13 @@ uses
 
 type
   TNoteRec = record
-    code: byte; // midi note code
+    code: byte; // midi note code (128 = pause)
     duration: byte;
   end;
 
 const
   TMR0H_Value = $E0;
   TMR0L_Value = $00;
-
-//  TMR0H_Value = $EC; // values for 25 msec
-//  TMR0L_Value = $ED; // values for 25 msec
-//  TMR0H_Value = $E1; // values for 40 msec
-//  TMR0L_Value = $7C; // values for 40 msec
 
 var
   Sustain: array[3] of byte; // duration of sustain in 25 msec.
@@ -54,7 +49,7 @@ begin
   TMR0H := TMR0H_Value;
   TMR0L := TMR0L_Value;
 
-  for v := 0 to 2 do
+  for v := 2 downto 0 do
   begin
     // stop note if sustain period is over
     stn := curr_stn[v];
@@ -69,22 +64,14 @@ begin
     per := curr_period[v];
     if per > 0 then
       dec(per);
+      
     if (per = 0) and (play > 0) and (NoteCounts[v] > 0) then
     begin
-      // next note
       note_no := curr_note[v];
-      inc(note_no);
-      if note_no >= NoteCounts[v] then
-      begin
-        note_no := 0;
-        if (v = 0) and (play <> 255) and (play > 0) then
-          dec(play);
-      end; // if note_no >= NoteCounts[v] then
 
-      if play > 0 then
+      // play note if neccessary
+      if note_no < NoteCounts[v] then
       begin
-        curr_note[v] := note_no;
-
         n := @(Notes[v][note_no]);
 
         per := n^.duration;
@@ -95,11 +82,26 @@ begin
 
         if n^.code < 128 then
           PlayNote_i(v, MidiNoteToFreq(n^.code));
-      end; // if play > 0 then
+
+      end; // if note_no < NoteCounts[v] then
+
+      // next note
+      inc(note_no);
+      if (note_no >= NoteCounts[v]) and (v = 0) then
+      begin
+        note_no := 0;
+        curr_note[1] := 0;
+        curr_note[2] := 0;
+        if (play < 255) and (play > 0) then
+          dec(play);
+      end; // if (note_no >= NoteCounts[v]) and (v = 0) then
+
+      curr_note[v] := note_no;
+      
     end; // if (per = 0) and (play > 0) then
     curr_period[v] := per;
     
-  end; // for v := 0 to 2 do
+  end; // for v := 2 downto 0 do
 
   if play > 0 then
     LATA.6 := 1 - LATA.6
@@ -242,15 +244,13 @@ begin
     // PLxx - start playing (xx times, 0 = infinite)
     for i := 0 to 2 do
     begin
-      curr_note[i] := NoteCounts[i] - 1;
+      curr_note[i] := 0;
       curr_stn[i] := 0;
       curr_period[i] := 0;
     end;
     play := Hex2Byte(_cmd[2], _cmd[3]);
     if play = 0 then
-      play := 255
-    else
-      inc(play);
+      play := 255;
   end
   else if (c1 = 'S') and (c2 = 'T') then
   begin
