@@ -449,14 +449,14 @@ begin
   
   if FindFirst(dir_item) then
   begin
-    if ((dir_item.FileAttr and 8) > 0) then
+    if (dir_item.FileAttr and 8) > 0 then
       stop := 1;
 
     while stop = 0 do
     begin
       if FindNext(dir_item) then
       begin
-        if ((dir_item.FileAttr and 8) > 0) then
+        if (dir_item.FileAttr and 8) > 0 then
           stop := 1;
       end
       else
@@ -464,12 +464,13 @@ begin
     end;
   end;
 
-  bios_str[0] := 0;
-  if ((dir_item.FileAttr and 8) > 0) then
+  if (dir_item.FileAttr and 8) > 0 then
   begin
     strcpy(bios_str, dir_item.FileName);
     StrTrim(bios_str);
-  end;
+  end
+  else
+    bios_str[0] := 0;
 end;
 (******************************************************************************)
 end.

@@ -27,7 +27,7 @@ const
   TMR0L_Value = $00;
 
 var
-  Sustain: array[3] of byte; // duration of sustain in 25 msec.
+  Sustain: array[3] of byte; // duration of sustain in xx msec.
   Notes: array[3] of array[icNoteCount] of TNoteRec;
   NoteCounts: array[3] of word;
 
