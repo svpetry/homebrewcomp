@@ -160,10 +160,12 @@ begin
           $4A: value := '-';
           $12: begin
             keyb_shift := 1; // left shift
+            spec_key := 0;
 //            Usart_Write_Text('left shift on');
           end;
           $59: begin
             keyb_shift := 1; // right shift
+            spec_key := 0;
 //            Usart_Write_Text('right shift on');
           end;
           $F0: begin // break codes
@@ -227,10 +229,12 @@ begin
             case scode of
               $12: begin
                 keyb_shift := 0; // left shift
+                spec_key := 0;
 //                Usart_Write_Text('left shift off');
               end;
               $59: begin
                 keyb_shift := 0; // right shift
+                spec_key := 0;
 //                Usart_Write_Text('right shift off');
               end;
             end; // case scode of
@@ -238,6 +242,7 @@ begin
           end; // $F0
         end; // case scode of
       end; // if keyb_shift = 0 then ... else
+      
       if value = 255 then
       begin
         case scode of
@@ -265,6 +270,12 @@ begin
                 $11: keyb_altgr := 1; // alt gr
               end; // case scode of
             end; // if result = 1 then
+
+            keyb_shift := 0;
+            keyb_altgr := 0;
+            while KeybGetScancode(scode) = 1 do
+              nop;
+              
           end; // $E0
           $05: spec_key := 59; // F1
           $06: spec_key := 60; // F2
