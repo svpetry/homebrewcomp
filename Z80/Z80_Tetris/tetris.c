@@ -7,6 +7,7 @@
 #include "tmain.h"
 #include "utils.h"
 #include "utils3d.h"
+#include "sound.h"
 
 /* code: 0x0290-0x9fff
  * data: 0xa000-0xf000
@@ -33,6 +34,8 @@ void main() {
 	init();
 
 	tetris();
+
+	send_sound_cmd("ST");
 
 	clrbuf();
 	buf2screen();

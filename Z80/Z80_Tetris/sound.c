@@ -6,9 +6,11 @@
 #include "io.h"
 #include "defs.h"
 
-#define CMD_COUNT = 22
+#define INIT_CMD_COUNT 15
+#define SONG_CMD_COUNT 6
 
-const char cmds[CMD_COUNT][] = {
+/******************************************************************************/
+const char *init_cmds[INIT_CMD_COUNT] = {
 	"VO8",
 
 	"WF03",
@@ -26,34 +28,19 @@ const char cmds[CMD_COUNT][] = {
 	"WF21",
 	"AD225",
 	"SR233",
-	"ST208",
+	"ST208"
+};
 
+const char *song_cmds[SONG_CMD_COUNT] = {
 	"SN0",
-	"NOE5 08",
-	"NOB4 04",
-	"NOC5 04",
-	"NOD5 04",
-	"NOE5 02",
-	"NOD5 02",
-	"NOC5 04",
-	"NOB4 04",
 	"EN",
 
 	"SN1",
-	"NOB4 08",
-	"NOG4#04",
-	"NOA4 04",
-	"NOB4 04",
-	"NO-  04",
-	"NOC5 04",
-	"NOB4 04",
 	"EN",
 
 	"SN2",
-	"EN",
-
-	"PL"
-}
+	"EN"
+};
 /******************************************************************************/
 void send_sound_cmd(char *cmd) {
 	byte i;
@@ -71,8 +58,13 @@ void send_sound_cmd(char *cmd) {
 void start_song() {
 	word i;
 
-	for (i = 0; i < CMD_COUNT; i++)
-		send_sound_cmd(cmds[i]);
+	for (i = 0; i < INIT_CMD_COUNT; i++)
+		send_sound_cmd(init_cmds[i]);
+
+	for (i = 0; i < SONG_CMD_COUNT; i++)
+		send_sound_cmd(song_cmds[i]);
+
+	send_sound_cmd("PL0");
 
 }
 /******************************************************************************/
