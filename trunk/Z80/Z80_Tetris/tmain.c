@@ -9,6 +9,7 @@
 #include "io.h"
 #include "defs.h"
 #include "splashscreen.h"
+#include "sound.h"
 
 
 #define BLOCK_SIZE 5
@@ -169,7 +170,6 @@ void tetris(void) {
 			start = 1;
 		}
 	}
-	send_sound_cmd("ST");
 }
 /******************************************************************************/
 void move_left(void) {
