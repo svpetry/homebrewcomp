@@ -5,6 +5,8 @@
 #include "splashscreen.h"
 #include "defs.h"
 #include "io.h"
+#include "utils.h"
+#include "video.h"
 
 
 /******************************************************************************/
@@ -239,15 +241,79 @@ const char picture[25][80] = {
 	}
 };/******************************************************************************/
 void show_splashscreen(void) {
+	char *dest;
+	byte x, y;
+
 	io_write(5, 0);
 	io_write(6, 0);
 
-	memcpy((char *)0x1000, picture, 0x0800);
+	dest = (char *)0x1000;
+
+	for (y = 0; y < 25; y++) {
+		for (x = 0; x < 80; x++) {
+			*dest = picture[y][x];
+			dest++;    
+		}
+		dest += 48;
+	}
+
+	delay_ms(500);
+
+	io_write(5, 0);
+	io_write(6, 2);
+
+	delay_ms(120);
+
+	io_write(5, 0);
+	io_write(6, 10);
+
+	delay_ms(120);
+
+	io_write(5, 0);
+	io_write(6, 5);
+
+	delay_ms(120);
+
+	io_write(5, 0);
+	io_write(6, 15);
+
+	delay_ms(120);
+
+	io_write(5, 0);
+	io_write(6, 63);
+
+	delay_ms(120);
 
 	io_write(5, 0);
 	io_write(6, 15);
 
 	getchar();
+
+	io_write(5, 0);
+	io_write(6, 15);
+
+	delay_ms(120);
+
+	io_write(5, 0);
+	io_write(6, 5);
+
+	delay_ms(120);
+
+	io_write(5, 0);
+	io_write(6, 10);
+
+	delay_ms(120);
+
+	io_write(5, 0);
+	io_write(6, 2);
+
+	delay_ms(120);
+
+	io_write(5, 0);
+	io_write(6, 0);
+
+	clrbuf();
+	buf2screen();
 
 	io_write(5, 42);
 	io_write(6, 15);
