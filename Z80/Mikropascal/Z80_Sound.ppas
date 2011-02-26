@@ -49,7 +49,30 @@ begin
   TMR0H := TMR0H_Value;
   TMR0L := TMR0L_Value;
 
-  for v := 2 downto 0 do
+  if (play > 0) and (curr_note[0] = 0) and (curr_period[0] = 0) then
+  begin
+    StopNote_i(0);
+    StopNote_i(1);
+    StopNote_i(2);
+    
+    curr_note[1] := 0;
+    curr_note[2] := 0;
+
+    curr_period[1] := 0;
+    curr_period[2] := 0;
+    
+    curr_stn[0] := 0;
+    curr_stn[1] := 0;
+    curr_stn[2] := 0;
+
+    if play > 0 then
+      LATA.6 := 1 - LATA.6
+    else
+      LATA.6 := 0;
+
+  end ; // if (play > 0) and (curr_note[0] = 0) and (curr_period[0] = 0) then
+
+  for v := 0 to 2 do
   begin
     // stop note if sustain period is over
     stn := curr_stn[v];
@@ -83,31 +106,33 @@ begin
         if n^.code < 128 then
           PlayNote_i(v, MidiNoteToFreq(n^.code));
 
-      end; // if note_no < NoteCounts[v] then
+        // next note
+        inc(note_no);
+      end // if note_no < NoteCounts[v] then
+      else begin
 
-      // next note
-      inc(note_no);
-      if (note_no >= NoteCounts[v]) and (v = 0) then
-      begin
-        note_no := 0;
-        curr_note[1] := 0;
-        curr_note[2] := 0;
-        if (play < 255) and (play > 0) then
-          dec(play);
-      end; // if (note_no >= NoteCounts[v]) and (v = 0) then
+        // restart from the beginning
+        if v = 0 then
+        begin
+          note_no := 0;
+          if (play < 255) and (play > 0) then
+            dec(play);
+        end; // if v = 0 then
+
+      end; // if note_no < NoteCounts[v] then ... else
 
       curr_note[v] := note_no;
       
-    end; // if (per = 0) and (play > 0) then
+    end; // if (per = 0) and (play > 0) and (NoteCounts[v] > 0) then
     curr_period[v] := per;
     
-  end; // for v := 2 downto 0 do
+  end; // for v := 0 to 2 do
 
-  if play > 0 then
+{  if play > 0 then
     LATA.6 := 1 - LATA.6
   else
     LATA.6 := 0;
-
+}
   INTCON.TMR0IF := 0;
 end;
 (******************************************************************************)

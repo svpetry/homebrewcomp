@@ -62,7 +62,7 @@ main() {
 	__endasm;
 
 	memset(0x1000, 32, 0x0C80);
-	strcpy(0x1000, "Zilog Z84C0020PEC CPU, 131.072 Bytes RAM. Loading bios.bin...");
+	strcpy(0x1000, "Zilog Z84C0020PEC CPU, 131.072 Bytes RAM. Waiting for bios.bin...");
 
 
 	__asm
