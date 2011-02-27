@@ -17,6 +17,6 @@ sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x9d70 --data-loc 0xA000 
 ren crt0.ihx tetris.ihx
 
 if not exist tetris.ihx goto end
-ihx2bin tetris.ihx tetris.bin 640 > ihx2bin.log
-DZ80-32.EXE tetris.bin tetris_dis.asm /m=640
+..\Tools\ihx2bin tetris.ihx tetris.bin 640 > ihx2bin.log
+..\Tools\DZ80-32.EXE tetris.bin tetris_dis.asm /m=640
 :end

@@ -15,6 +15,6 @@ sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x9d70 --data-loc 0xA000 
 ren crt0.ihx 3dtest.ihx
 
 if not exist 3dtest.ihx goto end
-ihx2bin 3dtest.ihx 3dtest.bin 640 > ihx2bin.log
-DZ80-32.EXE 3dtest.bin 3dtest_dis.asm /m=640
+..\Tools\ihx2bin 3dtest.ihx 3dtest.bin 640 > ihx2bin.log
+..\Tools\DZ80-32.EXE 3dtest.bin 3dtest_dis.asm /m=640
 :end

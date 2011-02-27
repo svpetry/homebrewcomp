@@ -16,6 +16,6 @@ sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x2d70 --data-loc 0x3000 
 ren crt0.ihx edit.ihx
 
 if not exist edit.ihx goto end
-ihx2bin edit.ihx edit.bin 640 > ihx2bin.log
-DZ80-32.EXE edit.bin edit_dis.asm /m=640
+..\Tools\ihx2bin edit.ihx edit.bin 640 > ihx2bin.log
+..\Tools\DZ80-32.EXE edit.bin edit_dis.asm /m=640
 :end
