@@ -11,6 +11,6 @@ sdcc "-Wl -b _CODE2 = 0x8000" -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 
 ren crt0.ihx basic.ihx
 
 if not exist basic.ihx goto end
-ihx2bin basic.ihx basic.bin 640 > ihx2bin.log
-DZ80-32.EXE basic.bin basic_dis.asm /m=640
+..\Tools\ihx2bin basic.ihx basic.bin 640 > ihx2bin.log
+..\Tools\DZ80-32.EXE basic.bin basic_dis.asm /m=640
 :end
