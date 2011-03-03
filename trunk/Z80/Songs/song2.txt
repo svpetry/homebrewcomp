@@ -17,7 +17,7 @@ SD1ff
 # setup voice 3
 WF21
 AD200
-SR240
+SR280
 SD2ff
 
 
@@ -29,12 +29,12 @@ NOE4 10
 EN
 
 SN1
-NOC0 08
 NOC1 08
-NOD0 08
+NOC2 08
 NOD1 08
-NOE0 08
+NOD2 08
 NOE1 08
+NOE2 08
 EN
 
 SN2
@@ -44,4 +44,4 @@ NOE6 10
 EN
 
 # start playing
-PL01
+PL03
