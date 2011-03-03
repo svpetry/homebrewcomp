@@ -22,11 +22,10 @@ type
     duration: byte;
   end;
 
-const
-  TMR0H_Value = $E0;
-  TMR0L_Value = $00;
-
 var
+  TMR0H_Value: byte;
+  TMR0L_Value: byte;
+
   Sustain: array[3] of byte; // duration of sustain in xx msec.
   Notes: array[3] of array[icNoteCount] of TNoteRec;
   NoteCounts: array[3] of word;
@@ -138,6 +137,9 @@ end;
 (******************************************************************************)
 procedure Init;
 begin
+  TMR0H_Value := $E0;
+  TMR0L_Value := $00;
+
 //  OSCCON := %01120000;
 
   ADCON0 := 0; // disable A/D Converter
@@ -295,6 +297,11 @@ begin
   begin
     // PNvnnnd - play note nnn, voice v, duration d
 
+  end
+  else if (c1 = 'G') and (c2 = 'S') then
+  begin
+    // GSxx - set global speed: ff = fast, 00 = slow. Standard: e0
+    TMR0H_Value := Hex2Byte(_cmd[2], _cmd[3]);
   end;
 
 end; // ExecuteCommand

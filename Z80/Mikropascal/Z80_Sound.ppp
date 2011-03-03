@@ -24,7 +24,7 @@ Count=0
 [OtherFiles]
 Count=1
 Value0=X:\Z80\Mikropascal\Z80_Sound.ppas
-Value1=X:\Z80\Mikropascal\Z80_Sound.ppas
+Value1=X:\Z80\Mikropascal\Initializer.ppas
 [TabIndex]
 Value=0
 [SearchPath]

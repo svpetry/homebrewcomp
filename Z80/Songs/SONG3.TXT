@@ -1,0 +1,40 @@
+# set volume
+VOf
+
+# setup voice 1
+WF01
+PW0800
+AD012
+SR08c
+SD004
+
+# setup voice 2
+WF11
+PW1800
+AD112
+SR18c
+SD104
+
+# setup voice 3
+WF21
+PW2800
+AD212
+SR28c
+SD204
+
+
+# notes
+SN0
+NOC5 40
+EN
+
+SN1
+NOF5 40
+EN
+
+SN2
+NOA5 40
+EN
+
+# start playing
+PL01
