@@ -7,14 +7,14 @@ GSd8
 WF03
 PW0800
 AD010
-SR0a8
+SR0e8
 SD006
 
 # setup voice 2
 WF13
 PW1800
 AD110
-SR1a8
+SR1e8
 SD106
 
 # setup voice 3
