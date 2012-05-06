@@ -1,7 +1,7 @@
 ;--------------------------------------------------------
 ; File Created by SDCC : free open source ANSI-C Compiler
-; Version 2.9.0 #5416 (Mar 22 2009) (MINGW32)
-; This file was generated Fri Aug 06 19:13:24 2010
+; Version 3.0.0 #6037 (Oct 31 2010) (MINGW32)
+; This file was generated Fri Sep 09 15:37:10 2011
 ;--------------------------------------------------------
 	.module main
 	.optsdcc -mz80
@@ -176,6 +176,9 @@ _delay_ms:
 	sub	a,4 (ix)
 	ld	a,b
 	sbc	a,5 (ix)
+	jp	PO,00116$
+	xor	a,#0x80
+00116$:
 	jp	P,00108$
 ;main.c:53: for (j = 0; j < 650; j++);
 ;	genAssign
@@ -222,20 +225,19 @@ _main:
 ;	genIpush
 ; _saveRegsForCall: sendSetSize: 0 deInUse: 0 bcInUse: 0 deSending: 0
 	ld	a,(_value)
-	push	af
-	inc	sp
 ;	genIpush
-	ld	a,#0x00
-	push	af
-	inc	sp
+; peephole 0x' pushed de instead of pushing a twice.
+	ld	d,a
+	ld	e,#0x00
+	push	de
 ;	genCall
 	call	_io_write
-	pop	af
 ;main.c:67: delay_ms(20);
 ;	genIpush
 ; _saveRegsForCall: sendSetSize: 0 deInUse: 0 bcInUse: 0 deSending: 0
 	ld	hl,#0x0014
-	push	hl
+; peephole 92a used ex to move #0x0014 onto the stack.
+	ex	(sp),hl
 ;	genCall
 	call	_delay_ms
 	pop	af
