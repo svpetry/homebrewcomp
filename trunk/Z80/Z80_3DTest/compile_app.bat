@@ -16,5 +16,5 @@ ren crt0.ihx 3dtest.ihx
 
 if not exist 3dtest.ihx goto end
 ..\Tools\ihx2bin 3dtest.ihx 3dtest.bin 640 > ihx2bin.log
-..\Tools\DZ80-32.EXE 3dtest.bin 3dtest_dis.asm /m=640
+..\Tools\dZ80c 3dtest.bin 3dtest_dis.asm -m=640
 :end

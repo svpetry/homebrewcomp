@@ -17,5 +17,5 @@ ren crt0.ihx edit.ihx
 
 if not exist edit.ihx goto end
 ..\Tools\ihx2bin edit.ihx edit.bin 640 > ihx2bin.log
-..\Tools\DZ80-32.EXE edit.bin edit_dis.asm /m=640
+..\Tools\dZ80c edit.bin edit_dis.asm -m=640
 :end

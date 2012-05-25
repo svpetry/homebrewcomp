@@ -20,5 +20,6 @@ ren crt0.ihx basic.ihx
 
 if not exist basic.ihx goto end
 ..\Tools\ihx2bin basic.ihx basic.bin 640 > ihx2bin.log
-..\Tools\DZ80-32.EXE basic.bin basic_dis.asm /m=640
+REM ..\Tools\DZ80-32.EXE basic.bin basic_dis.asm /m=640
+..\Tools\dZ80c basic.bin basic_dis.asm -m=640
 :end
