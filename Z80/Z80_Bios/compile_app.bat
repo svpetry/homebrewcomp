@@ -15,6 +15,6 @@ sdcc -mz80 --no-std-crt0 --code-loc 0x0290 --code-size 0x3d70 --data-loc 0x4000 
 ren crt0.ihx bios.ihx
 
 if not exist bios.ihx goto end
-ihx2bin bios.ihx bios.bin > ihx2bin.log
-DZ80-32.EXE bios.bin bios_dis.asm
+..\Tools\ihx2bin bios.ihx bios.bin > ihx2bin.log
+..\Tools\dZ80c bios.bin bios.asm -m=640
 :end

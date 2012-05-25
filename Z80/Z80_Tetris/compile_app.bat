@@ -18,5 +18,5 @@ ren crt0.ihx tetris.ihx
 
 if not exist tetris.ihx goto end
 ..\Tools\ihx2bin tetris.ihx tetris.bin 640 > ihx2bin.log
-..\Tools\DZ80-32.EXE tetris.bin tetris_dis.asm /m=640
+..\Tools\dZ80c tetris.bin tetris_dis.asm -m=640
 :end

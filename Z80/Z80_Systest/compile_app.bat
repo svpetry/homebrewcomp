@@ -14,5 +14,5 @@ ren crt0.ihx systest.ihx
 
 if not exist systest.ihx goto end
 ..\Tools\ihx2bin systest.ihx systest.bin 640 > ihx2bin.log
-..\Tools\DZ80-32.EXE systest.bin systest_dis.asm /m=640
+..\Tools\dZ80c systest.bin systest_dis.asm -m=640
 :end
