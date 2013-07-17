@@ -1,0 +1,21 @@
+commands:
+----------------------------------------
+
+VOx	set global volume (x = value)
+ADvxx	set attack time/decay time (v = voice, xx = value)
+SRvxx	set sustain level/release time (v = voice, xx = value)
+SDvxx	set sustain duration
+WFvx	set waveform (v = voice, x = waveform: 0 = off, 1 = triangle, 2 = sawtooth, 3 = rectangle, 4 = noise)
+PWvxxx	set rectangle pulse width (v = voice, xxx = value)
+SNv	start input of notes (v = voice)
+EN	end input of notes
+NOnnndd	input note nnn, duration dd (20 = 1, 10 = 1/2, 08 = 1/4, 04 = 1/8, 02 = 1/16, 01 = 1/32)
+PLxx	start playing (xx times, 0 = infinite)
+ST	stop playing
+LDx	LED, x: 1 = on, 0 = off
+PNvnnnd	play note nnn, voice v, duration dd
+GSxx	set global speed: ff = fast, 00 = slow. Standard: e0
+
+
+Fn = Fout * 16777216 Hz / Fclk = Fout * 16.777216
+

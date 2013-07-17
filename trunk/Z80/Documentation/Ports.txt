@@ -1,0 +1,95 @@
+ports
+================================================================================
+
+Input:
+	128	read single character from keyboard (255 = no key pressed)
+	130	read timer ticks (b0)
+	131	read timer ticks (b1)
+	132	read timer ticks (b2)
+	133	read timer ticks (b3)
+	161	disk status (1 = ok, 0 = error)
+	163	read byte from file
+	173	read byte from RS232
+	174	read RS232 status (1 = data ready, 0 = no data)
+
+Output:
+	0	ram bank select (1 = bank1, 2 = bank2, 4 = bank3)
+	1	external port 1 (sound card)
+	2	external port 2
+	3	led
+	4	pc speaker
+	5	vga bg color
+	6	vga fg color
+	7	vga ram
+		Bit 0: enable video ram from 0x1000 to 0x1fff
+		Bit 1: enable 160x100 pixel graphics mode
+	160	send disk command
+		0: init mmc
+		1: read sector
+		2: write sector
+		10: read first dir entry
+		11: read next dir entry
+		20: open file for reading (outparam: 1=ok, paramdword: file size)
+		21: open file for writing (create new)
+		22: open file for writing (append)
+		22: close file
+		23: read block
+		24: write block (param1: size in bytes)
+		25: load complete file into memory
+		26: read volume name
+		27: load program
+		28: delete file (outparam: 1=file deleted)
+		29: check if file exists (outparam: 1=yes)
+	170	init RS232
+		0: 4800 Baud
+		1: 9600 Baud
+		2: 19200 Baud
+		3: 38400 Baud
+	171	write byte to RS232
+	172	write text to RS232
+
+
+control busses (<- = in, -> = out)
+================================================================================
+
+memory module
+1	VCC
+2	GND
+3	GND
+4	/MEMRD		<-
+5	/MEMWR		<-
+6	/EN_RAM0	<-
+7	/IOWR		<-
+8	/WR_PORT5	->
+9	/WR_PORT6	->
+10	/WR_PORT7	->
+
+vga
+1	/WR_FGCOLOR	<-
+2	/WR_BGCOLOR	<-
+3	/VRAM_BUSY	->
+4	/WR_VRAM	<-
+
+controller module
+1	RESET		->
+2	BUSAK		<-
+3	/BUSRQ		->
+4	/INT		->
+5	/MEMRD_PIC	->
+6	/MEMWR_PIC	->
+7	/WAIT_1_2	->
+8	/IOWR		<-
+9	/IORD		<-
+10	GND
+
+cpu module
+1	/MEMWR		->
+2	/MEMRD		->
+3	/IOWR		->
+4	/WAIT0		<-
+5	/IORD		->
+6	VCC
+7	GND
+8	GND
+
+
