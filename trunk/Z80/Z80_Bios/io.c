@@ -85,8 +85,6 @@ void list_dir(char *wildcard) {
 		p++;
 	}
 
-
-//	puts("\n directory listing");
 	puts_nlb("\n volume name: ");
 	io_write(160, 26); // get volume name
 	while (busy);
@@ -103,7 +101,7 @@ void list_dir(char *wildcard) {
 		// param1w + param2: file size (dword)
 		// outparam: attributes (only 1st byte), 'RHSVDA' (R = bit0)
 
-		if (matches(sparam, wildcard) && (out_paramb & 0x08) == 0) {
+		if (matches(sparam, wildcard) && (out_paramb & 8) == 0) {
 			putchar(' ');
 			puts_nlb(sparam);
 
@@ -114,15 +112,15 @@ void list_dir(char *wildcard) {
 
 			for (i = 0; i < 5; i++)
 				s[i] = '-';
-			if (out_paramb & 0x01)
+			if (out_paramb & 1)
 				s[0] = 'R';
-			if (out_paramb & 0x02)
+			if (out_paramb & 2)
 				s[1] = 'H';
-			if (out_paramb & 0x04)
+			if (out_paramb & 4)
 				s[2] = 'S';
-			if (out_paramb & 0x16)
+			if (out_paramb & 16)
 				s[3] = 'D';
-			if (out_paramb & 0x32)
+			if (out_paramb & 32)
 				s[4] = 'A';
 			s[5] = 0;
 			puts(s);

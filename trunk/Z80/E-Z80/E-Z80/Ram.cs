@@ -6,12 +6,14 @@ using System.Threading.Tasks;
 
 namespace E_Z80
 {
-    class Ram : IMemRangeProvider
+    class Ram : IMemRangeProvider, IPortProvider
     {
         // the memory system consists of 4 banks of ram, each has a size of 32 kbytes.
         private byte[] FMemoryLow = new byte[0x8000];
         private byte[][] FMemoryHigh = { new byte[0x8000], new byte[0x8000], new byte[0x8000] };
         private int FSelectedHighBank;
+
+        #region IMemRangeProvider
 
         public bool Peek(int _Addr, out byte _Value)
         {
@@ -28,10 +30,34 @@ namespace E_Z80
             return true;
         }
 
-        public void SetHighBank(int _BankNo)
+        #endregion
+
+        #region IPortProvider
+
+        public int InB(int _Addr, int _Hi)
         {
-            FSelectedHighBank = _BankNo;
+            return 0;
         }
 
+        public void OutB(int _Addr, int _Value, int _State)
+        {
+            if (_Addr == 0)
+            {
+                switch (_Value)
+                {
+                    case 1:
+                        FSelectedHighBank = 0;
+                        break;
+                    case 2:
+                        FSelectedHighBank = 1;
+                        break;
+                    case 4:
+                        FSelectedHighBank = 2;
+                        break;
+                }
+            }
+        }
+
+        #endregion
     }
 }

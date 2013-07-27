@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace E_Z80
@@ -28,6 +29,9 @@ namespace E_Z80
 
     public class Z80
     {
+        //private StreamWriter FLogFile = new StreamWriter("cpulog.txt");
+
+        public bool EnableLog { get; set; }
 
         public static int IM0 = 0;
         public static int IM1 = 1;
@@ -426,10 +430,12 @@ namespace E_Z80
 
             cycle = 0;
 
+            state_HALT = false;
+
             A1 = 0; F1 = 0; B1 = 0; C1 = 0; D1 = 0; E1 = 0; H1 = 0; L1 = 0;
 
             //if (!debugDisabled)
-            //{ log("***Z80 RESET***"); }
+            //FLogFile.WriteLine("***Z80 RESET***");
 
         }
 
@@ -483,6 +489,10 @@ namespace E_Z80
                 }
 
                 instruction = MemProvider.Peek(PC);
+                
+                //if (EnableLog)
+                    //FLogFile.WriteLine(String.Format("{0:X04} : {1:X02}", PC, instruction));
+
                 PPC = PC;
                 PC = (PC + 1) & 0xffff;
                 _R++;
@@ -3278,7 +3288,7 @@ namespace E_Z80
                 if (NMI)
                 { // Take NMI
                     //if (!goingToirq) {
-                    //if (!debugDisabled) { log("...CPUZ80 takes non maskable interrupt"); }
+                    //FLogFile.WriteLine("...CPUZ80 takes non maskable interrupt");
                     state_HALT = false;
 
                     IFF1 = IFF0;
@@ -3295,7 +3305,7 @@ namespace E_Z80
 
                 if (IFF0 && IRQ)
                 {	// Take interrupt if enabled
-                    //  System.out.println("...CPUZ80 takes interrupt using interrupt mode "+Integer.toString(IM));
+                    //FLogFile.WriteLine("...CPUZ80 takes interrupt using interrupt mode " + IM);
                     state_HALT = false;
 
                     switch (IM)

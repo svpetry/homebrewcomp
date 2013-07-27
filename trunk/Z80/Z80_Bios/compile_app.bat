@@ -16,5 +16,5 @@ ren crt0.ihx bios.ihx
 
 if not exist bios.ihx goto end
 ..\Tools\ihx2bin bios.ihx bios.bin > ihx2bin.log
-..\Tools\dZ80c bios.bin bios.asm -m=640
+..\Tools\dZ80c bios.bin bios_dis.asm
 :end

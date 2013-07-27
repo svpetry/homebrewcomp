@@ -27,12 +27,12 @@ Output:
 		0: init mmc
 		1: read sector
 		2: write sector
-		10: read first dir entry
+		10: read first dir entry (sparam: filename, param1l: file size)
 		11: read next dir entry
 		20: open file for reading (outparam: 1=ok, paramdword: file size)
 		21: open file for writing (create new)
 		22: open file for writing (append)
-		22: close file
+		(22: close file)
 		23: read block
 		24: write block (param1: size in bytes)
 		25: load complete file into memory

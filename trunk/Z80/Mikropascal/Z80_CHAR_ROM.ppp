@@ -12,15 +12,19 @@ SimDebug=0
 [ProjectFiles]
 Count=0
 [OtherFiles]
-Count=1
-Value0=X:\Sven\Elektronik\mikroPascal\Z80_ROM\Z80_CHAR_ROM.ppas
-Value1=X:\Sven\Elektronik\mikroPascal\Z80_ROM\Z80_CHAR_ROM.asm
-[TabIndex]
-Value=0
-[SearchPath]
 Count=3
-Value0=X:\PortableApps\mikroPascal8\Defs\
-Value1=X:\Sven\Elektronik\mikroPascal\Z80_ROM\
-Value2=X:\PortableApps\mikroPascal8\Uses\p18\
+Value0=C:\Users\Sven\Documents\Z80\Mikropascal\Z80_CHAR_ROM.ppas
+Value1=C:\Users\Sven\Documents\Z80\Mikropascal\Characters_320x200.ppas
+Value2=C:\Users\Sven\Documents\Z80\Mikropascal\Z80_VGA_Timer.ppas
+[TabIndex]
+Value=2
+[SearchPath]
+Count=6
+Value0=C:\Program Files (x86)\Mikroelektronika\mikroPascal\Defs\
+Value1=C:\Program Files (x86)\Mikroelektronika\mikroPascal\Uses\p18\
+Value2=C:\Users\Sven\Documents\Z80\Mikropascal\
+Value3=X:\PortableApps\mikroPascal8\Defs\
+Value4=X:\Sven\Elektronik\mikroPascal\Z80_ROM\
+Value5=X:\PortableApps\mikroPascal8\Uses\p18\
 [EEPROMinfo]
 isused=0

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ namespace E_Z80
     public class MemoryMapper : IMemoryProvider
     {
         private List<MemoryMapping> FMemoryMappings = new List<MemoryMapping>();
+        //private StreamWriter FLogFile = new StreamWriter("memlog.txt");
 
         private IEnumerable<IMemRangeProvider> EnumMappings(int _Addr)
         {
@@ -31,6 +33,8 @@ namespace E_Z80
                     yield return hMapping.Provider;
             }
         }
+
+        #region IMemoryProvider
 
         public int Peek(int _Addr)
         {
@@ -48,10 +52,16 @@ namespace E_Z80
             foreach (var hMemRange in EnumMappings(_Addr))
             {
                 if (hMemRange.Poke(_Addr, (byte)(_Value & 0xff)))
+                {
+                    //FLogFile.WriteLine(_Addr.ToString() + " : " + _Value.ToString());
+                    //FLogFile.Flush();
                     return;
+                }
             }
 
         }
+
+        #endregion
 
         public void Register(int _AddrLo, int _AddrHigh, IMemRangeProvider _Provider)
         {

@@ -4,7 +4,7 @@ uses
   Keyboard;
 
 var
-   bios_str: string[20];
+   bios_str: string[20]; // Todo: length should be 31
 
 const
   BIOS_STR_ADDR_LO = $60;

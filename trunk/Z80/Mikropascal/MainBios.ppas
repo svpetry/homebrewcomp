@@ -122,8 +122,8 @@ begin
           if mmc_changed = 1 then
             InitMmc;
           ReadBiosStr;
-          Usart_Write_Text(bios_str);
-          Usart_Write_Text(#13+#10);
+          //Usart_Write_Text(bios_str);
+          //Usart_Write_Text(#13+#10);
           disk_status := Mmc_Fat_Assign(bios_str, $A0);
           if disk_status = 1 then
             Mmc_Fat_Rewrite;
@@ -143,12 +143,12 @@ begin
           MemWrite(BUSY_ADDR, 0);
         end;
 
-        // close file
+{        // close file
     		22: begin
           LATA.4 := 0;
           LATA.4 := 1;
     		end;
-
+}
         // read block
     		23: begin
           LATA.4 := 0;
@@ -164,8 +164,8 @@ begin
           LATA.4 := 1;
           MemWrite(BUSY_ADDR, 1);
           block_size := MemReadW(BIOS_PARAM1_ADDR_LO);
-          Usart_Write_Text('Block size: ');
-          Usart_Write_NumW(block_size);
+          //Usart_Write_Text('Block size: ');
+          //Usart_Write_NumW(block_size);
           WriteFile(block_size);
           MemWrite(BUSY_ADDR, 0);
     		end;
@@ -178,7 +178,7 @@ begin
           if mmc_changed = 1 then
             InitMmc;
           ReadBiosStr;
-
+          // not implemented!
           MemWrite(BUSY_ADDR, 0);
     		end;
     		
