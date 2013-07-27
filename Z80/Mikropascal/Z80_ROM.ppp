@@ -21,15 +21,19 @@ SimDebug=0
 [ProjectFiles]
 Count=0
 [OtherFiles]
-Count=0
-Value0=X:\Sven\Elektronik\mikroPascal\Z80_ROM\Z80_ROM.ppas
+Count=2
+Value0=C:\Users\Sven\Documents\Z80\Mikropascal\Z80_ROM.ppas
+Value1=C:\Users\Sven\Documents\Z80\Mikropascal\Boot.ppas
 [TabIndex]
 Value=0
 [SearchPath]
-Count=4
-Value0=X:\PortableApps\mikroPascal8\Defs\
-Value1=X:\PortableApps\mikroPascal8\Uses\p18\
-Value2=X:\Sven\Elektronik\mikroPascal\Z80\
-Value3=X:\Sven\Elektronik\mikroPascal\Z80_ROM\
+Count=7
+Value0=C:\Program Files (x86)\Mikroelektronika\mikroPascal\Defs\
+Value1=C:\Program Files (x86)\Mikroelektronika\mikroPascal\Uses\p18\
+Value2=C:\Users\Sven\Documents\Z80\Mikropascal\
+Value3=X:\PortableApps\mikroPascal8\Defs\
+Value4=X:\PortableApps\mikroPascal8\Uses\p18\
+Value5=X:\Sven\Elektronik\mikroPascal\Z80\
+Value6=X:\Sven\Elektronik\mikroPascal\Z80_ROM\
 [EEPROMinfo]
 isused=0

@@ -36,6 +36,8 @@ void init() {
 	__endasm;
 }
 
+const char *scTest = "12345";
+
 main() {
 //	register char *s;
 //	register char c;

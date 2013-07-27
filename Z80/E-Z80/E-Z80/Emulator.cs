@@ -2,7 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Input;
+using System.Diagnostics;
 
 namespace E_Z80
 {
@@ -12,27 +17,91 @@ namespace E_Z80
         private MemoryMapper FMemoryMapper;
         private PortMapper FPortMapper;
         private Ram FRam;
+        private Graphics FGraphics;
+        private TickCounter FTickCounter;
+        private DiskController FDiskController;
+        private Serial FSerial;
+        private Led FLed;
+        private Speaker FSpeaker;
+        private Keyboard FKeyboard;
+        private BootLoader FBootLoader;
 
         private bool FInterruptIrq;
         private bool FInterruptNmi;
-        private bool FStop;
         private Task FMainTask;
 
-        public Emulator()
+        public Emulator(WriteableBitmap _Screen)
         {
             FMemoryMapper = new MemoryMapper();
             FPortMapper = new PortMapper();
             FCpu = new Z80 { MemProvider = FMemoryMapper, PortProvider = FPortMapper };
 
+            FGraphics = new Graphics(_Screen);
+            FMemoryMapper.Register(0x1000, 0x1fff, FGraphics);
+            FPortMapper.Register(5, 7, FGraphics);
+
             FRam = new Ram();
             FMemoryMapper.Register(0, 0xffff, FRam);
+            FPortMapper.Register(0, 0, FRam);
+
+            FTickCounter = new TickCounter();
+            FPortMapper.Register(130, 133, FTickCounter);
+
+            FDiskController = new DiskController(FMemoryMapper, () => FCpu.Reset());
+            FPortMapper.Register(160, 169, FDiskController);
+
+            FSerial = new Serial();
+            FPortMapper.Register(170, 179, FSerial);
+
+            FLed = new Led();
+            FPortMapper.Register(3, 3, FLed);
+
+            FSpeaker = new Speaker();
+            FPortMapper.Register(4, 4, FSpeaker);
+
+            FKeyboard = new Keyboard();
+            FPortMapper.Register(128, 128, FKeyboard);
+
+            FBootLoader = new BootLoader(FMemoryMapper);
+        }
+
+        public string SdDirectory { 
+            get
+            {
+                return FDiskController.DirName;
+            }
+            set
+            {
+                FDiskController.DirName = value;
+            }
         }
 
         private void ExecutionLoop()
         {
-            while (!FStop)
+            FBootLoader.Load();
+            FCpu.Reset();
+            FCpu.Exec(20000000); // 1 second = 20,000,000 cycles
+            FCpu.Reset();
+
+
+            Thread.Sleep(500);
+            FGraphics.RamActive = false;
+            FDiskController.LoadProgram(DiskController.BiosFile);
+            FCpu.EnableLog = true;
+
+            var hStopwatch = new Stopwatch();
+
+            while (true)
             {
-                FCpu.Exec(1);
+                hStopwatch.Start();
+                FCpu.Exec(20 * 20000); // should last 20 mseconds
+                hStopwatch.Stop();
+
+                if (hStopwatch.ElapsedMilliseconds < 20)
+                    Thread.Sleep(20 - (int)hStopwatch.ElapsedMilliseconds);
+                hStopwatch.Reset();
+
+
                 if (FInterruptIrq)
                 {
                     FCpu.Interrupt(Z80.INTERRUPT_TYPE_IRQ, true);
@@ -46,16 +115,59 @@ namespace E_Z80
             }
         }
 
-        public void Start()
+        public void Test()
         {
-            FStop = false;
-            FMainTask = new Task(ExecutionLoop);
-            FMainTask.Start();
+            var hTask = new Task(() =>
+            {
+                Random hRnd = new Random();
+                while (true)
+                {
+                    var hRow = 0;
+                    var hCol = 0;
+                    for (int hChar = 0; hChar < 128; hChar++)
+                    {
+                         FGraphics.PutChar(hCol, hRow, (byte)hChar);
+                        if (++hCol == 80)
+                        {
+                            hCol = 0;
+                            hRow++;
+                        }
+
+                    }
+                    Thread.Sleep(1000);
+
+                    //FGraphics.FgColor = Color.FromRgb((byte)hRnd.Next(255), (byte)hRnd.Next(255), (byte)hRnd.Next(255));
+                    //FGraphics.BgColor = Color.FromRgb((byte)hRnd.Next(255), (byte)hRnd.Next(255), (byte)hRnd.Next(255));
+
+                    FGraphics.OutB(5, hRnd.Next(255), 0);
+                    FGraphics.OutB(6, hRnd.Next(255), 0);
+                }
+            });
+            hTask.Start();
         }
 
-        public void Stop()
+        public void AddNewKey(char _Key)
         {
-            FStop = true;
+            FKeyboard.AddNewKey(_Key);
+        }
+
+        public void AddNewSpecialKey(Key _Key)
+        {
+            FKeyboard.AddNewSpecialKey(_Key);
+        }
+
+        public void UpdateScreen()
+        {
+            FGraphics.UpdateScreen();
+        }
+
+        public void Start()
+        {
+            if (FMainTask == null)
+            {
+                FMainTask = new Task(ExecutionLoop);
+                FMainTask.Start();
+            }
         }
 
         public void InterruptIrq()
@@ -67,5 +179,6 @@ namespace E_Z80
         {
             FInterruptNmi = true;
         }
+
     }
 }

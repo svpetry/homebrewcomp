@@ -20,7 +20,7 @@ void v_hidecursor() {
 	lidx = line_ptr + cur_row;
 	if (lidx >= V_ROWS)
 		lidx -= V_ROWS;
-	p = (byte *)VIDEO_RAM + (cur_row << 7) + cur_col;
+	p = (byte *)VIDEO_RAM + (((word)cur_row) << 7) + cur_col;
 	*p = linebuf[lidx][cur_col];
 }
 /******************************************************************************/
@@ -31,7 +31,7 @@ void v_showcursor() {
 	lidx = line_ptr + cur_row;
 	if (lidx >= V_ROWS)
 		lidx -= V_ROWS;
-	p = (byte *)VIDEO_RAM + (cur_row << 7) + cur_col;
+	p = (byte *)VIDEO_RAM + (((word)cur_row) << 7) + cur_col;
 	*p = linebuf[lidx][cur_col] + 128;
 }
 /******************************************************************************/

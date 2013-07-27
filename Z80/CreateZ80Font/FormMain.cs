@@ -30,50 +30,97 @@ namespace CreateZ80Font
             string file_name = tbFontFile.Text;
             if (File.Exists(file_name))
             {
-                TextWriter tw = new StreamWriter(Path.ChangeExtension(file_name, ".ppas"));
                 Bitmap bmp = new Bitmap(file_name);
 
-                tw.WriteLine("unit Characters;");
-                tw.WriteLine("");
-                tw.WriteLine("const");
-                tw.WriteLine("  char_data: array[0..127] of array[0..15] of byte =");
-
-                int char_no;
-                for (char_no = 0; char_no < 128; char_no++)
-                {
-                    int char_x, char_y;
-
-                    if (char_no == 0)
-                        tw.WriteLine("  ((");
-                    else
-                        tw.WriteLine("  ), (");
-
-                    char_x = (char_no % 32) * 16;
-                    char_y = (char_no / 32) * 16;
-
-                    for (int y = 0; y < 16; y++)
-                    {
-                        tw.Write("    %");
-                        for (int x = 0; x < 8; x++)
-                        {
-                            if (bmp.GetPixel(char_x + x, char_y + y).G == 0)
-                                tw.Write("1");
-                            else
-                                tw.Write("0");
-                        }
-                        if (y == 15)
-                            tw.WriteLine("");
-                        else
-                            tw.WriteLine(",");
-                    }
-
-                }
-                tw.WriteLine("  ));");
-                tw.WriteLine("");
-                tw.WriteLine("end.");
-
-                tw.Close();
+                WritePpas(file_name, bmp);
+                WriteCs(file_name, bmp);
             }
+        }
+
+        private static void WritePpas(string file_name, Bitmap bmp)
+        {
+            TextWriter tw = new StreamWriter(Path.ChangeExtension(file_name, ".ppas"));
+            tw.WriteLine("unit Characters;");
+            tw.WriteLine("");
+            tw.WriteLine("const");
+            tw.WriteLine("  char_data: array[0..127] of array[0..15] of byte =");
+
+            int char_no;
+            for (char_no = 0; char_no < 128; char_no++)
+            {
+                int char_x, char_y;
+
+                if (char_no == 0)
+                    tw.WriteLine("  ((");
+                else
+                    tw.WriteLine("  ), (");
+
+                char_x = (char_no % 32) * 16;
+                char_y = (char_no / 32) * 16;
+
+                for (int y = 0; y < 16; y++)
+                {
+                    tw.Write("    %");
+                    for (int x = 0; x < 8; x++)
+                    {
+                        if (bmp.GetPixel(char_x + x, char_y + y).G == 0)
+                            tw.Write("1");
+                        else
+                            tw.Write("0");
+                    }
+                    if (y == 15)
+                        tw.WriteLine("");
+                    else
+                        tw.WriteLine(",");
+                }
+
+            }
+            tw.WriteLine("  ));");
+            tw.WriteLine("");
+            tw.WriteLine("end.");
+
+            tw.Close();
+        }
+
+        private static void WriteCs(string file_name, Bitmap bmp)
+        {
+            TextWriter tw = new StreamWriter(Path.ChangeExtension(file_name, ".cs"));
+
+            int char_no;
+            for (char_no = 0; char_no < 128; char_no++)
+            {
+                int char_x, char_y;
+
+                if (char_no == 0)
+                    tw.WriteLine("{{");
+                else
+                    tw.WriteLine("}, {");
+
+                char_x = (char_no % 32) * 16;
+                char_y = (char_no / 32) * 16;
+
+                for (int y = 0; y < 16; y++)
+                {
+                    tw.Write("\t");
+                    for (int x = 0; x < 8; x++)
+                    {
+                        if (bmp.GetPixel(char_x + x, char_y + y).G == 0)
+                            tw.Write("1");
+                        else
+                            tw.Write("0");
+
+                        if (y == 15 && x == 7)
+                            tw.Write("");
+                        else
+                            tw.Write(",");
+                    }
+                    tw.WriteLine();
+                }
+
+            }
+            tw.WriteLine("}};");
+
+            tw.Close();
         }
 
         private void bnOpenBinFile_Click(object sender, EventArgs e)

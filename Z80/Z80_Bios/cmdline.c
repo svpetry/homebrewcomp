@@ -60,6 +60,7 @@ void cmdline(void) {
 	puts_nlb(CMD_PROMPT);
 	while (1) {
 		c = getchar();
+
 		if (c == 0) {
 			// special key
 			c = getchar();
@@ -73,7 +74,7 @@ void cmdline(void) {
 				pos = strlen(cmdbuf);
 			}
 
-		} else if (c == '\n') {
+		} else if (c == 10) {
 			putchar('\n');
 			strcpy(last_cmdbuf, cmdbuf);
 			strtolower(cmdbuf);
@@ -107,9 +108,9 @@ void cmdline(void) {
 
 				// DIR
 				} else if (!strcmp(params[0], "dir")) {
+					if (paramcount == 0)
+						*(params[1]) = 0;
 					list_dir(params[1]);
-
-				// GRAPHCIS
 
 				// GRAPHCIS
 				} else if (!strcmp(params[0], "graphics")) {
