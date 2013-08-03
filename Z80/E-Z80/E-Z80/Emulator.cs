@@ -63,6 +63,8 @@ namespace E_Z80
             FPortMapper.Register(128, 128, FKeyboard);
 
             FBootLoader = new BootLoader(FMemoryMapper);
+
+            OriginalSpeed = true;
         }
 
         public string SdDirectory { 
@@ -75,6 +77,8 @@ namespace E_Z80
                 FDiskController.DirName = value;
             }
         }
+
+        public bool OriginalSpeed { get; set; }
 
         private void ExecutionLoop()
         {
@@ -97,8 +101,11 @@ namespace E_Z80
                 FCpu.Exec(20 * 20000); // should last 20 mseconds
                 hStopwatch.Stop();
 
-                if (hStopwatch.ElapsedMilliseconds < 20)
-                    Thread.Sleep(20 - (int)hStopwatch.ElapsedMilliseconds);
+                if (OriginalSpeed)
+                {
+                    if (hStopwatch.ElapsedMilliseconds < 20)
+                        Thread.Sleep(20 - (int)hStopwatch.ElapsedMilliseconds);
+                }
                 hStopwatch.Reset();
 
 
@@ -113,37 +120,6 @@ namespace E_Z80
                     FInterruptNmi = false;
                 }
             }
-        }
-
-        public void Test()
-        {
-            var hTask = new Task(() =>
-            {
-                Random hRnd = new Random();
-                while (true)
-                {
-                    var hRow = 0;
-                    var hCol = 0;
-                    for (int hChar = 0; hChar < 128; hChar++)
-                    {
-                         FGraphics.PutChar(hCol, hRow, (byte)hChar);
-                        if (++hCol == 80)
-                        {
-                            hCol = 0;
-                            hRow++;
-                        }
-
-                    }
-                    Thread.Sleep(1000);
-
-                    //FGraphics.FgColor = Color.FromRgb((byte)hRnd.Next(255), (byte)hRnd.Next(255), (byte)hRnd.Next(255));
-                    //FGraphics.BgColor = Color.FromRgb((byte)hRnd.Next(255), (byte)hRnd.Next(255), (byte)hRnd.Next(255));
-
-                    FGraphics.OutB(5, hRnd.Next(255), 0);
-                    FGraphics.OutB(6, hRnd.Next(255), 0);
-                }
-            });
-            hTask.Start();
         }
 
         public void AddNewKey(char _Key)
