@@ -5,9 +5,10 @@
     <StackPanel>
         <Image x:Name="ImageScreen" HorizontalAlignment="Left" Height="400" Margin="10" VerticalAlignment="Top" Width="640" Stretch="None" MouseDown="ImageScreen_MouseDown" Focusable="True" FocusManager.IsFocusScope="True" />
         <StackPanel Orientation="Horizontal" Margin="10">
-            <Label Content="SD card directory:"></Label>
-            <TextBox x:Name="TextBoxDirectory" Height="23" Width="250" TextWrapping="Wrap" Margin="5,0,0,0" />
+            <Label Content="SD card directory:" VerticalAlignment="Center"></Label>
+            <TextBox x:Name="TextBoxDirectory" Height="23" Width="250" TextWrapping="Wrap" Margin="5,0,0,0" IsEnabled="False" />
             <Button x:Name="ButtonSelectDirectory" Content="..." Width="18" Margin="5,0,0,0" Click="SelectDirectory"/>
+            <CheckBox x:Name="CheckboxOriginalSpeed" Margin="15,0,0,0" Content="original speed" Checked="CheckboxOriginalSpeed_Checked" IsChecked="True" Unchecked="CheckboxOriginalSpeed_Unchecked" VerticalAlignment="Center"/>
         </StackPanel>
 
     </StackPanel>

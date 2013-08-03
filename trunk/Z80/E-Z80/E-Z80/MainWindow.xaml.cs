@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -97,6 +96,18 @@ namespace E_Z80
         private void ImageScreen_MouseDown(object sender, MouseButtonEventArgs e)
         {
             ImageScreen.Focus();
+        }
+
+        private void CheckboxOriginalSpeed_Checked(object sender, RoutedEventArgs e)
+        {
+            if (FEmulator != null)
+                FEmulator.OriginalSpeed = true;
+        }
+
+        private void CheckboxOriginalSpeed_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (FEmulator != null)
+                FEmulator.OriginalSpeed = false;
         }
 
     }
