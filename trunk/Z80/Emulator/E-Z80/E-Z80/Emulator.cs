@@ -98,13 +98,13 @@ namespace E_Z80
             while (true)
             {
                 hStopwatch.Start();
-                FCpu.Exec(20 * 20000); // should last 20 mseconds
+                FCpu.Exec(25 * 20000); // should last 25 mseconds
                 hStopwatch.Stop();
 
                 if (OriginalSpeed)
                 {
-                    if (hStopwatch.ElapsedMilliseconds < 20)
-                        Thread.Sleep(20 - (int)hStopwatch.ElapsedMilliseconds);
+                    if (hStopwatch.ElapsedMilliseconds < 25)
+                        Thread.Sleep(25 - (int)hStopwatch.ElapsedMilliseconds);
                 }
                 hStopwatch.Reset();
 
