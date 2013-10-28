@@ -1,7 +1,6 @@
-*Complete system*
+==Complete system==
 
 https://homebrewcomp.googlecode.com/svn/wiki/DSC01804.jpg
-
 
 *CPU*
 
