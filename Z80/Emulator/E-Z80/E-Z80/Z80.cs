@@ -10,6 +10,7 @@ namespace E_Z80
     /**
      * Z80 Class emulates a Z80's CPU behaviour
      * By Elfic One (2006)
+     * Enhanced by S.Petry (2013)
      *
      *  V1.00	+ Port to CSharp based on version 1.50 of CPUZ80 written in 2001 by E.Duijs as a part of JEmu
      *  
