@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace E_Z80
+namespace E_Z80.Emulator
 {
-
-
     /**
      * Z80 Class emulates a Z80's CPU behaviour
      * By Elfic One (2006)

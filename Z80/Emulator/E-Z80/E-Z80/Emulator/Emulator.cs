@@ -9,9 +9,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Input;
 using System.Diagnostics;
 
-namespace E_Z80
+namespace E_Z80.Emulator
 {
-    public class Emulator
+    public class Z80_Emulator
     {
         private Z80 FCpu;
         private MemoryMapper FMemoryMapper;
@@ -30,13 +30,16 @@ namespace E_Z80
         private bool FInterruptNmi;
         private Task FMainTask;
 
-        public Emulator(WriteableBitmap _Screen)
+        private const int cFrameDurationMs = 25;
+        private const int cCyclesPerMs = 20000;
+
+        public Z80_Emulator()
         {
             FMemoryMapper = new MemoryMapper();
             FPortMapper = new PortMapper();
             FCpu = new Z80 { MemProvider = FMemoryMapper, PortProvider = FPortMapper };
 
-            FGraphics = new Graphics(_Screen);
+            FGraphics = new Graphics();
             FMemoryMapper.Register(0x1000, 0x1fff, FGraphics);
             FPortMapper.Register(5, 7, FGraphics);
 
@@ -60,7 +63,7 @@ namespace E_Z80
             FPortMapper.Register(4, 4, FSpeaker);
 
             FKeyboard = new Keyboard();
-            FPortMapper.Register(128, 128, FKeyboard);
+            FPortMapper.Register(128, 129, FKeyboard);
 
             FBootLoader = new BootLoader(FMemoryMapper);
 
@@ -80,13 +83,22 @@ namespace E_Z80
 
         public bool OriginalSpeed { get; set; }
 
+        public Double LoadFactor { get; private set; }
+
+        public WriteableBitmap Screen
+        {
+            get
+            {
+                return FGraphics.Screen;
+            }
+        }
+
         private void ExecutionLoop()
         {
             FBootLoader.Load();
             FCpu.Reset();
-            FCpu.Exec(20000000); // 1 second = 20,000,000 cycles
+            FCpu.Exec(cCyclesPerMs * 1000); // 1 second
             FCpu.Reset();
-
 
             Thread.Sleep(500);
             FGraphics.RamActive = false;
@@ -98,14 +110,18 @@ namespace E_Z80
             while (true)
             {
                 hStopwatch.Start();
-                FCpu.Exec(25 * 20000); // should last 25 mseconds
+                FCpu.Exec(cFrameDurationMs * cCyclesPerMs);
                 hStopwatch.Stop();
 
-                if (OriginalSpeed)
+                if (OriginalSpeed && hStopwatch.ElapsedMilliseconds < cFrameDurationMs)
                 {
-                    if (hStopwatch.ElapsedMilliseconds < 25)
-                        Thread.Sleep(25 - (int)hStopwatch.ElapsedMilliseconds);
+                    var hSleepMs = cFrameDurationMs - (int)hStopwatch.ElapsedMilliseconds;
+                    LoadFactor = 1.0 - (double)hSleepMs / (double)cFrameDurationMs;
+                    Thread.Sleep(hSleepMs);
                 }
+                else
+                    LoadFactor = 1.0;
+
                 hStopwatch.Reset();
 
 
@@ -130,6 +146,16 @@ namespace E_Z80
         public void AddNewSpecialKey(Key _Key)
         {
             FKeyboard.AddNewSpecialKey(_Key);
+        }
+
+        public void KeyDown(Key _Key)
+        {
+            FKeyboard.KeyDown(_Key);
+        }
+
+        public void KeyUp(Key _Key)
+        {
+            FKeyboard.KeyUp(_Key);
         }
 
         public void UpdateScreen()

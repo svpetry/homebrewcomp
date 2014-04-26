@@ -5,10 +5,18 @@ using System.Text;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Threading.Tasks;
 
-namespace E_Z80
+namespace E_Z80.Emulator
 {
     enum GraMode { Text, Graphics };
+
+    internal class WritePixelsInfo
+    {
+        public Int32Rect Rect { get; set; }
+        public byte[] Pixels { get; set; }
+        public int Stride { get; set; }
+    }
 
     class Graphics : IMemRangeProvider, IPortProvider
     {
@@ -27,10 +35,11 @@ namespace E_Z80
         private Stack<int> FInvalidChars = new Stack<int>();
         private bool FAllInvalid;
         private GraMode FMode = GraMode.Text;
+        private object FScreenLockObj = new object();
 
-        public Graphics(WriteableBitmap _Screen)
+        public Graphics()
         {
-            FScreen = _Screen;
+            FScreen = new WriteableBitmap(640, 480, 96, 96, PixelFormats.Bgr32, null);
         }
 
         private Color ValueToColor(int _Value)
@@ -131,6 +140,14 @@ namespace E_Z80
             }
         }
 
+        public WriteableBitmap Screen
+        {
+            get
+            {
+                return FScreen;
+            }
+        }
+
         public void PutChar(int _Col, int _Row, byte _Char)
         {
             int hCharIdx = _Row * cRowSize + _Col;
@@ -151,12 +168,12 @@ namespace E_Z80
             }
         }
 
-        private void DrawChar(int _Col, int _Row)
+        private WritePixelsInfo PrepareDrawChar(int _Col, int _Row)
         {
             if (_Col < ColCount && _Row < RowCount)
             {
                 var hRect = new Int32Rect(_Col * 8, _Row * 16, 8, 16);
-                var hBytesPerPixel = FScreen.Format.BitsPerPixel / 8;
+                var hBytesPerPixel = 4; // FScreen.Format.BitsPerPixel / 8;
                 var hStride = hRect.Width * hBytesPerPixel;
 
                 byte[] hPixels;
@@ -189,12 +206,60 @@ namespace E_Z80
                         }
                     }
                 }
-                FScreen.WritePixels(hRect, hPixels, hStride, 0);
+                return new WritePixelsInfo { Pixels = hPixels, Rect = hRect, Stride = hStride };
             }
+            return null;
         }
+
+        //private void DrawChar(int _Col, int _Row)
+        //{
+        //    if (_Col < ColCount && _Row < RowCount)
+        //    {
+        //        var hRect = new Int32Rect(_Col * 8, _Row * 16, 8, 16);
+        //        var hBytesPerPixel = 4; // FScreen.Format.BitsPerPixel / 8;
+        //        var hStride = hRect.Width * hBytesPerPixel;
+
+        //        byte[] hPixels;
+
+        //        if (FMode == GraMode.Text)
+        //        {
+        //            hPixels = Characters.GetChar(FVideoRam[_Row * cRowSize + _Col], FFgColor, FBgColor);
+        //        }
+        //        else
+        //        {
+        //            byte hChar = FVideoRam[_Row * cRowSize + _Col];
+        //            hPixels = new byte[hStride * 16];
+        //            for (var hIdx = 0; hIdx < 8 * 16; hIdx++)
+        //            {
+        //                int hPixelIdx = hIdx * hBytesPerPixel;
+        //                int hRow = hIdx / 32;
+        //                int hCol = (hIdx % 8) / 4;
+        //                int hBitPos = hRow * 2 + hCol;
+        //                if ((hChar & (1 << hBitPos)) > 0)
+        //                {
+        //                    hPixels[hPixelIdx] = FFgColor.B;
+        //                    hPixels[hPixelIdx + 1] = FFgColor.G;
+        //                    hPixels[hPixelIdx + 2] = FFgColor.R;
+        //                }
+        //                else
+        //                {
+        //                    hPixels[hPixelIdx] = FBgColor.B;
+        //                    hPixels[hPixelIdx + 1] = FBgColor.G;
+        //                    hPixels[hPixelIdx + 2] = FBgColor.R;
+        //                }
+        //            }
+        //        }
+        //        lock (FScreenLockObj)
+        //        {
+        //            FScreen.WritePixels(hRect, hPixels, hStride, 0);
+        //        }
+        //    }
+        //}
 
         public void UpdateScreen()
         {
+            var hWritePixelsInfos = new Stack<WritePixelsInfo>();
+
             if (FAllInvalid)
             {
                 lock (FInvalidChars)
@@ -203,24 +268,56 @@ namespace E_Z80
                     FInvalidChars.Clear();
                 }
 
-                for (var hRow = 0; hRow < RowCount; hRow++)
-                {
-                    for (var hCol = 0; hCol < ColCount; hCol++)
-                        DrawChar(hCol, hRow);
-                }
+                Parallel.For(0, RowCount,
+                    _Row =>
+                    {
+                        for (var hCol = 0; hCol < ColCount; hCol++)
+                        {
+                            var hWritePixelsInfo = PrepareDrawChar(hCol, _Row);
+                            if (hWritePixelsInfo != null)
+                            {
+                                lock (hWritePixelsInfos)
+                                {
+                                    hWritePixelsInfos.Push(hWritePixelsInfo);
+                                }
+                            }
+                        }
+                    });
+                
+                //for (var hRow = 0; hRow < RowCount; hRow++)
+                //{
+                //    for (var hCol = 0; hCol < ColCount; hCol++)
+                //        DrawChar(hCol, hRow);
+                //}
 
             }
             else
             {
                 lock (FInvalidChars)
                 {
-                    while (FInvalidChars.Count > 0)
-                    {
-                        var hCharIdx = FInvalidChars.Pop();
-                        DrawChar(hCharIdx % cRowSize, hCharIdx / cRowSize);
-                    }
+                    Parallel.ForEach<int>(FInvalidChars,
+                        _CharIdx =>
+                        {
+                            var hWritePixelsInfo = PrepareDrawChar(_CharIdx % cRowSize, _CharIdx / cRowSize);
+                            if (hWritePixelsInfo != null)
+                            {
+                                lock (hWritePixelsInfos)
+                                {
+                                    hWritePixelsInfos.Push(hWritePixelsInfo);
+                                }
+                            }
+                        });
+
+                    //while (FInvalidChars.Count > 0)
+                    //{
+                    //    var hCharIdx = FInvalidChars.Pop();
+                    //    DrawChar(hCharIdx % cRowSize, hCharIdx / cRowSize);
+                    //}
                 }
             }
+
+            foreach (var hWritePixelsInfo in hWritePixelsInfos)
+                FScreen.WritePixels(hWritePixelsInfo.Rect, hWritePixelsInfo.Pixels, hWritePixelsInfo.Stride, 0);
         }
 
         #region IMemRangeProvider

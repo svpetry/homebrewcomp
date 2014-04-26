@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace E_Z80
+namespace E_Z80.Emulator
 {
     public interface IMemRangeProvider
     {
