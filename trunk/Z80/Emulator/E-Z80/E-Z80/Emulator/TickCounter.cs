@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace E_Z80
+namespace E_Z80.Emulator
 {
     class TickCounter : IPortProvider
     {

@@ -1,0 +1,30 @@
+﻿<Window x:Class="E_Z80.Views.MainView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:E_Z80.Views"
+        Title="Z80 Computer Emulator"
+        Height="500" Width="680"
+        ResizeMode="CanMinimize"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewKeyUp="Window_PreviewKeyUp"
+        TextInput="Window_TextInput">
+    
+    <Window.Resources>
+        <local:LoadFactorToStringConverter x:Key="LoadFactorToStringConv" />
+    </Window.Resources>
+
+    <StackPanel>
+        <Image x:Name="ImageScreen" HorizontalAlignment="Left" Height="400" Margin="10" 
+               VerticalAlignment="Top" Width="640" Stretch="None" 
+               Focusable="True" FocusManager.IsFocusScope="True" Source="{Binding ScreenSource}"
+               local:FocusExtension.IsFocused="{Binding ImageFocused}" >
+        </Image>
+        <StackPanel Orientation="Horizontal" Margin="10">
+            <Label Content="SD card directory:" VerticalAlignment="Center"/>
+            <TextBox Height="23" Width="250" Margin="5,0,0,0" Focusable="False" Text="{Binding Directory}"/>
+            <Button Content="..." Width="18" Margin="5,0,0,0" Focusable="False" Command="{Binding SelectDirectoryCommand}"/>
+            <CheckBox Margin="15,0,0,0" Content="original speed" IsChecked="{Binding OriginalSpeed, Mode=TwoWay}" VerticalAlignment="Center" Focusable="False"/>
+            <Label Margin="10,0,0,0" Content="{Binding LoadFactor, Converter={StaticResource LoadFactorToStringConv}}"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

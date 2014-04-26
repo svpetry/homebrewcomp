@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Media;
 
-namespace E_Z80
+namespace E_Z80.Emulator
 {
     public class Characters
     {
