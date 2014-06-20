@@ -46,7 +46,7 @@ begin
   LATA.0 := 1;
 
   LATA.2 := 1; // release bus
-end;
+end; // WriteBiosOutparam
 (******************************************************************************)
 procedure WriteBiosParamDWord(value: dword);
 begin
@@ -91,7 +91,7 @@ begin
   LATA.0 := 1;
 
   LATA.2 := 1; // release bus
-end;
+end; // WriteBiosParamDWord
 (******************************************************************************)
 procedure MemWrite(addr: word; value: byte);
 begin
@@ -118,7 +118,7 @@ begin
   LATA.0 := 1;
 
   LATA.2 := 1; // release bus
-end;
+end; // MemWrite
 (******************************************************************************)
 function MemRead(addr: word): byte;
 begin
@@ -143,7 +143,7 @@ begin
   LATA.0 := 1; // read from address bus
 
   LATA.2 := 1; // release bus
-end;
+end; // MemRead
 (******************************************************************************)
 function MemReadW(addr: word): word;
 begin
@@ -173,7 +173,7 @@ begin
   LATA.0 := 1; // read from address bus
 
   LATA.2 := 1; // release bus
-end;
+end; // MemReadW
 (******************************************************************************)
 procedure WriteBiosStr;
 var
@@ -214,7 +214,7 @@ begin
   LATA.0 := 1; // read from address bus
 
   LATA.2 := 1; // release bus
-end;
+end; // WriteBiosStr
 (******************************************************************************)
 procedure ReadBiosStr;
 var
@@ -253,7 +253,7 @@ begin
   LATA.0 := 1; // read from address bus
 
   LATA.2 := 1; // release bus
-end;
+end; // ReadBiosStr
 (******************************************************************************)
 
 end.

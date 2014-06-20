@@ -36,7 +36,7 @@ begin
   if disk_status = 1 then
     Spi_Init_Advanced(Master_OSC_div4, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
   mmc_changed := 0;
-end;
+end; // InitMmc
 (******************************************************************************)
 procedure ReadFile(var size: longint);
 var
@@ -84,7 +84,7 @@ begin
 
     inc(i);
     dec(size);
-  end;
+  end; // while (i < 512) and (size > 0) do
 
   TRISD := 255;
   TRISB := 255;
@@ -92,7 +92,7 @@ begin
 
   // DMA deaktivieren
   LATA.2 := 1;
-end;
+end; // ReadFile
 (******************************************************************************)
 procedure WriteFile(var size: word);
 var
@@ -140,7 +140,7 @@ begin
     LATE.0 := 1;
 
     dec(i);
-  end;
+  end; // while i > 0 do
 
   TRISD := 255;
   LATA.0 := 1;
@@ -149,7 +149,7 @@ begin
 
   // DMA deaktivieren
   LATA.2 := 1;
-end;
+end; // WriteFile
 (******************************************************************************)
 procedure ReadSector;
 var
@@ -221,8 +221,8 @@ begin
       inc(addr_lo);
       if addr_lo = 0 then
         inc(addr_hi);
-    end;
-  end;
+    end; // for i := 0 to 511 do
+  end; // if disk_status = 0 then
   
   TRISD := 255;
   TRISB := 255;
@@ -230,7 +230,7 @@ begin
   
   // DMA deaktivieren
   LATA.2 := 1;
-end;
+end; // ReadSector
 (******************************************************************************)
 procedure WriteSector;
 var
@@ -294,7 +294,7 @@ begin
     inc(addr_lo);
     if addr_lo = 0 then
       inc(addr_hi);
-  end;
+  end; // for i := 0 to 511 do
 
   disk_status := Mmc_Write_Sector(sector, io_buffer);
 
@@ -303,7 +303,7 @@ begin
 
   // deactivate DMA
   LATA.2 := 1;
-end;
+end; // WriteSector
 (******************************************************************************)
 procedure LoadFile(var fname: string[13]; addr: word);
 var
@@ -353,7 +353,7 @@ begin
         inc(addr_hi);
 
       dec(fsize);
-    end;
+    end; // while fsize > 0 do
 
     TRISD := 255;
     TRISB := 255;
@@ -363,10 +363,10 @@ begin
     LATA.2 := 1;
 
     disk_status := 0;
-  end
+  end // if Mmc_Fat_Assign(fname, 0) = 1 then
   else
     disk_status := 1;
-end;
+end; // LoadFile
 (******************************************************************************)
 procedure LoadProgram(var fname: string[13]);
 var
@@ -424,7 +424,7 @@ begin
         inc(addr_hi);
 
       dec(fsize);
-    end;
+    end; // while fsize > 0 do
 
     TRISD := 255;
     TRISB := 255;
@@ -433,10 +433,10 @@ begin
     LATA.6 := 1; // release cpu reset line
     disk_status := 0;
 
-  end
+  end // if Mmc_Fat_Assign(fname, 0) = 1 then
   else
     disk_status := 1;
-end;
+end; // LoadProgram
 (******************************************************************************)
 procedure ReadVolumeName;
 var
@@ -461,8 +461,8 @@ begin
       end
       else
         stop := 1;
-    end;
-  end;
+    end; // while stop = 0 do
+  end; // if FindFirst(dir_item) then
 
   if (dir_item.FileAttr and 8) > 0 then
   begin
@@ -471,6 +471,6 @@ begin
   end
   else
     bios_str[0] := 0;
-end;
+end; // ReadVolumeName
 (******************************************************************************)
 end.

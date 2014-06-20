@@ -188,12 +188,12 @@ void start_editor() {
 						}
 					}
 					break;
-				case 77: // left
+				case 77: // right
 					if (cur_col < V_COLS - 1) {
 						cur_col++;
 					}
 					break;
-				case 75: // right
+				case 75: // left
 					if (cur_col > 0) {
 						cur_col--;
 					}
