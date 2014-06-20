@@ -18,7 +18,7 @@ namespace E_Z80.Emulator
         private const int cAddrParam1l = 0x0051;
         private const int cAddrParam2 = 0x0053;
         private const int cAddrProgram = 0x0280;
-        private const int cAddBuffer = 0x0080;
+        private const int cAddrBuffer = 0x0080; // size of buffer: 512 bytes
 
         public MemAccess(IMemoryProvider _Memory)
         {
@@ -125,7 +125,7 @@ namespace E_Z80.Emulator
         {
             byte[] hResult = new byte[_Size];
             for (var hIdx = 0; hIdx < _Size; hIdx++)
-                hResult[hIdx] = (byte)FMemory.Peek(cAddBuffer + hIdx);
+                hResult[hIdx] = (byte)FMemory.Peek(cAddrBuffer + hIdx);
             return hResult;
         }
     }
@@ -348,7 +348,7 @@ namespace E_Z80.Emulator
                         ResetStatus();
                         break;
 
-                    case 20: // open file for reading (sparam: file name, outparam: 1=ok, paramdword: file size)
+                    case 20: // open file for reading (sparam: file name, outparam: 1=ok, param1l: file size)
                         LoadFile();
                         break;
 

@@ -19,7 +19,7 @@ begin
   Usart_Write_Text(str);
   Usart_Write(10);
   Usart_Write(13);
-end;
+end; // Usart_Write_Num
 (******************************************************************************)
 procedure Usart_Write_NumW(num: word);
 var
@@ -29,7 +29,7 @@ begin
   Usart_Write_Text(str);
   Usart_Write(10);
   Usart_Write(13);
-end;
+end; // Usart_Write_NumW
 (******************************************************************************)
 function KeybGetScancode(var value: byte): byte;
 var
@@ -89,7 +89,7 @@ begin
   
 //  if Result = 1 then
 //    Usart_Write_Num(value);
-end;
+end; // KeybGetScancode
 (******************************************************************************)
 // result: 0 = no key pressed, 1 = key pressed
 // value: 255 = no key
@@ -259,8 +259,8 @@ begin
               case scode of
                 $75: spec_key := 72; // up
                 $72: spec_key := 80; // down
-                $6B: spec_key := 75; // left (achtung: evtl. vertauscht!)
-                $74: spec_key := 77; // right (achtung: evtl. vertauscht!)
+                $6B: spec_key := 75; // left
+                $74: spec_key := 77; // right
 //                $70: spec_key := 0; // insert
 //                $71: spec_key := 0; // del
                 $6C: spec_key := 71; // home
@@ -296,6 +296,6 @@ begin
     end; // if result = 1 then
   until (value < 255) or (result = 0);
 
-end;
+end; // KeybGetChar
 (******************************************************************************)
 end.

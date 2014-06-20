@@ -32,23 +32,48 @@ uses Boot, MainBios, Initializer, Keyboard, DiskIO;
 
 (******************************************************************************)
 procedure Interrupt;
-begin
-  TMR0H := $E6;
-  TMR0L := $D3;
-
-  // 1 tick every 100 ms
-  inc(ticks);
-
-  if LATA.0 = 1 then
-  begin
-    TRISA.1 := 1;
-    if PORTA.1 = 0 then
-      mmc_changed := 1;
-    TRISA.1 := 0;
-  end;
+var
+  data: byte;
   
-  INTCON.TMR0IF := 0;
-end;
+begin
+  // timer 0 interrupt
+  if INTCON.TMR0IF = 1 then
+  begin
+    TMR0H := $E6;
+    TMR0L := $D3;
+
+    // 1 tick every 100 ms
+    inc(ticks);
+
+    if LATA.0 = 1 then
+    begin
+      PORTA.5 := 1; // Z80 interrupt
+      PORTA.5 := 0;
+
+      TRISA.1 := 1;
+      if PORTA.1 = 0 then
+        mmc_changed := 1;
+      TRISA.1 := 0;
+
+    end; // if LATA.0 = 1 then
+
+    INTCON.TMR0IF := 0;
+  end; // if INTCON.TMR0IF = 1 then
+  
+  // serial data interrupt
+  if PIR1.RCIF = 1 then
+  begin
+    data := RCREG;
+    if ser_data_size < SER_BUFF_SIZE then
+    begin
+      ser_buffer[ser_ptr_in] := data;
+      inc(ser_ptr_in);
+      if ser_ptr_in = SER_BUFF_SIZE then
+        ser_ptr_in := 0;
+      inc(ser_data_size);
+    end; // if ser_data_size < SER_BUFF_SIZE then
+  end; // if PIR1.RCIF = 1 then
+end; // Interrupt
 (******************************************************************************)
 procedure Init;
 begin
@@ -58,9 +83,13 @@ begin
   ADCON1 := $0f;
   CMCON := $07; // disable comparator
 
-  INTCON := %10100000; // Enable Timer0 interrupt
-  PIE1 := 0;
+  INTCON := %11100000; // Enable Timer0 interrupt, enable peripheral interrupts
+  INTCON2 := %10000000; // disable PORTB pull-up
+  INTCON3 := 0;
+  PIE1 := %00100000; // enable USART receive interrupt
   PIE2 := 0;
+  IPR1 := 0;
+  IPR2 := 0;
   RCON := 0;
   CCP1CON := 0;
 //  ECCP1CON := 0;
@@ -95,6 +124,9 @@ begin
 
   // Init RS232
   Usart_Init(19200);
+  ser_ptr_in := 0;
+  ser_ptr_out := 0;
+  ser_data_size := 0;
   
   mmc_changed := 0;
   ticks := 0;

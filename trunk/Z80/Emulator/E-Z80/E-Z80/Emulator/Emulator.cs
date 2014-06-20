@@ -53,7 +53,7 @@ namespace E_Z80.Emulator
             FDiskController = new DiskController(FMemoryMapper, () => FCpu.Reset());
             FPortMapper.Register(160, 169, FDiskController);
 
-            FSerial = new Serial();
+            FSerial = new Serial(FMemoryMapper);
             FPortMapper.Register(170, 179, FSerial);
 
             FLed = new Led();
