@@ -1,17 +1,7 @@
-﻿using E_Z80.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
+using E_Z80.ViewModels;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace E_Z80.Views
 {
@@ -24,7 +14,7 @@ namespace E_Z80.Views
         {
             InitializeComponent();
 
-            DataContext = new MainViewModel(new ViewIOService());
+            DataContext = new MainViewModel(new ViewIoService()) { MainView = this };
         }
 
         private void Window_TextInput(object _Sender, TextCompositionEventArgs _E)
@@ -36,7 +26,9 @@ namespace E_Z80.Views
 
         private void Window_PreviewKeyDown(object _Sender, KeyEventArgs _E)
         {
-            if (!_E.IsRepeat)
+            if (_E.IsRepeat)
+                ((MainViewModel)DataContext).KeyRepeatCommand.Execute(_E.Key);
+            else
                 ((MainViewModel)DataContext).KeyDownCommand.Execute(_E.Key);
         }
 

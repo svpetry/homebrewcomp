@@ -6,9 +6,6 @@
 #include "defs.h"
 #include "utils.h"
 
-byte cur_col = 0;
-byte cur_row = 0;
-
 static volatile byte __at VIDEO_BUFFER linebuf[V_ROWS][V_COLS];
 static volatile byte line_ptr = 0;
 

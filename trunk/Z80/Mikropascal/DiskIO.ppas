@@ -90,7 +90,7 @@ begin
   TRISB := 255;
   LATA.0 := 1;
 
-  // DMA deaktivieren
+  // deactivate DMA
   LATA.2 := 1;
 end; // ReadFile
 (******************************************************************************)
@@ -147,7 +147,7 @@ begin
 
   Mmc_Fat_Write(io_buffer, size);
 
-  // DMA deaktivieren
+  // deactivate DMA
   LATA.2 := 1;
 end; // WriteFile
 (******************************************************************************)
@@ -159,7 +159,7 @@ var
   i: word;
   
 begin
-  // DMA aktivieren
+  // activate DMA
   LATA.2 := 0;
   while PORTA.3 = 0 do
     nop;
@@ -228,7 +228,7 @@ begin
   TRISB := 255;
   LATA.0 := 1;
   
-  // DMA deaktivieren
+  // deactivate DMA
   LATA.2 := 1;
 end; // ReadSector
 (******************************************************************************)
@@ -308,7 +308,6 @@ end; // WriteSector
 procedure LoadFile(var fname: string[13]; addr: word);
 var
   fsize: longint;
-  data: byte;
   addr_lo, addr_hi: byte;
   
 begin

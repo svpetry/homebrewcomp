@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.IO.Ports;
 
 namespace E_Z80.Emulator
 {
     class Serial : IPortProvider
     {
-        private IMemoryProvider FMemory;
+        private readonly IMemoryProvider FMemory;
         private SerialPort FSerialPort;
 
         private const int cAddrBuffer = 0x0080; // size of buffer: 512 bytes
@@ -30,7 +27,7 @@ namespace E_Z80.Emulator
                 return FSerialPort.BytesToRead > 0 ? FSerialPort.ReadByte() : 0;
             }
             // read RS232 status (1 = data ready, 0 = no data)
-            else if (_Addr == 174)
+            if (_Addr == 174)
             {
                 if (FSerialPort == null) return 0;
 
@@ -51,21 +48,27 @@ namespace E_Z80.Emulator
                 switch (_Value)
                 {
                     case 1:
-                        hBaudRate = 4800;
+                        hBaudRate = 1200;
                         break;
                     case 2:
-                        hBaudRate = 9600;
+                        hBaudRate = 2400;
                         break;
                     case 3:
-                        hBaudRate = 19200;
+                        hBaudRate = 4800;
                         break;
                     case 4:
-                        hBaudRate = 38400;
+                        hBaudRate = 9600;
                         break;
                     case 5:
-                        hBaudRate = 57600;
+                        hBaudRate = 19200;
                         break;
                     case 6:
+                        hBaudRate = 38400;
+                        break;
+                    case 7:
+                        hBaudRate = 57600;
+                        break;
+                    case 8:
                         hBaudRate = 115200;
                         break;
                 }
@@ -93,7 +96,7 @@ namespace E_Z80.Emulator
                 var hIdx = 0;
                 do
                 {
-                    hValue = (byte)FMemory.Peek(cAddrBuffer + hIdx);
+                    hValue = (byte)FMemory.Peek(cAddrBuffer + hIdx++);
                     hData.Add(hValue);
                 } while (hValue != 10 && hIdx < 512);
 

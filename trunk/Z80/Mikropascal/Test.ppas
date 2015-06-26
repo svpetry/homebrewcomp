@@ -51,7 +51,7 @@ var
 begin
   Init;
 
-  text := 'Mia & Marie';
+  text := 'Test!';
   Lcd_Out(1, 1, text);
 
   text[1] := 0;

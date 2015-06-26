@@ -1,23 +1,23 @@
 program Z80_VGA_Timer;
 
 (*
- * VGA Signalgenerator
+ * VGA signal generator
  * Clock: 50 MHz ext. = 12.5 MHz int.
  *
- * Auflösung: 640 x 400
+ * Resolution: 640 x 400
  *
  * pin layout:
- * RA0: H_VISIBLE: sichtbarer Bereich der Zeile (aktiv = 1)
- * RA1: /CLR_CNT: Zeilenzähler zurücksetzen
- * RA2: /V_SYNC: /vertikale Synchronisation
- * RA3: /H_SYNC: /horizontale Synchronisation
- * RA4: /VRAM_BUSY: An die CPU: Bald kommt der Speicherzugriff! (aktiv = 0)
- * RA5: WR_CHARRAM: 1 = Char-RAM schreiben, 0 = normaler Betrieb
+ * RA0: H_VISIBLE: visible area of row (active = 1)
+ * RA1: /CLR_CNT: reset row counter
+ * RA2: /V_SYNC: /vertical synchronization
+ * RA3: /H_SYNC: /horizontal syncronization
+ * RA4: /VRAM_BUSY: to the CPU: memory access follows! (active= 0)
+ * RA5: WR_CHARRAM: 1 = write character RAM, 0 = normal operation
  * RA6: CNT_CLK
- * RA7: Angeschlossen an Quarz-Oszillator
- * RB0-RB7, RE0: Zeilenzähler (0-399), RB0-RB3: A0-A3 des Character-RAM
- * RC0-RC7: A4-A11 des Character-RAM
- * RD0-RD7: D0-D7 des Character-RAM
+ * RA7: connected to crystal oscillator
+ * RB0-RB7, RE0: row counter (0-399), RB0-RB3: A0-A3 of character RAM
+ * RC0-RC7: A4-A11 of character RAM
+ * RD0-RD7: D0-D7 of character RAM
  * RE1: /EN_RAMACCESS
  * RE3: GRFX_MODE
  *)
@@ -79,9 +79,9 @@ begin
   TRISD := 0;
   PORTB := 15;
 
-  PORTC := 0; // Der ASCII-Code des Zeichens steht in PORTC (A4-A11 des Character-RAM)
+  PORTC := 0; // The caracter's ASCII code is on PORTC (A4-A11 of character RAM)
 
-  // Zeichen 0-127
+  // caracter 0-127
   for char := 0 to 127 do
   begin
     for line := 0 to 15 do
@@ -92,7 +92,7 @@ begin
     inc(PORTC);
   end;
   
-  // Zeichen 128-255
+  // character 128-255
   for char := 0 to 127 do
   begin
     for line := 0 to 15 do
@@ -122,7 +122,7 @@ begin
   TRISD := 0;
   PORTB := 15;
 
-  PORTC := 0; // Der ASCII-Code des Zeichens steht in PORTC (A4-A11 des Character-RAM)
+  PORTC := 0; // The caracter's ASCII code is on PORTC (A4-A11 of character RAM)
 
   for char := 0 to 255 do
   begin
@@ -185,13 +185,13 @@ begin
 
   asm
 loop:
-    MOVF   _next_porta, 0 // dafür unten 1 Pixel weniger!
+    MOVF   _next_porta, 0 // 1 pixel less further down!
     // 48 Pixel vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    MOVWF  LATA // hsync etc. einschalten
+    MOVWF  LATA // turn on hsync etc.
     MOVLW  9 // (%00001001) PORTE.0 = input
     MOVWF  TRISE
-    BCF    LATE, 1 // /EN_RAMACCESS, bewirkt Ausführung von wartendem Schreibzugriff
-    BSF    LATA, 4 // CPU kann wieder auf den Speicher zugreifen (Wartende CPU freigeben)
+    BCF    LATE, 1 // /EN_RAMACCESS, results in execution of waiting write access
+    BSF    LATA, 4 // CPU can access memory again (unlock waiting CPU)
     NOP
     NOP
     NOP
@@ -238,8 +238,8 @@ loop:
     // 48 Pixel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     // 24 Pixel vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    BSF    LATA, 3 // hsync ausschalten
-    BSF    LATA, 6 // Counter um 1 hochzählen wegen Versatz von 74LS590
+    BSF    LATA, 3 // turn off hsync
+    BSF    LATA, 6 // increment counter by 1 (offset of 74LS590)
     BCF    LATA, 6 //   - " -
     NOP
     NOP
@@ -247,11 +247,11 @@ loop:
     NOP
     NOP
     BTFSC  _data_line, 0
-    BCF    LATA, 4 // CPU: Bitte nicht mehr auf RAM zugreifen! (/VRAM_BUSY)
+    BCF    LATA, 4 // CPU must not access RAM! (/VRAM_BUSY)
     NOP
     BCF    _next_porte, 1
     BTFSC  _data_line, 0
-    BSF    _next_porte, 1 // Zugriff auf RAM verbieten, wenn data_line = 1
+    BSF    _next_porte, 1 // deny access of RAM if data_line = 1
     MOVF   _next_porte, 0
     MOVWF  LATE
     NOP
@@ -265,9 +265,9 @@ loop:
     // 24 Pixel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
     // 320 Pixel vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    BSF    LATA, 0 // Anfang sichtbarer Bereich
+    BSF    LATA, 0 // start of visible area
 
-    // vvv Block = 11 Instruktionen
+    // vvv block = 11 instructions
     // if line = 449 then
     MOVF   _line+1, 0, 0
     XORLW  1
@@ -278,7 +278,7 @@ loop:
     // line := 0
     CLRF   _line, 0
     CLRF   _line+1, 0
-    BCF    _next_porta, 2 // Start vsync
+    BCF    _next_porta, 2 // start vsync
     BRA    end1
 else1a:
     NOP
@@ -292,15 +292,15 @@ else1b:
     NOP
 end1:
 
-    // vvv Block = 9 Instruktionen
-    // if line = 2 then (Ende vsync)
+    // vvv block = 9 instructions
+    // if line = 2 then (end of vsync)
     MOVF   _line+1, 0, 0
     XORLW  0
     BNZ    else2a
     MOVLW  2
     XORWF  _line, 0, 0
     BNZ    else2b
-    BSF    _next_porta, 2 // Ende vsync
+    BSF    _next_porta, 2 // end of vsync
     BRA    end2
 else2a:
     NOP
@@ -311,8 +311,8 @@ else2b:
     NOP
 end2:
 
-    // vvv Block = 14 Instruktionen
-    // if line = 35 then (Anfang des sichtbaren Bereichs)
+    // vvv block = 14 instructions
+    // if line = 35 then (start of visible area)
     MOVF   _line+1, 0, 0
     XORLW  0
     BNZ    else3a
@@ -321,8 +321,8 @@ end2:
     BNZ    else3b
     BSF    _data_line, 0 // data_line := 1
     MOVLW  255
-    MOVWF  _next_portb // Zeilenzähler auf 255 setzen (dann wird er weiter unten auf 0 gesetzt)
-    BSF    _next_porte, 0 // wird weiter unten 0 wegen BTG
+    MOVWF  _next_portb // set row counter to 255 (then it will be set to 0 further down)
+    BSF    _next_porte, 0 // will be set to 0 further down because of BTG
     BCF    _next_trise, 0
     CLRF   _next_trisb
     BRA    end3
@@ -340,8 +340,8 @@ else3b:
     NOP
 end3:
 
-    // vvv Block = 13 Instruktionen
-    // if line = 435 then (Ende des sichtbaren Bereichs)
+    // vvv block = 13 instructions
+    // if line = 435 then (end of visible area)
     MOVF   _line+1, 0, 0
     XORLW  1
     BNZ    else4a
@@ -367,8 +367,8 @@ else4b:
     NOP
 end4:
 
-    // vvv Block = 7 Instruktionen
-    INCFSZ _next_portb, 1 // Zeilenzähler := Zeilenzähler + 1
+    // vvv block = 7 instructions
+    INCFSZ _next_portb, 1 // row counter := row counter + 1
     BRA    else5
     BTG    _next_porte, 0
 else5:
@@ -377,13 +377,12 @@ else5:
     NOP
     NOP
 
-{ // Auskommentiert, da hier für 320x200 Pixel nur jede zweite Zeile der
-  // Zeilenzähler hochgezählt wurde.
+{ // commented out. for 320x200 pixels only every second line was incremented
     BTFSS  _data_line, 0 // if data_line.0 = 1
     BRA    else5a
     BTFSS  _line, 0 // ... and _line.0 = 0
     BRA    else5b
-    INCF   _next_portb, 1 // Zeilenzähler := Zeilenzähler + 1
+    INCF   _next_portb, 1 // row counter := row counter + 1
     BRA    end5
 else5a:
     NOP
@@ -393,16 +392,16 @@ else5b:
     NOP
 end5:
 }
-    // Bis hier 55 Instruktionen
+    // 55 instructions until here
     
-    MOVLW   51 // 1 Instruktion
-wait_loop: // 50 * 5 + 4 = 254 Instruktionen warten
+    MOVLW   51 // 1 instruction
+wait_loop: // wait for 50 * 5 + 4 = 254 instructions
     NOP
     NOP
     DECFSZ WREG, 0
     BRA    wait_loop
 
-    // 10 Instruktionen
+    // 10 instructions
     MOVF   PORTE, 0, 0
     ANDLW  8
     XORWF  _gm, 0, 0
@@ -414,16 +413,16 @@ weiter6:
     NOP
     NOP
     NOP
-    // 320 Pixel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    // 320 pixels ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
-    // 7 Pixel (der 8. kommt ganz oben)vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    BCF    LATA, 0 // Ende sichtbarer Bereich
-    BCF    LATA, 1 // Counter löschen
-    BSF    LATA, 1 // Counter löschen
+    // 7 pixels (the 8. is on the very top) vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+    BCF    LATA, 0 // end of visible area
+    BCF    LATA, 1 // clear counter
+    BSF    LATA, 1 // clear counter
     MOVLW  255     // PORTB = input
     MOVWF  TRISB
     goto loop;
-    // 7 Pixel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    // 7 pixels ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 exitloop:
 

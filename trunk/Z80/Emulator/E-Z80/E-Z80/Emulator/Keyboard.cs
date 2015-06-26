@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Windows.Input;
 
 namespace E_Z80.Emulator
 {
     class Keyboard : IPortProvider
     {
-        private static Queue<byte> FKeyQueue = new Queue<byte>();
-        private static Queue<byte> FScanCodeQueue = new Queue<byte>();
-        private object FLockObj = new object();
+        private static readonly Queue<byte> FKeyQueue = new Queue<byte>();
+        private static readonly Queue<byte> FScanCodeQueue = new Queue<byte>();
+        private readonly object FLockObj = new object();
 
         #region IPortProvider
 
@@ -26,11 +23,10 @@ namespace E_Z80.Emulator
                         var hKey = FKeyQueue.Dequeue();
                         return hKey;
                     }
-                    else
-                        return 255;
+                    return 255;
                 }
             }
-            else if (_Addr == 129)
+            if (_Addr == 129)
             {
                 lock (FLockObj)
                 {
@@ -40,8 +36,7 @@ namespace E_Z80.Emulator
                         var hKey = FScanCodeQueue.Dequeue();
                         return hKey;
                     }
-                    else
-                        return 0;
+                    return 0;
                 }
             }
             return 0;

@@ -56,7 +56,7 @@ main() {
 
 	__asm
 		ld a, #1
-		out (0), a // RAM-Bank 0 aktivieren
+		out (0), a // activate RAM bank 0
 		out (7), a // enable VRAM & activate textmode
 	__endasm;
 
@@ -66,12 +66,12 @@ main() {
 		xor a, a
 		out (1), a // ext. Port = 0
 		out (2), a // ext. Port = 0
-		out (3), a // LED aus
-		out (4), a // PC-Speaker aus
+		out (3), a // LED off
+		out (4), a // PC Speaker off
 		ld a, #16
-		out (5), a // Hintergrundfarbe
+		out (5), a // Background color
 		ld a, #53
-		out (6), a // Vordergrundfarbe
+		out (6), a // Foreground color
 	__endasm;
 
 	delay_ms(200);
@@ -81,6 +81,7 @@ main() {
 
 	delay_ms(300);
 
+	// play some sound
 	send_sound_cmd("VOf");
 
 	send_sound_cmd("WF01");

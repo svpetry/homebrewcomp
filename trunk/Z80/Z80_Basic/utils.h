@@ -8,6 +8,7 @@ void delay_ms(word ms);
 void reverse(char s[]);
 void itoa_(int n, char s[]);
 void ltoa_(long i, char* buf);
+long powi(long base, int exp);
 void quit_app(void);
 
 #endif /* UTILS_H_ */

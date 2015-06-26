@@ -1,18 +1,13 @@
 unit MainBios;
 
-uses DiskIO, Memory, Keyboard, Fat16Dir;
+uses DiskIO, Memory, Keyboard, Fat16Dir, Serial;
 
 const
   BUSY_ADDR = $0044;
-  SER_BUFF_SIZE = 1024;
 
 var
   fsize: word;
   ticks: dword;
-  ser_buffer: array [0..SER_BUFF_SIZE] of byte;
-  ser_ptr_in: word;
-  ser_ptr_out: word;
-  ser_data_size: word;
 
 (******************************************************************************)
 procedure ProcessPortWrite;
@@ -20,7 +15,7 @@ var
   dir_item: TFat16DirItem;
   value: byte;
   block_size: word;
-  i: byte;
+  brg_value: word;
 
 begin
   value := PORTB;
@@ -251,14 +246,27 @@ begin
     170: begin
       LATA.4 := 0;
       LATA.4 := 1;
+      
+      RCSTA := %00010000;
+      TXSTA := %00100100;
+      BAUDCON := %00000100;
+
       case value of
-         1: Usart_Init(4800);
-         2: Usart_Init(9600);
-         3: Usart_Init(19200);
-         4: Usart_Init(38400);
-         5: Usart_Init(57600);
-         6: Usart_Init(115200);
+        1: brg_value := 13749; // 1200 baud
+        2: brg_value := 6874; // 2400 baud
+        3: brg_value := 3436; // 4800 baud
+        4: brg_value := 1717; // 9600 baud
+        5: brg_value := 858; // 19200 baud
+        6: brg_value := 428; // 38400 baud
+        7: brg_value := 290; // 56700 baud
+        8: brg_value := 142; // 115200 baud
       end;
+      
+      SPBRGH := Hi(brg_value);
+      SPBRG := Lo(brg_value);
+
+      RCSTA.7 := 1; // enable serial port
+
       ser_ptr_in := 0;
       ser_ptr_out := 0;
       ser_data_size := 0;
@@ -273,10 +281,9 @@ begin
     
     // write text to RS232
     172: begin
-      ReadBiosStr();
-      Usart_Write_Text(bios_str);
       LATA.4 := 0;
       LATA.4 := 1;
+      SerialWriteText();
     end // 172
     
     else begin

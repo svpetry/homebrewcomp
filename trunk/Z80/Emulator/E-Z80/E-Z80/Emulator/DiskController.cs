@@ -1,42 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace E_Z80.Emulator
 {
     internal class MemAccess
     {
-        private IMemoryProvider FMemory;
+        private readonly IMemoryProvider FMemory;
 
         private const int cAddrBusy = 0x0044;
-        private const int cAddrSparam = 0x0060;
-        private const int cAddrOutparam = 0x0055;
         private const int cAddrParam1b = 0x0051;
         private const int cAddrParam1w = 0x0051;
         private const int cAddrParam1l = 0x0051;
         private const int cAddrParam2 = 0x0053;
-        private const int cAddrProgram = 0x0280;
+        private const int cAddrOutparam = 0x0055;
+        private const int cAddrSparam = 0x0060;
         private const int cAddrBuffer = 0x0080; // size of buffer: 512 bytes
+        private const int cAddrProgram = 0x0280;
 
         public MemAccess(IMemoryProvider _Memory)
         {
             FMemory = _Memory;
         }
 
-        public string sparam
+        public string Sparam
         {
             get
             {
-                string hStr = "";
-                for (int hIdx = 0; hIdx < 0x20; hIdx++)
+                var hStr = "";
+                for (var hIdx = 0; hIdx < 0x20; hIdx++)
                 {
-                    byte hChar = (byte)FMemory.Peek(cAddrSparam + hIdx);
+                    var hChar = (byte)FMemory.Peek(cAddrSparam + hIdx);
                     if (hChar == 0)
                         break;
-                    else
-                        hStr = hStr + (char)hChar;
+                    hStr += (char)hChar;
                 }
 
                 return hStr;
@@ -47,17 +44,17 @@ namespace E_Z80.Emulator
                 var hStr = value;
                 if (hStr.Length > 0x1f)
                     hStr = hStr.Substring(0, 0x1f);
-                int hIdx = 0;
-                foreach (char cChar in hStr)
+                var hIdx = 0;
+                foreach (var hChar in hStr)
                 {
-                    FMemory.Poke(cAddrSparam + hIdx, (byte)cChar);
+                    FMemory.Poke(cAddrSparam + hIdx, (byte)hChar);
                     hIdx++;
                 }
                 FMemory.Poke(cAddrSparam + hIdx, 0);
             }
         }
 
-        public byte busy
+        public byte Busy
         {
             set
             {
@@ -65,7 +62,7 @@ namespace E_Z80.Emulator
             }
         }
 
-        public byte param1b
+        public byte Param1B
         {
             get
             {
@@ -77,7 +74,7 @@ namespace E_Z80.Emulator
             }
         }
 
-        public int param1w
+        public int Param1W
         {
             get
             {
@@ -90,7 +87,7 @@ namespace E_Z80.Emulator
             }
         }
 
-        public uint param1l
+        public uint Param1L
         {
             get
             {
@@ -106,7 +103,7 @@ namespace E_Z80.Emulator
             }
         }
 
-        public int outparam
+        public int Outparam
         {
             set
             {
@@ -123,7 +120,7 @@ namespace E_Z80.Emulator
 
         public byte[] ReadBuffer(int _Size)
         {
-            byte[] hResult = new byte[_Size];
+            var hResult = new byte[_Size];
             for (var hIdx = 0; hIdx < _Size; hIdx++)
                 hResult[hIdx] = (byte)FMemory.Peek(cAddrBuffer + hIdx);
             return hResult;
@@ -140,8 +137,8 @@ namespace E_Z80.Emulator
     class DiskController : IPortProvider
     {
         private string FDirName = "";
-        private MemAccess FMemAccess;
-        private Action FResetCpu;
+        private readonly MemAccess FMemAccess;
+        private readonly Action FResetCpu;
         private int FStatus = 1;
 
         private string[] FDirFiles;
@@ -178,7 +175,7 @@ namespace E_Z80.Emulator
             var hFileName = Path.Combine(FDirName, _FileName);
             if (File.Exists(hFileName))
             {
-                byte[] hBytes = File.ReadAllBytes(hFileName);
+                var hBytes = File.ReadAllBytes(hFileName);
 
                 if (_FileName == BiosFile)
                     FMemAccess.Load(hBytes, 0x0000);
@@ -209,36 +206,36 @@ namespace E_Z80.Emulator
 
         private void LoadFile()
         {
-            var hFileName = Path.Combine(FDirName, FMemAccess.sparam);
+            var hFileName = Path.Combine(FDirName, FMemAccess.Sparam);
             if (File.Exists(hFileName))
             {
                 FFilePos = 0;
                 FFileContent = File.ReadAllBytes(hFileName);
-                FMemAccess.param1l = (uint)FFileContent.Length;
-                FMemAccess.outparam = 1;
+                FMemAccess.Param1L = (uint)FFileContent.Length;
+                FMemAccess.Outparam = 1;
             }
             else
-                FMemAccess.outparam = 0;
+                FMemAccess.Outparam = 0;
             
             ResetStatus();
         }
 
         private void WriteNewFile()
         {
-            var hFileName = Path.Combine(FDirName, FMemAccess.sparam);
-            if (!File.Exists(hFileName))
-            {
-                FSaveFileName = hFileName;
-                FStatus = 1;
-                FWriteMode = WriteMode.CreateNew;
-            }
-            else
-                FStatus = 0;
+            var hFileName = Path.Combine(FDirName, FMemAccess.Sparam);
+
+            // overwrite existing file
+            if (File.Exists(hFileName))
+                File.Delete(hFileName);
+
+            FSaveFileName = hFileName;
+            FStatus = 1;
+            FWriteMode = WriteMode.CreateNew;
         }
 
         private void AppendFile()
         {
-            var hFileName = Path.Combine(FDirName, FMemAccess.sparam);
+            var hFileName = Path.Combine(FDirName, FMemAccess.Sparam);
             if (File.Exists(hFileName))
             {
                 FSaveFileName = hFileName;
@@ -255,7 +252,7 @@ namespace E_Z80.Emulator
             {
                 if (FSaveFileName != "")
                 {
-                    int hSize = (int)FMemAccess.param1l;
+                    int hSize = (int)FMemAccess.Param1L;
                     if (FWriteMode == WriteMode.CreateNew && !File.Exists(FSaveFileName))
                     {
                         File.WriteAllBytes(FSaveFileName, FMemAccess.ReadBuffer(hSize));
@@ -278,11 +275,11 @@ namespace E_Z80.Emulator
 
         private void SetDirInfo(string _FileName)
         {
-            FMemAccess.sparam = _FileName.ToUpper();
+            FMemAccess.Sparam = _FileName.ToUpper();
             var hFileInfo = new FileInfo(Path.Combine(FDirName, _FileName));
-            FMemAccess.param1l = (uint)hFileInfo.Length;
+            FMemAccess.Param1L = (uint)hFileInfo.Length;
             
-            int hAttributes = 0;
+            var hAttributes = 0;
             if (hFileInfo.Attributes.HasFlag(FileAttributes.ReadOnly))
                 hAttributes += 1;
             if (hFileInfo.Attributes.HasFlag(FileAttributes.Hidden))
@@ -293,14 +290,14 @@ namespace E_Z80.Emulator
                 hAttributes += 16;
             if (hFileInfo.Attributes.HasFlag(FileAttributes.Archive))
                 hAttributes += 32;
-            FMemAccess.outparam = hAttributes;
+            FMemAccess.Outparam = hAttributes;
         }
 
         #region IPortProvider
 
         public int InB(int _Addr, int _Hi)
         {
-            FMemAccess.busy = 1;
+            FMemAccess.Busy = 1;
             switch (_Addr)
             {
                 case 161: // disk status (1 = OK)
@@ -309,13 +306,13 @@ namespace E_Z80.Emulator
                 case 163:
                     return ReadByteFromFile();
             }
-            FMemAccess.busy = 0;
+            FMemAccess.Busy = 0;
             return 0;
         }
 
         public void OutB(int _Addr, int _Value, int _State)
         {
-            FMemAccess.busy = 1;
+            FMemAccess.Busy = 1;
             if (_Addr == 160)
             {
                 switch (_Value)
@@ -335,7 +332,7 @@ namespace E_Z80.Emulator
                         if (FDirFiles.Length > 0)
                             SetDirInfo(FDirFiles[0]);
                         else
-                            FMemAccess.sparam = "";
+                            FMemAccess.Sparam = "";
                         FDirFileIdx = 1;
                         ResetStatus();
                         break;
@@ -344,7 +341,7 @@ namespace E_Z80.Emulator
                         if (FDirFileIdx < FDirFiles.Length)
                             SetDirInfo(FDirFiles[FDirFileIdx++]);
                         else
-                            FMemAccess.sparam = "";
+                            FMemAccess.Sparam = "";
                         ResetStatus();
                         break;
 
@@ -373,35 +370,35 @@ namespace E_Z80.Emulator
                     case 26: // read volume name
                         var hSegments = FDirName.Split(Path.DirectorySeparatorChar);
                         if (hSegments.Length > 1)
-                            FMemAccess.sparam = hSegments[hSegments.Length - 2].ToUpper();
+                            FMemAccess.Sparam = hSegments[hSegments.Length - 2].ToUpper();
                         else
-                            FMemAccess.sparam = "";
+                            FMemAccess.Sparam = "";
                         ResetStatus();
                         break;
 
                     case 27: // load program
-                        LoadProgram(FMemAccess.sparam);
+                        LoadProgram(FMemAccess.Sparam);
                         break;
 
                     case 28: // delete file (outparam: 1=file deleted)
-                        var hFileName = Path.Combine(FDirName, FMemAccess.sparam);
+                        var hFileName = Path.Combine(FDirName, FMemAccess.Sparam);
                         if (File.Exists(hFileName))
                         {
                             File.Delete(hFileName);
-                            FMemAccess.outparam = 1;
+                            FMemAccess.Outparam = 1;
                         }
                         else
-                            FMemAccess.outparam = 0;
+                            FMemAccess.Outparam = 0;
                         ResetStatus();
                         break;
 
                     case 29: // check if file exists (outparam: 1=yes)
-                        FMemAccess.outparam = File.Exists(Path.Combine(FDirName, FMemAccess.sparam)) ? 1 : 0;
+                        FMemAccess.Outparam = File.Exists(Path.Combine(FDirName, FMemAccess.Sparam)) ? 1 : 0;
                         ResetStatus();
                         break;
                 }
             }
-            FMemAccess.busy = 0;
+            FMemAccess.Busy = 0;
         }
 
         #endregion

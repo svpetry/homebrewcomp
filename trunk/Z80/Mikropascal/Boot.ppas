@@ -11,7 +11,7 @@ var
   fsize: longint;
   addr_lo: byte;
   addr_hi: byte;
-  dir_info: TFat16DirItem;
+  //dir_info: TFat16DirItem;
   data: byte;
 
 begin

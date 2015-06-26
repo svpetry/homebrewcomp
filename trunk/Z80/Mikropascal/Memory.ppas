@@ -3,15 +3,16 @@ unit Memory;
 uses
   Keyboard;
 
-var
-   bios_str: string[20]; // Todo: length should be 31
-
 const
   BIOS_STR_ADDR_LO = $60;
   BIOS_STR_ADDR_HI = $00;
+  BIOS_STR_SIZE = $20;
   BIOS_PARAM1_ADDR_LO = $51;
   BIOS_PARAM2_ADDR_LO = $53;
   BIOS_OUTPARAM_ADDR_LO = $55;
+
+var
+   bios_str: string[BIOS_STR_SIZE];
 
 (******************************************************************************)
 procedure WriteBiosOutparam(value: word);
@@ -197,7 +198,7 @@ begin
 
   pdata := @bios_str;
 
-  for i := 0 to 19 do
+  for i := 0 to BIOS_STR_SIZE - 1 do
   begin
     PORTD := addr_lo;
     inc(addr_lo);
@@ -237,7 +238,7 @@ begin
 
   pdata := @bios_str;
 
-  for i := 0 to 19 do
+  for i := 0 to BIOS_STR_SIZE - 1 do
   begin
     PORTD := addr_lo;
 

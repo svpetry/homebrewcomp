@@ -1,31 +1,60 @@
-﻿using E_Z80.Common;
-using E_Z80.Emulator;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Threading;
-using System.Windows.Media;
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
+using E_Z80.Common;
+using E_Z80.Emulator;
+using E_Z80.Views;
 
 namespace E_Z80.ViewModels
 {
-    class MainViewModel : BaseViewModel
+    internal class MainViewModel : BaseViewModel
     {
-        private IOService FIOService;
+        private readonly IOService FIoService;
 
-        private Z80_Emulator FEmulator;
+        private readonly MainEmulator FEmulator;
+
         private DispatcherTimer FScreenTimer;
-        private int FUpdateCountdown;
 
-        private const string cSettingsFile = "settings.ini";
+        private int FUpdateCountdown;
 
         private bool FOriginalSpeed;
         private int FLoadFactor;
-        private string FDirectory;
+
         private ImageSource FScreenSource;
+
+        public MainViewModel(IOService _IoService)
+        {
+            FIoService = _IoService;
+            Settings.Load();
+
+            InitCommands();
+
+            FEmulator = new MainEmulator();
+
+            OriginalSpeed = true;
+
+            InitScreenTimer();
+
+            var hInterruptTimer = new DispatcherTimer { Interval = new TimeSpan(0, 0, 0, 0, 100) };
+            hInterruptTimer.Tick += (_Sender, _EventArgs) => FEmulator.InterruptIrq();
+            hInterruptTimer.Start();
+
+            FEmulator.SdDirectory = Settings.SdDirectory;
+            FEmulator.Start();
+        }
+
+        private void InitScreenTimer()
+        {
+            if (FScreenTimer != null)
+                FScreenTimer.Stop();
+
+            FScreenTimer = new DispatcherTimer { Interval = new TimeSpan(0, 0, 0, 0, 1000 / Settings.UpdateRate) };
+            FScreenTimer.Tick += UpdateScreen;
+            FScreenTimer.Start();
+        }
 
         public bool OriginalSpeed
         {
@@ -56,23 +85,8 @@ namespace E_Z80.ViewModels
             }
         }
 
-        public string Directory
+        public ImageSource ScreenSource
         {
-            get
-            {
-                return FDirectory;
-            }
-            set
-            {
-                if (FDirectory == value) return;
-                FDirectory = value;
-                FEmulator.SdDirectory = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ImageSource ScreenSource 
-        { 
             get
             {
                 return FScreenSource;
@@ -81,79 +95,79 @@ namespace E_Z80.ViewModels
             {
                 FScreenSource = value;
                 OnPropertyChanged();
-            } 
+            }
         }
 
-        public bool ImageFocused
+        public Led Led
         {
             get
             {
-                return true;
-            }
-            set
-            {
-                OnPropertyChanged();
+                return FEmulator.Led;
             }
         }
 
-        public ActionCommand SelectDirectoryCommand { get; set; }
+        public ActionCommand KeyDownCommand { get; private set; }
 
-        public ActionCommand KeyDownCommand { get; set; }
+        public ActionCommand KeyUpCommand { get; private set; }
 
-        public ActionCommand KeyUpCommand { get; set; }
+        public ActionCommand TextInputCommand { get; private set; }
 
-        public ActionCommand TextInputCommand { get; set; }
-        
-        public MainViewModel(IOService _IOService)
-        {
-            FIOService = _IOService;
+        public ActionCommand KeyRepeatCommand { get; private set; }
 
-            InitCommands();
+        public ActionCommand SettingsCommand { get; private set; }
 
-            FEmulator = new Z80_Emulator();
+        public ActionCommand ResetCommand { get; private set; }
 
-            if (File.Exists(cSettingsFile))
-            {
-                var hDirectory = File.ReadAllText(cSettingsFile);
-                Directory = hDirectory;
-            }
-            OriginalSpeed = true;
-
-            FScreenTimer = new DispatcherTimer();
-            FScreenTimer.Interval = new TimeSpan(0, 0, 0, 0, 25);
-            FScreenTimer.Tick += UpdateScreen;
-            FScreenTimer.Start();
-
-            FEmulator.Start();
-        }
+        public Window MainView { get; set; }
 
         private void InitCommands()
         {
-            SelectDirectoryCommand = new ActionCommand((_Obj) =>
-            {
-                if (FIOService.OpenSelectFolderDialog(Directory))
+            KeyDownCommand = new ActionCommand(
+                _Obj =>
                 {
-                    Directory = FIOService.SelectedDirectory;
-                    File.WriteAllText(cSettingsFile, Directory);
-                }
-                ImageFocused = true;
-            });
+                    FEmulator.KeyDown((Key)_Obj);
+                    FEmulator.AddNewSpecialKey((Key)_Obj);
+                });
 
-            KeyDownCommand = new ActionCommand((_Obj) =>
-            {
-                FEmulator.KeyDown((Key)_Obj);
-                FEmulator.AddNewSpecialKey((Key)_Obj);
-            });
+            KeyUpCommand = new ActionCommand(_Obj => FEmulator.KeyUp((Key)_Obj));
 
-            KeyUpCommand = new ActionCommand((_Obj) =>
-            {
-                FEmulator.KeyUp((Key)_Obj);
-            });
+            TextInputCommand = new ActionCommand(_Obj => FEmulator.AddNewKey((char)_Obj));
 
-            TextInputCommand = new ActionCommand((_Obj) =>
+            KeyRepeatCommand = new ActionCommand(_Obj => FEmulator.AddNewSpecialKey((Key)_Obj));
+
+            SettingsCommand = new ActionCommand(ShowSettings);
+
+            ResetCommand = new ActionCommand(Reset);
+        }
+
+        private void Reset(object _Obj)
+        {
+            FEmulator.Reset();
+        }
+
+        private void ShowSettings(object _Obj)
+        {
+            if (OpenDialog(new SettingsView(), new SettingsViewModel(FIoService)) == true)
             {
-                FEmulator.AddNewKey((char)_Obj);
-            });
+                FEmulator.SdDirectory = Settings.SdDirectory;
+                InitScreenTimer();
+            }
+        }
+
+        private bool? OpenDialog(Window _DialogView, BaseViewModel _DialogViewModel)
+        {
+            try
+            {
+                _DialogView.Owner = MainView;
+                _DialogView.DataContext = _DialogViewModel;
+                var hResult = _DialogView.ShowDialog();
+                return hResult;
+            }
+            catch (Exception hEx)
+            {
+                FIoService.ShowError(hEx.Message);
+            }
+            return null;
         }
 
         private void UpdateScreen(object _Sender, EventArgs _E)
@@ -164,10 +178,8 @@ namespace E_Z80.ViewModels
             if (FUpdateCountdown-- == 0)
             {
                 LoadFactor = (int)(FEmulator.LoadFactor * 100);
-                FUpdateCountdown = 10;
+                FUpdateCountdown = 20;
             }
-
         }
-
     }
 }
