@@ -142,14 +142,14 @@ struct s_name_token {
 };
 
 struct s_num {
-	int ival;
+	long ival;
 	float fval;
 	byte isint;
 };
 
 struct s_expr_res {
 	char sval[MAX_STRING_LEN + 1];
-	int ival;
+	long ival;
 	float fval;
 	byte type;
 };

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace E_Z80.Emulator
 {
@@ -14,15 +12,11 @@ namespace E_Z80.Emulator
 
     public class PortMapper : IPortProvider
     {
-        private List<PortMapping> FPortMappings = new List<PortMapping>();
+        private readonly List<PortMapping> FPortMappings = new List<PortMapping>();
 
         private IEnumerable<IPortProvider> EnumMappings(int _Port)
         {
-            foreach (var hMapping in FPortMappings)
-            {
-                if (hMapping.PortLo <= _Port && hMapping.PortHi >= _Port)
-                    yield return hMapping.Provider;
-            }
+            return FPortMappings.Where(_Mapping => _Mapping.PortLo <= _Port && _Mapping.PortHi >= _Port).Select(_Mapping => _Mapping.Provider);
         }
 
         public int InB(int _Port, int _Hi)

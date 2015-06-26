@@ -1,0 +1,77 @@
+unit Serial;
+
+const
+  SER_BUFF_SIZE = 1024;
+
+var
+  ser_buffer: array [0..SER_BUFF_SIZE] of byte;
+  ser_ptr_in: word;
+  ser_ptr_out: word;
+  ser_data_size: word;
+
+(******************************************************************************)
+procedure InitSerial;
+begin
+  Usart_Init(19200);
+  ser_ptr_in := 0;
+  ser_ptr_out := 0;
+  ser_data_size := 0;
+end; // InitSerial
+(******************************************************************************)
+procedure SerialWriteText;
+var
+  addr_lo, addr_hi: byte;
+  i: word;
+  data: byte;
+
+begin
+  LATA.2 := 0; // request bus
+  while PORTA.3 = 0 do
+    nop;
+
+  LATA.0 := 0; // write to address bus
+  TRISD := 0; // address bus = output
+
+  addr_lo := BUFFER_ADDR_LO;
+  addr_hi := BUFFER_ADDR_HI;
+
+  LATA.1 := 1;
+  PORTD := addr_hi;
+  LATA.1 := 0;
+
+  data := 0;
+  i := 0;
+  while (i < 512) and (data <> 10) do
+  begin
+    if addr_lo = 0 then
+    begin
+      LATA.1 := 1;
+      PORTD := addr_hi;
+      LATA.1 := 0;
+    end;
+    PORTD := addr_lo;
+
+    // read byte from memory
+    LATE.0 := 0;
+
+    inc(addr_lo);
+    if addr_lo = 0 then
+      inc(addr_hi);
+    data := PORTB;
+
+    // write byte to RS232
+    Usart_Write(data);
+    
+    LATE.0 := 1;
+
+    inc(i);
+  end; // while (i < 512) and (data <> 10) do
+
+  TRISD := 255;
+  LATA.0 := 1;
+
+  // deactivate DMA
+  LATA.2 := 1;
+end; // SerialWriteText
+(******************************************************************************)
+end.

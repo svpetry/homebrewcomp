@@ -1,9 +1,6 @@
-﻿using E_Z80.Common;
+﻿using System.Windows.Media;
+using E_Z80.Common;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Forms;
@@ -13,10 +10,9 @@ namespace E_Z80.Views
     [ValueConversion(typeof(int), typeof(string))]
     public class LoadFactorToStringConverter : IValueConverter
     {
-
         public object Convert(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
         {
-            return string.Format("Load factor: {0} %", (int)_Value);
+            return string.Format("CPU load: {0} %", (int)_Value);
         }
 
         public object ConvertBack(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
@@ -25,12 +21,41 @@ namespace E_Z80.Views
         }
     }
 
-    public class ViewIOService : IOService
+    [ValueConversion(typeof(int), typeof(string))]
+    public class UpdateRateConverter : IValueConverter
+    {
+        public object Convert(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        {
+            return string.Format("{0} Hz", (int)_Value);
+        }
+
+        public object ConvertBack(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        {
+            var hStr = (string)_Value;
+            return int.Parse(hStr);
+        }
+    }
+
+    [ValueConversion(typeof(bool), typeof(Brush))]
+    public class LedColorConverter : IValueConverter
+    {
+        public object Convert(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        {
+            return (bool)_Value ? Brushes.Red : Brushes.LightGray;
+        }
+
+        public object ConvertBack(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        {
+            return null;
+        }
+    }
+
+    public class ViewIoService : IOService
     {
         public bool OpenSelectFolderDialog(string _InitialDir)
         {
             var hDialog = new FolderBrowserDialog { SelectedPath = _InitialDir };
-            System.Windows.Forms.DialogResult hResult = hDialog.ShowDialog();
+            var hResult = hDialog.ShowDialog();
             if (hResult == DialogResult.OK)
             {
                 SelectedDirectory = hDialog.SelectedPath;
@@ -40,33 +65,10 @@ namespace E_Z80.Views
         }
 
         public string SelectedDirectory { get; set; }
-    }
 
-    public static class FocusExtension
-    {
-        public static bool GetIsFocused(DependencyObject obj)
+        public void ShowError(string _ErrorMsg)
         {
-            return (bool)obj.GetValue(IsFocusedProperty);
-        }
-
-        public static void SetIsFocused(DependencyObject obj, bool value)
-        {
-            obj.SetValue(IsFocusedProperty, value);
-        }
-
-        public static readonly DependencyProperty IsFocusedProperty =
-            DependencyProperty.RegisterAttached(
-             "IsFocused", typeof(bool), typeof(FocusExtension),
-             new UIPropertyMetadata(false, OnIsFocusedPropertyChanged));
-
-        private static void OnIsFocusedPropertyChanged(DependencyObject d,
-            DependencyPropertyChangedEventArgs e)
-        {
-            var uie = (UIElement)d;
-            if ((bool)e.NewValue)
-            {
-                uie.Focus(); // Don't care about false values.
-            }
+            System.Windows.MessageBox.Show(_ErrorMsg, "Error!", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

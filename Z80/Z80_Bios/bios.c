@@ -19,7 +19,7 @@
  */
 
 void isr (void) __interrupt {
-	beep();
+//	beep();
 }
 
 // Ports initialisieren etc.

@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace E_Z80.Common
+﻿namespace E_Z80.Common
 {
     public interface IOService
     {
         bool OpenSelectFolderDialog(string _InitialDir);
 
         string SelectedDirectory { get; }
+
+        void ShowError(string _ErrorMsg);
     }
 }

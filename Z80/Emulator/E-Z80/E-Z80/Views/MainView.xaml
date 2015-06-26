@@ -1,30 +1,47 @@
 ﻿<Window x:Class="E_Z80.Views.MainView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:views="clr-namespace:E_Z80.Views"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:E_Z80.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:E_Z80.ViewModels"
         Title="Z80 Computer Emulator"
         Height="500" Width="680"
-        ResizeMode="CanMinimize"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel, IsDesignTimeCreatable=False}"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewKeyUp="Window_PreviewKeyUp"
-        TextInput="Window_TextInput">
+        TextInput="Window_TextInput" ResizeMode="CanMinimize">
     
     <Window.Resources>
-        <local:LoadFactorToStringConverter x:Key="LoadFactorToStringConv" />
+        <views:LoadFactorToStringConverter x:Key="LoadFactorToStringConv" />
+        <views:LedColorConverter x:Key="LedColorConverter" />
     </Window.Resources>
 
-    <StackPanel>
-        <Image x:Name="ImageScreen" HorizontalAlignment="Left" Height="400" Margin="10" 
-               VerticalAlignment="Top" Width="640" Stretch="None" 
-               Focusable="True" FocusManager.IsFocusScope="True" Source="{Binding ScreenSource}"
-               local:FocusExtension.IsFocused="{Binding ImageFocused}" >
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="45"/>
+        </Grid.RowDefinitions>
+        <Image x:Name="ImageScreen" Grid.Row="0" HorizontalAlignment="Left" Margin="10"
+               VerticalAlignment="Top" StretchDirection="Both" Stretch="None"
+               Focusable="True" FocusManager.IsFocusScope="True" Source="{Binding ScreenSource}">
         </Image>
-        <StackPanel Orientation="Horizontal" Margin="10">
-            <Label Content="SD card directory:" VerticalAlignment="Center"/>
-            <TextBox Height="23" Width="250" Margin="5,0,0,0" Focusable="False" Text="{Binding Directory}"/>
-            <Button Content="..." Width="18" Margin="5,0,0,0" Focusable="False" Command="{Binding SelectDirectoryCommand}"/>
-            <CheckBox Margin="15,0,0,0" Content="original speed" IsChecked="{Binding OriginalSpeed, Mode=TwoWay}" VerticalAlignment="Center" Focusable="False"/>
-            <Label Margin="10,0,0,0" Content="{Binding LoadFactor, Converter={StaticResource LoadFactorToStringConv}}"/>
-        </StackPanel>
-    </StackPanel>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="10">
+                <Ellipse Stroke="Black" Width="16" Height="16" Fill="{Binding Led.LedOn, Converter={StaticResource LedColorConverter}}"/>
+                <Label Margin="20,0,0,0" Content="{Binding LoadFactor, Converter={StaticResource LoadFactorToStringConv}}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
+                <CheckBox Margin="15,0,0,0" Content="original speed" IsChecked="{Binding OriginalSpeed, Mode=TwoWay}" VerticalAlignment="Center" Focusable="False"/>
+                <Button Width="86" Height="24" Margin="20,0,0,0" Content="Reset" Focusable="False" Command="{Binding ResetCommand}"/>
+                <Button Width="86" Height="24" Margin="10,0,0,0" Content="Settings" Focusable="False" Command="{Binding SettingsCommand}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
 </Window>

@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace E_Z80.Emulator
+﻿namespace E_Z80.Emulator
 {
     class Ram : IMemRangeProvider, IPortProvider
     {
         // the memory system consists of 4 banks of ram, each has a size of 32 kbytes.
-        private byte[] FMemoryLow = new byte[0x8000];
-        private byte[][] FMemoryHigh = { new byte[0x8000], new byte[0x8000], new byte[0x8000] };
+        private readonly byte[] FMemoryLow = new byte[0x8000];
+        private readonly byte[][] FMemoryHigh = { new byte[0x8000], new byte[0x8000], new byte[0x8000] };
         private int FSelectedHighBank;
 
         #region IMemRangeProvider
@@ -23,9 +18,9 @@ namespace E_Z80.Emulator
         public bool Poke(int _Addr, byte _Value)
         {
             if (_Addr < 0x8000)
-                FMemoryLow[_Addr] = (byte)_Value;
+                FMemoryLow[_Addr] = _Value;
             else
-                FMemoryHigh[FSelectedHighBank][_Addr - 0x8000] = (byte)_Value;
+                FMemoryHigh[FSelectedHighBank][_Addr - 0x8000] = _Value;
             return true;
         }
 

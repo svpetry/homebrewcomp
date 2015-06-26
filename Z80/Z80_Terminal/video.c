@@ -6,9 +6,6 @@
 #include "defs.h"
 #include "utils.h"
 
-char cur_col = 0;
-char cur_row = 0;
-
 static volatile byte __at VIDEO_BUFFER linebuf[V_ROWS][V_COLS];
 static volatile byte line_ptr = 0;
 
@@ -170,12 +167,12 @@ void put_line(char *s, byte row) {
 		*(p++) = ' ';
 		i++;
 	}
-}
+} // put_line
 /******************************************************************************/
 void write_inverse(byte row, byte col, char *s) {
 	char *p = (char *)(0x1000 + (row << 7) + col);
 	while (*s)
 		*(p++) = *(s++) + 128;
-}
+} // write_inverse
 /******************************************************************************/
 

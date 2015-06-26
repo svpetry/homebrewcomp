@@ -1,23 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
+using E_Z80.Annotations;
 
 namespace E_Z80.ViewModels
 {
-    class BaseViewModel : INotifyPropertyChanged
+    public class BaseViewModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
-        
-        protected void OnPropertyChanged([CallerMemberName] string _PropertyName = "")
+
+        [NotifyPropertyChangedInvocator]
+        protected virtual void OnPropertyChanged([CallerMemberName] string _PropertyName = null)
         {
-            var hEventArgs = new PropertyChangedEventArgs(_PropertyName);
-            var hChanged = PropertyChanged;
-            if (hChanged != null) hChanged(this, hEventArgs);
+            var hHandler = PropertyChanged;
+            if (hHandler != null) hHandler(this, new PropertyChangedEventArgs(_PropertyName));
         }
     }
 
@@ -29,7 +26,7 @@ namespace E_Z80.ViewModels
         public ActionCommand(Action<object> _Execute)
         {
             if (_Execute == null)
-                throw new ArgumentNullException("Execute cannot be null");
+                throw new ArgumentNullException("_Execute");
             FExecuteHandler = _Execute;
         }
 

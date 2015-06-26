@@ -57,7 +57,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Common\Defs.cs" />
     <Compile Include="Common\IOService.cs" />
+    <Compile Include="Common\Settings.cs" />
     <Compile Include="Emulator\BootLoader.cs" />
     <Compile Include="Emulator\Characters.cs" />
     <Compile Include="Emulator\DiskController.cs" />
@@ -68,6 +70,11 @@
     <Compile Include="Emulator\Serial.cs" />
     <Compile Include="Emulator\Speaker.cs" />
     <Compile Include="Emulator\TickCounter.cs" />
+    <Compile Include="Properties\Annotations.cs" />
+    <Compile Include="ViewModels\SettingsViewModel.cs" />
+    <Compile Include="Views\SettingsView.xaml.cs">
+      <DependentUpon>SettingsView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ViewModels\BaseViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="Views\MainView.xaml.cs">
@@ -80,6 +87,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Emulator\Emulator.cs" />
+    <Page Include="Views\SettingsView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Views\MainView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -114,7 +125,12 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\Z80Lib\Z80Lib.csproj">
+      <Project>{fa6dcd2f-5ef0-43a6-8ed0-dd382978399b}</Project>
+      <Name>Z80Lib</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

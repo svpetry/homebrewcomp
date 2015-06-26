@@ -1,13 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using E_Z80.ViewModels;
 
 namespace E_Z80.Emulator
 {
-    class Led : IPortProvider
+    public class Led : BaseViewModel, IPortProvider
     {
-        public bool LedOn { get; set; }
+        private bool FLedOn;
+
+        public bool LedOn
+        {
+            get
+            {
+                return FLedOn;
+            }
+            set
+            {
+                if (FLedOn == value) return;
+                FLedOn = value;
+                OnPropertyChanged();
+            }
+        }
 
         #region IPortProvider
 

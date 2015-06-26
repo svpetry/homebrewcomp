@@ -13,8 +13,8 @@
 #define V_SETCHAR(col, row, c) *((char *)VIDEO_RAM + (row << 7) + col) = c
 #define V_GETCHAR(col, row) *((char *)VIDEO_RAM + (row << 7) + col)
 
-extern char cur_col;
-extern char cur_row;
+static volatile char __at 0x0045 cur_col;
+static volatile char __at 0x0046 cur_row;
 
 void v_hidecursor();
 void v_showcursor();

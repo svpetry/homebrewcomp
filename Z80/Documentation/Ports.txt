@@ -42,12 +42,14 @@ Output:
 		28: delete file (outparam: 1=file deleted)
 		29: check if file exists (outparam: 1=yes)
 	170	init RS232
-		1: 4800 Baud
-		2: 9600 Baud
-		3: 19200 Baud
-		4: 38400 Baud
-		5: 57600 Baud
-		6: 115200 Baud
+		1: 1200 Baud
+		2: 2400 Baud
+		3: 4800 Baud
+		4: 9600 Baud
+		5: 19200 Baud
+		6: 38400 Baud
+		7: 57600 Baud
+		8: 115200 Baud
 	171	write byte to RS232
 	172	write text to RS232 (from buffer 0x0080, max 512 bytes, ends with ASCII 10 = \n)
 

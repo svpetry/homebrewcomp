@@ -73,6 +73,17 @@ void ltoa_(long i, char* buf) {
 	strcpy(buf, s);
 }
 /******************************************************************************/
+long powi(long base, int exp)
+{
+	long result = 1;
+	while (exp)
+	{
+		result *= base;
+		exp--;
+	}
+	return result;
+}
+/******************************************************************************/
 void quit_app() {
 #ifdef _DEBUG
 	exit(0);

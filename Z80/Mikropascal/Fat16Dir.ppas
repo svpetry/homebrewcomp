@@ -100,8 +100,8 @@ var I, Offset, Entry: word;
     FileSize: DWord;
     FileAttr: byte;
     
-var FatDirItem: TFat16DirItem;
-    FirstTimeAppend: byte;
+var //FatDirItem: TFat16DirItem;
+    //FirstTimeAppend: byte;
     Fat16Dir_Initialised: byte;
     FBR_Sector: DWord;
 (*

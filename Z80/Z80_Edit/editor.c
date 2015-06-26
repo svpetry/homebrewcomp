@@ -387,7 +387,7 @@ void show_status() {
 	ltoa(malloc_free_ram(), s);
 	strcat(s, " Bytes");
 	write_inverse(24, 30, s);
-}
+} // show_status
 /******************************************************************************/
 void display() {
 	byte i;
@@ -559,14 +559,14 @@ byte prompt_file_name() {
 			if (cnt == 0)
 				*((char *)0x1c00 + pos + pos_offset) = ' ';
 			c = io_read(128);
-			if (c == -128) {
+			if ((byte)c == 255) {
 				delay_ms(15);
 				if (cnt == CURSOR_DELAY)
 					*((char *)0x1c00 + pos + pos_offset) = ' ' + 128;
 				if (++cnt == CURSOR_DELAY << 1)
 					cnt = 0;
 			}
-		} while (c == -128);
+		} while ((byte)c == 255);
 		*((char *)0x1c00 + pos + pos_offset) = ' ' + 128;
 		// getchar ^^^
 

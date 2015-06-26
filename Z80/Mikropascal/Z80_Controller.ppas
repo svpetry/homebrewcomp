@@ -28,7 +28,7 @@ program Z80_Controller;
  * RE3: CTRL_RD (input)
  *)
 
-uses Boot, MainBios, Initializer, Keyboard, DiskIO;
+uses Boot, MainBios, Initializer, Keyboard, DiskIO, Serial;
 
 (******************************************************************************)
 procedure Interrupt;
@@ -109,7 +109,7 @@ begin
   PORTD := 0;
   TRISE := %00001100;
   PORTE := %00000011;
-
+  
   LATA.6 := 0; // reset CPU
   
   LATA.4 := 1; // enable io-port flipflops
@@ -123,11 +123,8 @@ begin
   Spi_Init_Advanced(Master_OSC_div64, DATA_SAMPLE_MIDDLE, CLK_IDLE_LOW, LOW_2_HIGH);
 
   // Init RS232
-  Usart_Init(19200);
-  ser_ptr_in := 0;
-  ser_ptr_out := 0;
-  ser_data_size := 0;
-  
+  InitSerial();
+
   mmc_changed := 0;
   ticks := 0;
 end;

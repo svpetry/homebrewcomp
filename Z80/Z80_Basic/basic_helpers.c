@@ -164,8 +164,6 @@ void goto_tokens(byte t1, byte t2) {
 /******************************************************************************/
 void exec_print() {
 	char *s;
-	byte last_sc = 0;
-	byte last_num = 1;
 
 	print_pos = 0;
 
@@ -173,19 +171,16 @@ void exec_print() {
 		parse_expression(1);
 		switch (expr_res.type) {
 			case VT_STRING:
-				last_num = 0;
 				break;
 			case VT_INT:
-				if (last_sc && !last_num)
-					putchar(' ');
-				itoa_(expr_res.ival, expr_res.sval);
-				last_num = 1;
+				putchar(' ');
+				print_pos++;
+				ltoa_(expr_res.ival, expr_res.sval);
 				break;
 			case VT_FLOAT:
-				if (last_sc && !last_num)
-					putchar(' ');
+				putchar(' ');
+				print_pos++;
 				ftoa_(expr_res.fval, expr_res.sval);
-				last_num = 1;
 				break;
 			default:
 				putchar('\n');
@@ -197,23 +192,19 @@ void exec_print() {
 			putchar(*(s++));
 			print_pos++;
 		}
-		if (last_num)
-        	putchar(' ');
 
 		get_next_token();
 		if (token == T_COLON || token == T_LINEEND) {
 			putchar('\n');
 			return;
 		} else if (*token_str == ',') {
-			byte p = 8 - print_pos % 8;
-			last_sc = 0;
+			byte p = 13 - print_pos % 14;
 			while (p) {
 				putchar(' ');
 				print_pos++;
 				p--;
 			}
 		} else if (*token_str == ';') {
-			last_sc = 1;
 			get_next_token();
 			if (token == T_COLON || token == T_LINEEND)
 				return;
@@ -815,7 +806,7 @@ void eval_strfunc(char *result, int *l) {
 		case T_STR:
 			parse_expression(1);
 			if (expr_res.type == VT_INT) {
-				itoa_(expr_res.ival, s);
+				ltoa_(expr_res.ival, s);
 			} else if (expr_res.type == VT_FLOAT) {
 				ftoa_(expr_res.fval, s);
 			} else
@@ -877,7 +868,7 @@ void str2num(char *str, struct s_num *value) {
 
 	(*value).isint = isint;
 	if (isint)
-		(*value).ival = atoi(s);
+		(*value).ival = atol(s);
 	else
 		(*value).fval = atof(s);
 } // void str2num(char *str, struct s_num *value)
@@ -1144,7 +1135,7 @@ void parse_num_3(struct s_num *a, byte eval_bool) {
 		}
 		if (token == T_INTVAL) {
 			a->isint = 1;
-			a->ival = atoi(token_str);
+			a->ival = atol(token_str);
 		} else if (token == T_FLOATVAL) {
 			a->isint = 0;
 			a->fval = atof(token_str);
@@ -1208,7 +1199,7 @@ void parse_num_2(struct s_num *a, byte eval_bool) {
 				a->fval = pow(a->fval, b.fval);
 		#else
 			if (a->isint)
-				a->ival = powf(a->ival, b.ival);
+				a->ival = powi(a->ival, b.ival);
 			else
 				a->fval = powf(a->fval, b.fval);
 		#endif

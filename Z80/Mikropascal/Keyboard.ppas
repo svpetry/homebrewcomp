@@ -204,7 +204,6 @@ begin
           $22: value := 'X';
           $1A: value := 'Y';
           $35: value := 'Z';
-          $45: value := '=';
           $16: value := '!';
           $1E: value := '"';
           $26: value := '§';
@@ -214,6 +213,8 @@ begin
           $3D: value := '/';
           $3E: value := '(';
           $46: value := ')';
+          $45: value := '=';
+          $4E: value := '?';
           //$54: value := 'Ü';
           $5B: value := '*';
           //$4C: value := 'Ö';

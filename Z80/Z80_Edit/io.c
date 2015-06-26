@@ -35,7 +35,8 @@ char getchar(void) {
 			if (++cnt == CURSOR_DELAY << 1)
 				cnt = 0;
 		}
-	} while (result == 255);
+	}
+	while (result == 255);
 	v_hidecursor();
 	return result;
 }
