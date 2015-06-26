@@ -1,0 +1,52 @@
+**Complete system**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01804.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01804.jpg)
+
+**CPU**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01805.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01805.jpg)
+
+
+**BIOS/Peripherals**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01797.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01797.jpg)
+
+
+**CPU board**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01798.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01798.jpg)
+
+
+**Graphics adapter**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01800.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01800.jpg)
+
+
+**Memory board**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01801.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01801.jpg)
+
+
+**Bus board**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01802.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01802.jpg)
+
+
+**CPU + bus drivers**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01806.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01806.jpg)
+
+
+**4 x 32 kb SRAM**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01807.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01807.jpg)
+
+
+**Memory board**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01808.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01808.jpg)
+
+
+**Graphics board**
+
+![https://homebrewcomp.googlecode.com/svn/wiki/DSC01809.jpg](https://homebrewcomp.googlecode.com/svn/wiki/DSC01809.jpg)
