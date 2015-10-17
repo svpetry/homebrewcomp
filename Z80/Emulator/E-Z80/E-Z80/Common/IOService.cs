@@ -2,10 +2,10 @@
 {
     public interface IOService
     {
-        bool OpenSelectFolderDialog(string _InitialDir);
+        bool OpenSelectFolderDialog(string initialDir);
 
         string SelectedDirectory { get; }
 
-        void ShowError(string _ErrorMsg);
+        void ShowError(string errorMsg);
     }
 }

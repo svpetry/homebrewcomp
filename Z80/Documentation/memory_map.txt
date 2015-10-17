@@ -1,0 +1,34 @@
+0x0000-0x0039		interrupt vectors
+
+0x0040		dword	disk sector
+0x0044		byte	busy flag (disk operations)
+0x0045		byte	cursor column
+0x0046		byte	cursor row
+0x0047		byte	cursor state (0 = disabled, 1 = enabled)
+0x0048		byte	index of line 0 in video buffer
+0x0049		byte	cursor blink counter
+0x004a		byte	first line offset
+0x004b		byte	number of lines
+
+0x0050		byte	controller command
+0x0051		word	controller param1
+0x0053		word	controller param2
+0x0055		word	controller outparam (word)
+0x0058		byte	program parameter count (max. 8)
+
+0x0060		byte	BIOS command code
+0x0061		word	BIOS parameter 1
+0x0063		word	BIOS parameter 2
+0x0065		byte	BIOS result code
+
+0x0066			NMI interrupt code
+
+0x0080-0x027f		disk r/w buffer (512 bytes), program parameters (8 x 64 bytes), controller sparam
+
+0x0280-0x0a4f		video buffer (2000 bytes)
+
+0x0a50-0x127f		BIOS code
+
+0x1000-0x1fff		video ram (4K bytes)
+
+0x1280-0xffff		user ram area

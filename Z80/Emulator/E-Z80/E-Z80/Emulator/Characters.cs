@@ -7,7 +7,7 @@ namespace E_Z80.Emulator
         public const int CharWidth = 8;
         public const int CharHeight = 16;
 
-        private static readonly byte[,] FCharacters = new byte[128, CharWidth * CharHeight] 
+        private static readonly byte[,] FCharacters = new byte[,] //[128, CharWidth * CharHeight] 
         {{
             0,0,0,0,0,0,0,0,
             0,0,0,0,0,0,0,0,
@@ -2186,26 +2186,26 @@ namespace E_Z80.Emulator
             0,0,0,0,0,0,0,0
         }};
 
-        public static byte[] GetChar(byte _CharCode, Color _FgColor, Color _BgColor)
+        public static byte[] GetChar(byte charCode, Color fgColor, Color bgColor)
         {
             var hResult = new byte[CharWidth * CharHeight * 4];
             var hResultIdx = 0;
-            var hCharCode = _CharCode & 0x7f;
-            var hInvert = _CharCode > 127;
+            var hCharCode = charCode & 0x7f;
+            var hInvert = charCode > 127;
 
             for (int hIdx = 0; hIdx < CharWidth * CharHeight; hIdx++)
             {
                 if (FCharacters[hCharCode, hIdx] == (hInvert ? 0 : 1))
                 {
-                    hResult[hResultIdx] = _FgColor.B;
-                    hResult[hResultIdx + 1] = _FgColor.G;
-                    hResult[hResultIdx + 2] = _FgColor.R;
+                    hResult[hResultIdx] = fgColor.B;
+                    hResult[hResultIdx + 1] = fgColor.G;
+                    hResult[hResultIdx + 2] = fgColor.R;
                 }
                 else
                 {
-                    hResult[hResultIdx] = _BgColor.B;
-                    hResult[hResultIdx + 1] = _BgColor.G;
-                    hResult[hResultIdx + 2] = _BgColor.R;
+                    hResult[hResultIdx] = bgColor.B;
+                    hResult[hResultIdx + 1] = bgColor.G;
+                    hResult[hResultIdx + 2] = bgColor.R;
                 }
                 hResultIdx += 4;
             }

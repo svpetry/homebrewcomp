@@ -4,33 +4,33 @@ namespace E_Z80.Emulator
 {
     public class Led : BaseViewModel, IPortProvider
     {
-        private bool FLedOn;
+        private bool _ledOn;
 
         public bool LedOn
         {
             get
             {
-                return FLedOn;
+                return _ledOn;
             }
             set
             {
-                if (FLedOn == value) return;
-                FLedOn = value;
+                if (_ledOn == value) return;
+                _ledOn = value;
                 OnPropertyChanged();
             }
         }
 
         #region IPortProvider
 
-        public int InB(int _Addr, int _Hi)
+        public int InB(int addr, int hi)
         {
             return 0;
         }
 
-        public void OutB(int _Addr, int _Value, int _State)
+        public void OutB(int addr, int value, int state)
         {
-            if (_Addr == 3)
-                LedOn = (_Value & 1) == 1;
+            if (addr == 3)
+                LedOn = (value & 1) == 1;
         }
 
         #endregion

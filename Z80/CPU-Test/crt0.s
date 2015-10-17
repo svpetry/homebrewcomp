@@ -26,7 +26,7 @@
 	.org	0x100
 init:
 	;; Stack at the top of memory.
-	ld	sp,#0x7fff
+	ld	sp,#0x8000
 
 	;; Initialize global variables
 	call	_main

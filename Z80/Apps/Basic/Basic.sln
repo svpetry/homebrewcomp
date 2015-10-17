@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1D3D08B0-26AF-4356-B58D-308F98ADBB13}"
+	ProjectSection(SolutionItems) = preProject
+		basic.c = basic.c
+		basic_helpers.c = basic_helpers.c
+		basic_helpers.h = basic_helpers.h
+		bdefs.h = bdefs.h
+		compile_app.bat = compile_app.bat
+		crt0.s = crt0.s
+		ftoa.c = ftoa.c
+		ftoa.h = ftoa.h
+		mybasic.c = mybasic.c
+		mybasic.h = mybasic.h
+		utils_b0.c = utils_b0.c
+		utils_b0.h = utils_b0.h
+		vars.c = vars.c
+		vars.h = vars.h
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

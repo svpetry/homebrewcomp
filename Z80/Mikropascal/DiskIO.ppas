@@ -367,6 +367,7 @@ begin
     disk_status := 1;
 end; // LoadFile
 (******************************************************************************)
+{
 procedure LoadProgram(var fname: string[13]);
 var
   fsize: longint;
@@ -436,6 +437,7 @@ begin
   else
     disk_status := 1;
 end; // LoadProgram
+}
 (******************************************************************************)
 procedure ReadVolumeName;
 var

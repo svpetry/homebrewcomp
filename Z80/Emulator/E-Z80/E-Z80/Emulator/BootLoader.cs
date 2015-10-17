@@ -6,26 +6,26 @@ namespace E_Z80.Emulator
 {
     class BootLoader
     {
-        private byte[] FData;
+        private byte[] _data;
 
-        private readonly IMemoryProvider FMemory;
+        private readonly IMemoryProvider _memory;
 
         private void LoadBootloader()
         {
             if (File.Exists(Defs.BootloaderFile))
-                FData = File.ReadAllText(Defs.BootloaderFile).Split(',').Select(_Str => (byte)int.Parse(_Str.Trim())).ToArray();
+                _data = File.ReadAllText(Defs.BootloaderFile).Split(',').Select(_ => (byte)int.Parse(_.Trim())).ToArray();
         }
 
-        public BootLoader(IMemoryProvider _Memory)
+        public BootLoader(IMemoryProvider memory)
         {
-            FMemory = _Memory;
+            _memory = memory;
         }
 
         public void Load()
         {
             LoadBootloader();
-            for (var hIdx = 0; hIdx < FData.Length; hIdx++)
-                FMemory.Poke(hIdx, FData[hIdx]);
+            for (var hIdx = 0; hIdx < _data.Length; hIdx++)
+                _memory.Poke(hIdx, _data[hIdx]);
         }
 
     }

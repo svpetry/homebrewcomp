@@ -1,25 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 
 namespace E_Z80.Emulator
 {
     class TickCounter : IPortProvider
     {
-        private uint FTempTicks;
+        private uint _tempTicks;
 
         public uint Ticks { get; private set; }
 
-        public TickCounter()
+        public TickCounter(CancellationToken token)
         {
             var hTask = new Task(
                 () =>
                 {
-                    while (true)
+                    while (!token.IsCancellationRequested)
                     {
                         Ticks++;
                         Thread.Sleep(100);
@@ -30,27 +25,27 @@ namespace E_Z80.Emulator
 
         #region IPortProvider
 
-        public int InB(int _Addr, int _Hi)
+        public int InB(int addr, int hi)
         {
-            switch (_Addr)
+            switch (addr)
             {
                 case 130:
-                    FTempTicks = Ticks;
-                    return (byte)(FTempTicks & 0x000000ff);
+                    _tempTicks = Ticks;
+                    return (byte)(_tempTicks & 0x000000ff);
 
                 case 131:
-                    return (byte)((FTempTicks & 0x0000ff00) >> 8);
+                    return (byte)((_tempTicks & 0x0000ff00) >> 8);
                 
                 case 132:
-                    return (byte)((FTempTicks & 0x00ff0000) >> 16);
+                    return (byte)((_tempTicks & 0x00ff0000) >> 16);
                 
                 case 133:
-                    return (byte)((FTempTicks & 0xff000000) >> 24);
+                    return (byte)((_tempTicks & 0xff000000) >> 24);
             }
             return 0;
         }
 
-        public void OutB(int _Addr, int _Value, int _State)
+        public void OutB(int addr, int value, int state)
         {
         }
 

@@ -13,14 +13,14 @@ namespace E_Z80.Emulator
 
     public interface IMemoryProvider
     {
-        int Peek(int _Addr);
-        void Poke(int _Addr, int _Value);
+        int Peek(int addr);
+        void Poke(int addr, int value);
     }
 
     public interface IPortProvider
     {
-        int InB(int _Addr, int _Hi);
-        void OutB(int _Addr, int _Value, int _State);
+        int InB(int addr, int hi);
+        void OutB(int addr, int value, int state);
     }
 
     public class Z80
@@ -51,8 +51,8 @@ namespace E_Z80.Emulator
         public int A1, F1, B1, C1, D1, E1, H1, L1;
         public int PC;
         public int SP = 0x10000;
-        public int _IX, _IY;
-        public int IXYd = 0; 			// IX+d or IY+d
+        public int IX, IY;
+        public int IXYd = 0; 			// Ix+d or IY+d
 
         // states
         public bool state_HALT = false;
@@ -65,50 +65,52 @@ namespace E_Z80.Emulator
         public int I_Vector = 0;
         public bool IRQ = false; // interrupt request
         public bool NMI = false; // Non-maskable interrupt
-        //private bool goingToirq = false;// used to execute 1 more instruction after an irq
+        //private bool goingToirq = false;// used to execute 1 more inst after an irq
 
-        // Current cycle of execution
-        public int cycle = 0;
-        public int cycleCounter;
+        // Current cyc of execution
+        public int Cycle = 0;
+        public int CycleCounter;
 
         public IMemoryProvider MemProvider { get; set; }
         public IPortProvider PortProvider { get; set; }
 
-        // Currently executed instruction
-        private int instruction = 0;
+        // Currently executed inst
+        private int _instruction = 0;
 
         // Misc
-        private int tmp, tmp1, tmp2, tmp3;
-        private int PPC = 0; 				// previous PC - used by debugger
-        private static int[] bitSet = { 1, 2, 4, 8, 16, 32, 64, 128 }; 		// lookup table for setting a bit of an 8-bit value using OR
-        private static int[] bitRes = { 254, 253, 251, 247, 239, 223, 191, 127 }; // lookup table for resetting a bit of an 8-bit value using AND
+        private int _tmp, _tmp1, _tmp2, _tmp3;
+        private int _PPC = 0; 				// previous PC - used by debugger
+        private static readonly int[] BitSet = { 1, 2, 4, 8, 16, 32, 64, 128 }; 		// lookup table for setting a bit of an 8-bit value using OR
+        private static readonly int[] BitRes = { 254, 253, 251, 247, 239, 223, 191, 127 }; // lookup table for resetting a bit of an 8-bit value using AND
 
         // Debug info
-        protected int debugLevel = 0;
-        protected int debugBreakPoint = 0;
-        protected bool debugEnabled = false;
-        protected bool startSlice = true;
+#pragma warning disable 414
+        private int _debugLevel = 0;
+        private int _debugBreakPoint = 0;
+        private bool _debugEnabled = false;
+        private bool _startSlice = true;
+#pragma warning restore 414
 
         // flag tables
-        private static bool[] parity = new bool[256];
-        private static int[] SZ = new int[256];
-        private static int[] SZ_BIT = new int[256];
-        private static int[] SZP = new int[256];
-        private static int[] SZHV_inc = new int[256];
-        private static int[] SZHV_dec = new int[256];
-        private static int[] SZHVC_Add = new int[2 * 256 * 256];
-        private static int[] SZHVC_sub = new int[2 * 256 * 256];
-        private static int SF = 0x80;
-        private static int ZF = 0x40;
-        private static int YF = 0x20;
-        private static int HF = 0x10;
-        private static int XF = 0x08;
-        private static int VF = 0x04;
-        private static int PF = 0x04;
-        private static int NF = 0x02;
-        private static int CF = 0x01;
+        private static bool[] _parity = new bool[256];
+        private static int[] _SZ = new int[256];
+        private static int[] _SZ_BIT = new int[256];
+        private static int[] _SZP = new int[256];
+        private static int[] _SZHV_inc = new int[256];
+        private static int[] _SZHV_dec = new int[256];
+        private static int[] _SZHVC_Add = new int[2 * 256 * 256];
+        private static int[] _SZHVC_sub = new int[2 * 256 * 256];
+        private static int _SF = 0x80;
+        private static int _ZF = 0x40;
+        private static int _YF = 0x20;
+        private static int _HF = 0x10;
+        private static int _XF = 0x08;
+        private static int _VF = 0x04;
+        private static int _PF = 0x04;
+        private static int _NF = 0x02;
+        private static int _CF = 0x01;
 
-        private String tag;
+        private string _tag;
 
         static Z80()
         {
@@ -125,7 +127,7 @@ namespace E_Z80.Emulator
                         bp = !bp;
                     }
                 }
-                parity[i] = bp;
+                _parity[i] = bp;
 
                 p = 0;
 
@@ -138,38 +140,38 @@ namespace E_Z80.Emulator
                 if ((i & 0x40) != 0) ++p;
                 if ((i & 0x80) != 0) ++p;
 
-                SZ[i] = (i != 0) ? i & 0x80 : 0x40;
+                _SZ[i] = (i != 0) ? i & 0x80 : 0x40;
 
-                SZ[i] |= (i & (0x20 | 0x08)); 	/* undocumented flag bits 5+3 */
+                _SZ[i] |= (i & (0x20 | 0x08)); 	/* undocumented flag bits 5+3 */
 
-                SZ_BIT[i] = (i != 0) ? i & 0x80 : 0x40 | 0x04;
+                _SZ_BIT[i] = (i != 0) ? i & 0x80 : 0x40 | 0x04;
 
-                SZ_BIT[i] |= (i & (0x20 | 0x08)); /* undocumented flag bits 5+3 */
+                _SZ_BIT[i] |= (i & (0x20 | 0x08)); /* undocumented flag bits 5+3 */
 
-                SZP[i] = SZ[i] | (((p & 1) != 0) ? 0 : 0x04);
+                _SZP[i] = _SZ[i] | (((p & 1) != 0) ? 0 : 0x04);
 
-                SZHV_inc[i] = SZ[i];
+                _SZHV_inc[i] = _SZ[i];
 
                 if (i == 0x80)
                 {
-                    SZHV_inc[i] |= 0x04;
+                    _SZHV_inc[i] |= 0x04;
                 }
 
                 if ((i & 0x0f) == 0x00)
                 {
-                    SZHV_inc[i] |= 0x10;
+                    _SZHV_inc[i] |= 0x10;
                 }
 
-                SZHV_dec[i] = SZ[i] | 0x02;
+                _SZHV_dec[i] = _SZ[i] | 0x02;
 
                 if (i == 0x7f)
                 {
-                    SZHV_dec[i] |= 0x04;
+                    _SZHV_dec[i] |= 0x04;
                 }
 
                 if ((i & 0x0f) == 0x0f)
                 {
-                    SZHV_dec[i] |= 0x10;
+                    _SZHV_dec[i] |= 0x10;
                 }
             }
 
@@ -194,31 +196,31 @@ namespace E_Z80.Emulator
                     {
                         if ((newval & 0x80) != 0)
                         {
-                            SZHVC_Add[padd] = SF;
+                            _SZHVC_Add[padd] = _SF;
                         }
                         else
                         {
-                            SZHVC_Add[padd] = 0;
+                            _SZHVC_Add[padd] = 0;
                         }
                     }
                     else
                     {
-                        SZHVC_Add[padd] = ZF;
+                        _SZHVC_Add[padd] = _ZF;
                     }
 
-                    SZHVC_Add[padd] |= (newval & (YF | XF));	/* undocumented flag bits 5+3 */
+                    _SZHVC_Add[padd] |= (newval & (_YF | _XF));	/* undocumented flag bits 5+3 */
 
                     if ((newval & 0x0f) < (oldval & 0x0f))
                     {
-                        SZHVC_Add[padd] |= HF;
+                        _SZHVC_Add[padd] |= _HF;
                     }
                     if (newval < oldval)
                     {
-                        SZHVC_Add[padd] |= CF;
+                        _SZHVC_Add[padd] |= _CF;
                     }
                     if (((val ^ oldval ^ 0x80) & (val ^ newval) & 0x80) != 0)
                     {
-                        SZHVC_Add[padd] |= VF;
+                        _SZHVC_Add[padd] |= _VF;
                     }
                     padd++;
 
@@ -228,33 +230,33 @@ namespace E_Z80.Emulator
                     {
                         if ((newval & 0x80) != 0)
                         {
-                            SZHVC_Add[padc] = SF;
+                            _SZHVC_Add[padc] = _SF;
                         }
                         else
                         {
-                            SZHVC_Add[padc] = 0;
+                            _SZHVC_Add[padc] = 0;
                         }
                     }
                     else
                     {
-                        SZHVC_Add[padc] = ZF;
+                        _SZHVC_Add[padc] = _ZF;
                     }
 
 
-                    SZHVC_Add[padc] |= (newval & (YF | XF));	/* undocumented flag bits 5+3 */
+                    _SZHVC_Add[padc] |= (newval & (_YF | _XF));	/* undocumented flag bits 5+3 */
                     if ((newval & 0x0f) <= (oldval & 0x0f))
                     {
-                        SZHVC_Add[padc] |= HF;
+                        _SZHVC_Add[padc] |= _HF;
                     }
 
                     if (newval <= oldval)
                     {
-                        SZHVC_Add[padc] |= CF;
+                        _SZHVC_Add[padc] |= _CF;
                     }
 
                     if (((val ^ oldval ^ 0x80) & (val ^ newval) & 0x80) != 0)
                     {
-                        SZHVC_Add[padc] |= VF;
+                        _SZHVC_Add[padc] |= _VF;
                     }
 
                     padc++;
@@ -265,30 +267,30 @@ namespace E_Z80.Emulator
                     {
                         if ((newval & 0x80) != 0)
                         {
-                            SZHVC_sub[psub] = NF | SF;
+                            _SZHVC_sub[psub] = _NF | _SF;
                         }
                         else
                         {
-                            SZHVC_sub[psub] = NF;
+                            _SZHVC_sub[psub] = _NF;
                         }
                     }
                     else
                     {
-                        SZHVC_sub[psub] = NF | ZF;
+                        _SZHVC_sub[psub] = _NF | _ZF;
                     }
 
-                    SZHVC_sub[psub] |= (newval & (YF | XF));	/* undocumented flag bits 5+3 */
+                    _SZHVC_sub[psub] |= (newval & (_YF | _XF));	/* undocumented flag bits 5+3 */
                     if ((newval & 0x0f) > (oldval & 0x0f))
                     {
-                        SZHVC_sub[psub] |= HF;
+                        _SZHVC_sub[psub] |= _HF;
                     }
                     if (newval > oldval)
                     {
-                        SZHVC_sub[psub] |= CF;
+                        _SZHVC_sub[psub] |= _CF;
                     }
                     if (((val ^ oldval) & (oldval ^ newval) & 0x80) != 0)
                     {
-                        SZHVC_sub[psub] |= VF;
+                        _SZHVC_sub[psub] |= _VF;
                     }
                     psub++;
 
@@ -298,32 +300,32 @@ namespace E_Z80.Emulator
                     {
                         if ((newval & 0x80) != 0)
                         {
-                            SZHVC_sub[psbc] = NF | SF;
+                            _SZHVC_sub[psbc] = _NF | _SF;
                         }
                         else
                         {
-                            SZHVC_sub[psbc] = NF;
+                            _SZHVC_sub[psbc] = _NF;
                         }
                     }
                     else
                     {
-                        SZHVC_sub[psbc] = NF | ZF;
+                        _SZHVC_sub[psbc] = _NF | _ZF;
                     }
 
-                    SZHVC_sub[psbc] |= (newval & (YF | XF));	/* undocumented flag bits 5+3 */
+                    _SZHVC_sub[psbc] |= (newval & (_YF | _XF));	/* undocumented flag bits 5+3 */
                     if ((newval & 0x0f) >= (oldval & 0x0f))
                     {
-                        SZHVC_sub[psbc] |= HF;
+                        _SZHVC_sub[psbc] |= _HF;
                     }
 
                     if (newval >= oldval)
                     {
-                        SZHVC_sub[psbc] |= CF;
+                        _SZHVC_sub[psbc] |= _CF;
                     }
 
                     if (((val ^ oldval) & (oldval ^ newval) & 0x80) != 0)
                     {
-                        SZHVC_sub[psbc] |= VF;
+                        _SZHVC_sub[psbc] |= _VF;
                     }
 
                     psbc++;
@@ -339,17 +341,17 @@ namespace E_Z80.Emulator
         public Z80()
         {
             //super();
-            this.debugLevel = 0;
+            _debugLevel = 0;
         }
 
         public void SetTag(String tag)
         {
-            this.tag = tag;
+            _tag = tag;
         }
 
-        public String GetTag()
+        public string GetTag()
         {
-            return this.tag;
+            return _tag;
         }
 
         /**
@@ -357,7 +359,7 @@ namespace E_Z80.Emulator
          */
         public long GetInstruction()
         {
-            return (long)instruction;
+            return _instruction;
         }
 
         public void Interrupt(int type, bool irq)
@@ -382,14 +384,14 @@ namespace E_Z80.Emulator
 
         public void SetDebug(bool debug)
         {
-            debugEnabled = debug;
+            _debugEnabled = debug;
         }
 
         public void SetProperty(int property, int value)
         {
             if (property == PROPERTY_Z80_IRQ_VECTOR)
             {
-                this.I_Vector = value;
+                I_Vector = value;
             }
         }
 
@@ -398,7 +400,7 @@ namespace E_Z80.Emulator
          */
         public void Irq()
         {
-            this.IRQ = true;
+            IRQ = true;
             //if (!debugDisabled)
             //   { log("irq Request..."); }
         }
@@ -408,7 +410,7 @@ namespace E_Z80.Emulator
          */
         public void Nmi()
         {
-            this.NMI = true;
+            NMI = true;
             //if (!debugDisabled)
             //   { log("Non-Maskable irq Request..."); }
         }
@@ -418,13 +420,13 @@ namespace E_Z80.Emulator
          */
         public void Reset()
         {
-            SP = 0x10000; 	// it's actually 0 but since the 1st stack instruction is never a POP
+            SP = 0x10000; 	// it's actually 0 but since the 1st stack inst is never a POP
             // we can set it to default 0x10000 in order to prevent AND-ing SP
             // with 0xffff all the time...
 
-            PC = 0; A = 0; F = 0; B = 0; C = 0; D = 0; E = 0; H = 0; L = 0; I = 0; _R = 0; _IX = 0xffff; _IY = 0xffff;
+            PC = 0; A = 0; F = 0; B = 0; C = 0; D = 0; E = 0; H = 0; L = 0; I = 0; _R = 0; IX = 0xffff; IY = 0xffff;
 
-            cycle = 0;
+            Cycle = 0;
 
             state_HALT = false;
 
@@ -437,7 +439,7 @@ namespace E_Z80.Emulator
 
         public int GetCycle()
         {
-            return cycleCounter - cycle;
+            return CycleCounter - Cycle;
 
         }
 
@@ -453,29 +455,29 @@ namespace E_Z80.Emulator
          */
         public void Exec(int cycles)
         {
-            cycleCounter += cycle;
-            cycle += cycles;
+            CycleCounter += Cycle;
+            Cycle += cycles;
 
-            cycle = checkInterrupt(cycle);
+            Cycle = CheckInterrupt(Cycle);
 
             if (DEBUG)
             {
-                startSlice = true;
+                _startSlice = true;
             }
 
-            while (cycle > 0)
+            while (Cycle > 0)
             {
                 Step();
 
                 // Cpu in HALT state
-                if (state_HALT == true)
+                if (state_HALT)
                 {
 
-                    while (state_HALT == true)
+                    while (state_HALT)
                     {
-                        halt();
-                        cycle = checkInterrupt(cycle);
-                        if (cycle <= 0)
+                        Halt();
+                        Cycle = CheckInterrupt(Cycle);
+                        if (Cycle <= 0)
                         {
                             return;
                         }
@@ -484,278 +486,278 @@ namespace E_Z80.Emulator
                     }
                 }
 
-                instruction = MemProvider.Peek(PC);
-                
-                //if (EnableLog)
-                    //FLogFile.WriteLine(String.Format("{0:X04} : {1:X02}", PC, instruction));
+                _instruction = MemProvider.Peek(PC);
 
-                PPC = PC;
+                //if (EnableLog)
+                //    FLogFile.WriteLine(String.Format("{0:X04} : {1:X02}", PC, inst));
+
+                _PPC = PC;
                 PC = (PC + 1) & 0xffff;
                 _R++;
 
-                switch (instruction)
+                switch (_instruction)
                 {
-                    case 0x00: nop(); break; 		// NOP			ok
-                    case 0x01: ld_BC_nn(); break; 	// LD BC,nn		ok
-                    case 0x02: ld_BCi_A(); break; 	// LD (BC),A	ok
-                    case 0x03: inc_BC(); break; 	// INC BC		ok
-                    case 0x04: inc_B(); break;		// INC B		ok
-                    case 0x05: dec_B(); break;		// DEC B		ok
-                    case 0x06: ld_B_n(); break;	// LD B,n		ok
-                    case 0x07: rlca(); break;		// RLCA			ok
-                    case 0x08: ex_AF_AF(); break;	// EX AF,AF'	ok
-                    case 0x09: add_HL_BC(); break;	// ADD HL,BC	ok
-                    case 0x0a: ld_A_BCi(); break;	// LD A,(BC)	ok
-                    case 0x0b: dec_BC(); break;	// DEC BC		ok
-                    case 0x0C: inc_C(); break;		// INC C		ok
-                    case 0x0D: dec_C(); break;		// DEC C		ok
-                    case 0x0e: ld_C_n(); break;	// LD C,n		ok
-                    case 0x0f: rrca(); break;		// RRCA			ok
-                    case 0x10: djnz_n(); break;	// DJNZ,n		ok
-                    case 0x11: ld_DE_nn(); break; 	// LD DE,nn		ok
-                    case 0x12: ld_DEi_A(); break;	// LD (DE),A	ok
-                    case 0x13: inc_DE(); break; 	// INC DE		ok
-                    case 0x14: inc_D(); break;		// INC D		ok
-                    case 0x15: dec_D(); break;		// DEC D		ok
-                    case 0x16: ld_D_n(); break;	// LD D,n		ok
-                    case 0x17: rla(); break;		// RLA
-                    case 0x18: jr_e(); break;		// JR e			ok
-                    case 0x19: add_HL_DE(); break;	// ADD HL,DE	ok
-                    case 0x1a: ld_A_DEi(); break;	// LD A,(DE)	ok
-                    case 0x1b: dec_DE(); break; 	// DEC DE		ok
-                    case 0x1C: inc_E(); break; 	// INC E		ok
-                    case 0x1D: dec_E(); break; 	// DEC E		ok
-                    case 0x1e: ld_E_n(); break; 	// LD E,n		ok
-                    case 0x1f: rra(); break; 		// RRA
-                    case 0x20: jr_NZ_e(); break;	// JR NZ,e		ok
-                    case 0x21: ld_HL_nn(); break; 	// LD HL,nn		ok
-                    case 0x22: ld_ni_HL(); break;	// LD (nn),HL	ok
-                    case 0x23: inc_HL(); break; 	// INC HL		ok
-                    case 0x24: inc_H(); break; 	// INC H		ok
-                    case 0x25: dec_H(); break;		// DEC H		ok
-                    case 0x26: ld_H_n(); break; 	// LD H,n		ok
-                    case 0x27: daa(); break;		// DAA			ok
-                    case 0x28: jr_Z_e(); break;	// JR Z,e		ok
-                    case 0x29: add_HL_HL(); break;	// ADD HL,HL	ok
-                    case 0x2a: ld_HL_ni(); break;	// LD HL,(nn)	ok
-                    case 0x2b: dec_HL(); break; 	// DEC HL		ok
-                    case 0x2C: inc_L(); break; 	// INC L		ok
-                    case 0x2D: dec_L(); break; 	// DEC L		ok
-                    case 0x2e: ld_L_n(); break; 	// LD L,n		ok
-                    case 0x2f: cpl(); break;		// CPL			ok
-                    case 0x30: jr_NC_e(); break;	// JR NC,e		ok
-                    case 0x31: ld_SP_nn(); break; 	// LD SP,nn		ok
-                    case 0x32: ld_ni_A(); break;	// LD (nn),A	ok
-                    case 0x33: inc_SP(); break;	// INC SP		ok
-                    case 0x34: inc_HLi(); break; 	// INC (HL)		ok
-                    case 0x35: dec_HLi(); break; 	// DEC (HL)		ok
-                    case 0x36: ld_HLi_n(); break; 	// LD (HL),n	ok
-                    case 0x37: scf(); break;		// SCF			ok
-                    case 0x38: jr_C_e(); break;	// JR C,e		ok
-                    case 0x39: add_HL_SP(); break; // ADD HL,SP	ok
-                    case 0x3a: ld_A_ni(); break;	// LD A,(nn)	ok
-                    case 0x3b: dec_SP(); break; 	// DEC SP		ok
-                    case 0x3C: inc_A(); break;		// INC A		ok
-                    case 0x3D: dec_A(); break;		// DEC A		ok
-                    case 0x3e: ld_A_n(); break;	// LD A,n		ok
-                    case 0x3f: ccf(); break;		// CCF			ok
-                    case 0x40: nop(); break;		// LD B,B		ok
-                    case 0x41: ld_B(C, 4); break; 	// LD B,C		ok
-                    case 0x42: ld_B(D, 4); break; 	// LD B,D		ok
-                    case 0x43: ld_B(E, 4); break; 	// LD B,E		ok
-                    case 0x44: ld_B(H, 4); break; 	// LD B,H		ok
-                    case 0x45: ld_B(L, 4); break; 	// LD B,L		ok
-                    case 0x46: ld_B(HLi(), 7); break; 	// LD B,(HL)	ok
-                    case 0x47: ld_B(A, 4); break; 	// LD B,A		ok
-                    case 0x48: ld_C(B, 4); break;	// LD C,B		ok
-                    case 0x49: nop(); break; 		// LD C,C		ok
-                    case 0x4a: ld_C(D, 4); break; 	// LD C,D		ok
-                    case 0x4b: ld_C(E, 4); break; 	// LD C,E		ok
-                    case 0x4c: ld_C(H, 4); break; 	// LD C,H		ok
-                    case 0x4d: ld_C(L, 4); break; 	// LD C,L		ok
-                    case 0x4e: ld_C(HLi(), 7); break; 	// LD C,(HL)	ok
-                    case 0x4f: ld_C(A, 4); break; 	// LD C,A		ok
-                    case 0x50: ld_D(B, 4); break;	// LD D,B		ok
-                    case 0x51: ld_D(C, 4); break;	// LD D,C		ok
-                    case 0x52: nop(); break;		// LD D,D		ok
-                    case 0x53: ld_D(E, 4); break;	// LD D,E		ok
-                    case 0x54: ld_D(H, 4); break;	// LD D,H		ok
-                    case 0x55: ld_D(L, 4); break;	// LD D,L		ok
-                    case 0x56: ld_D(HLi(), 7); break; 	// LD D,(HL)	ok
-                    case 0x57: ld_D(A, 4); break;	// LD D,A		ok
-                    case 0x58: ld_E(B, 4); break; 	// LD E,B		ok
-                    case 0x59: ld_E(C, 4); break; 	// LD E,C		ok
-                    case 0x5a: ld_E(D, 4); break; 	// LD E,D		ok
-                    case 0x5b: nop(); break; 		// LD E,E		ok
-                    case 0x5c: ld_E(H, 4); break; 	// LD E,H		ok
-                    case 0x5d: ld_E(L, 4); break; 	// LD E,L		ok
-                    case 0x5e: ld_E(HLi(), 7); break; 	// LD E,(HL)	ok
-                    case 0x5f: ld_E(A, 4); break; 	// LD E,A		ok
-                    case 0x60: ld_H(B, 4); break;	// LD H,B		ok
-                    case 0x61: ld_H(C, 4); break;	// LD H,C		ok
-                    case 0x62: ld_H(D, 4); break;	// LD H,D		ok
-                    case 0x63: ld_H(E, 4); break;	// LD H,E		ok
-                    case 0x64: nop(); break; 		// LD H,H		ok
-                    case 0x65: ld_H(L, 4); break;	// LD H,L		ok
-                    case 0x66: ld_H(HLi(), 7); break;	// LD H,(HL)	ok
-                    case 0x67: ld_H(A, 4); break;	// LD H,A		ok
-                    case 0x68: ld_L(B, 4); break;	// LD L,B		ok
-                    case 0x69: ld_L(C, 4); break;	// LD L,C		ok
-                    case 0x6a: ld_L(D, 4); break; 	// LD L,D		ok
-                    case 0x6b: ld_L(E, 4); break; 	// LD L,E		ok
-                    case 0x6c: ld_L(H, 4); break; 	// LD L,H		ok
-                    case 0x6d: nop(); break; 		// LD L,L		ok
-                    case 0x6e: ld_L(HLi(), 7); break;	// LD L,(HL)	ok
-                    case 0x6f: ld_L(A, 4); break;	// LD L,A		ok
-                    case 0x70: ld_HLi(B, 7); break; // LD (HL),B	ok
-                    case 0x71: ld_HLi(C, 7); break; // LD (HL),C	ok
-                    case 0x72: ld_HLi(D, 7); break; // LD (HL),D	ok
-                    case 0x73: ld_HLi(E, 7); break; // LD (HL),E	ok
-                    case 0x74: ld_HLi(H, 7); break; // LD (HL),H	ok
-                    case 0x75: ld_HLi(L, 7); break; // LD (HL),L	ok
-                    case 0x76: halt(); break;		// HALT			ok
-                    case 0x77: ld_HLi(A, 7); break; // LD (HL),A	ok
-                    case 0x78: ld_A(B, 4); break; 	// LD A,B		ok
-                    case 0x79: ld_A(C, 4); break; 	// LD A,C		ok
-                    case 0x7a: ld_A(D, 4); break; 	// LD A,D		ok
-                    case 0x7b: ld_A(E, 4); break; 	// LD A,E		ok
-                    case 0x7c: ld_A(H, 4); break; 	// LD A,H		ok
-                    case 0x7d: ld_A(L, 4); break; 	// LD A,L		ok
-                    case 0x7e: ld_A(HLi(), 7); break; 	// LD A,(HL)	ok
-                    case 0x7f: nop(); break; 		// LD A,A		ok
-                    case 0x80: add_A(B, 4); break;	// ADD A,B		ok
-                    case 0x81: add_A(C, 4); break; 	// ADD A,C		ok
-                    case 0x82: add_A(D, 4); break; 	// ADD A,D		ok
-                    case 0x83: add_A(E, 4); break; 	// ADD A,E		ok
-                    case 0x84: add_A(H, 4); break; 	// ADD A,H		ok
-                    case 0x85: add_A(L, 4); break; 	// ADD A,L		ok
-                    case 0x86: add_A(HLi(), 7); break; 	// ADD A,(HL)	ok
-                    case 0x87: add_A(A, 4); break; 	// ADD A,A		ok
-                    case 0x88: adc_A(B, 4); break;	// ADC A,B		ok
-                    case 0x89: adc_A(C, 4); break;	// ADC A,C		ok
-                    case 0x8a: adc_A(D, 4); break;	// ADC A,D		ok
-                    case 0x8b: adc_A(E, 4); break;	// ADC A,E		ok
-                    case 0x8c: adc_A(H, 4); break;	// ADC A,H		ok
-                    case 0x8d: adc_A(L, 4); break;	// ADC A,L		ok
-                    case 0x8e: adc_A(HLi(), 7); break; 	// ADC A,(HL)	ok
-                    case 0x8f: adc_A(A, 4); break;	// ADC A,A		ok
-                    case 0x90: sub_A(B, 4); break; 	// SUB A,B		ok
-                    case 0x91: sub_A(C, 4); break; 	// SUB A,C		ok
-                    case 0x92: sub_A(D, 4); break; 	// SUB A,D		ok
-                    case 0x93: sub_A(E, 4); break; 	// SUB A,E		ok
-                    case 0x94: sub_A(H, 4); break; 	// SUB A,H		ok
-                    case 0x95: sub_A(L, 4); break; 	// SUB A,L		ok
-                    case 0x96: sub_A(HLi(), 7); break; 	// SUB A,(HL)	ok
-                    case 0x97: sub_A(A, 4); break; 	// SUB A,A		ok
-                    case 0x98: sbc_A(B, 4); break; 	// SBC A,B		ok
-                    case 0x99: sbc_A(C, 4); break; 	// SBC A,C		ok
-                    case 0x9a: sbc_A(D, 4); break; 	// SBC A,D		ok
-                    case 0x9b: sbc_A(E, 4); break; 	// SBC A,E		ok
-                    case 0x9c: sbc_A(H, 4); break; 	// SBC A,H		ok
-                    case 0x9d: sbc_A(L, 4); break; 	// SBC A,L		ok
-                    case 0x9e: sbc_A(HLi(), 7); break; 	// SBC A,(HL)	ok
-                    case 0x9f: sbc_A(A, 4); break; 	// SBC A,A		ok
-                    case 0xa0: and_A(B, 4); break; 	// AND B		ok
-                    case 0xa1: and_A(C, 4); break; 	// AND C		ok
-                    case 0xa2: and_A(D, 4); break; 	// AND D		ok
-                    case 0xa3: and_A(E, 4); break; 	// AND E		ok
-                    case 0xa4: and_A(H, 4); break; 	// AND H		ok
-                    case 0xa5: and_A(L, 4); break; 	// AND L		ok
-                    case 0xa6: and_A(HLi(), 7); break; 	// AND (HL)	ok
-                    case 0xa7: and_A(A, 4); break; 	// AND A		ok
-                    case 0xa8: xor_A(B, 4); break; 	// XOR B		ok
-                    case 0xa9: xor_A(C, 4); break; 	// XOR C		ok
-                    case 0xaa: xor_A(D, 4); break; 	// XOR D		ok
-                    case 0xab: xor_A(E, 4); break; 	// XOR E		ok
-                    case 0xac: xor_A(H, 4); break; 	// XOR H		ok
-                    case 0xad: xor_A(L, 4); break; 	// XOR L		ok
-                    case 0xae: xor_A(HLi(), 7); break; 	// XOR (HL)	ok
-                    case 0xaf: xor_A(A, 4); break; 	// XOR A		ok
-                    case 0xb0: or_A(B, 4); break; 	// OR B			ok
-                    case 0xb1: or_A(C, 4); break; 	// OR C			ok
-                    case 0xb2: or_A(D, 4); break; 	// OR D			ok
-                    case 0xb3: or_A(E, 4); break; 	// OR E			ok
-                    case 0xb4: or_A(H, 4); break; 	// OR H			ok
-                    case 0xb5: or_A(L, 4); break; 	// OR L			ok
-                    case 0xb6: or_A(HLi(), 7); break; 	// OR (HL)	ok
-                    case 0xb7: or_A(A, 4); break; 	// OR A			ok
-                    case 0xb8: cp_A(B, 4); break;	// CP B			ok
-                    case 0xb9: cp_A(C, 4); break;	// CP C			ok
-                    case 0xba: cp_A(D, 4); break;	// CP D			ok
-                    case 0xbb: cp_A(E, 4); break;	// CP E			ok
-                    case 0xbc: cp_A(H, 4); break;	// CP H			ok
-                    case 0xbd: cp_A(L, 4); break;	// CP L			ok
-                    case 0xbe: cp_A(HLi(), 7); break;  	// CP A,(HL)ok
-                    case 0xbf: cp_A(A, 4); break;	// CP A			ok
-                    case 0xc0: ret_NZ(); break; 	// RET NZ		ok
-                    case 0xc1: pop_BC(); break; 	// POP BC		ok
-                    case 0xc2: jp_NZ_nn(); break; 	// JP NZ,nn		ok
-                    case 0xc3: jp_nn(); break; 	// JP nn		ok
-                    case 0xc4: call_NZ_nn(); break;// CALL NZ,nn	ok
-                    case 0xc5: push_BC(); break; 	// PUSH BC		ok
-                    case 0xc6: add_A_n(); break; 	// ADD A,n		ok
-                    case 0xc7: rst(0x00); break; 	// RST $00		ok
-                    case 0xc8: ret_Z(); break;		// RET Z		ok
-                    case 0xc9: ret(); break; 		// RET			ok
-                    case 0xca: jp_Z_nn(); break; 	// JP Z,nn 		ok
+                    case 0x00: Nop(); break; 		// NOP			ok
+                    case 0x01: Ld_BC_nn(); break; 	// LD Bc,nn		ok
+                    case 0x02: Ld_BCi_A(); break; 	// LD (Bc),a	ok
+                    case 0x03: Inc_BC(); break; 	// INC Bc		ok
+                    case 0x04: Inc_B(); break;		// INC B		ok
+                    case 0x05: Dec_B(); break;		// DEC B		ok
+                    case 0x06: Ld_B_n(); break;	// LD B,n		ok
+                    case 0x07: Rlca(); break;		// RLCA			ok
+                    case 0x08: Ex_AF_AF(); break;	// EX Af,Af'	ok
+                    case 0x09: Add_HL_BC(); break;	// ADD Hl,Bc	ok
+                    case 0x0a: Ld_A_BCi(); break;	// LD a,(Bc)	ok
+                    case 0x0b: Dec_BC(); break;	// DEC Bc		ok
+                    case 0x0C: Inc_C(); break;		// INC C		ok
+                    case 0x0D: Dec_C(); break;		// DEC C		ok
+                    case 0x0e: Ld_C_n(); break;	// LD C,n		ok
+                    case 0x0f: Rrca(); break;		// RRCA			ok
+                    case 0x10: Djnz_n(); break;	// DJNZ,n		ok
+                    case 0x11: Ld_DE_nn(); break; 	// LD De,nn		ok
+                    case 0x12: Ld_DEi_A(); break;	// LD (De),a	ok
+                    case 0x13: Inc_DE(); break; 	// INC De		ok
+                    case 0x14: Inc_D(); break;		// INC D		ok
+                    case 0x15: Dec_D(); break;		// DEC D		ok
+                    case 0x16: Ld_D_n(); break;	// LD D,n		ok
+                    case 0x17: Rla(); break;		// RLA
+                    case 0x18: Jr_e(); break;		// JR e			ok
+                    case 0x19: Add_HL_DE(); break;	// ADD Hl,De	ok
+                    case 0x1a: Ld_A_DEi(); break;	// LD a,(De)	ok
+                    case 0x1b: Dec_DE(); break; 	// DEC De		ok
+                    case 0x1C: Inc_E(); break; 	// INC E		ok
+                    case 0x1D: Dec_E(); break; 	// DEC E		ok
+                    case 0x1e: Ld_E_n(); break; 	// LD E,n		ok
+                    case 0x1f: Rra(); break; 		// RRA
+                    case 0x20: Jr_NZ_e(); break;	// JR NZ,e		ok
+                    case 0x21: Ld_HL_nn(); break; 	// LD Hl,nn		ok
+                    case 0x22: Ld_ni_HL(); break;	// LD (nn),Hl	ok
+                    case 0x23: Inc_HL(); break; 	// INC Hl		ok
+                    case 0x24: Inc_H(); break; 	// INC H		ok
+                    case 0x25: Dec_H(); break;		// DEC H		ok
+                    case 0x26: Ld_H_n(); break; 	// LD H,n		ok
+                    case 0x27: Daa(); break;		// DAA			ok
+                    case 0x28: Jr_Z_e(); break;	// JR Z,e		ok
+                    case 0x29: Add_HL_HL(); break;	// ADD Hl,Hl	ok
+                    case 0x2a: Ld_HL_ni(); break;	// LD Hl,(nn)	ok
+                    case 0x2b: Dec_HL(); break; 	// DEC Hl		ok
+                    case 0x2C: Inc_L(); break; 	// INC L		ok
+                    case 0x2D: Dec_L(); break; 	// DEC L		ok
+                    case 0x2e: Ld_L_n(); break; 	// LD L,n		ok
+                    case 0x2f: Cpl(); break;		// CPL			ok
+                    case 0x30: Jr_NC_e(); break;	// JR NC,e		ok
+                    case 0x31: Ld_SP_nn(); break; 	// LD SP,nn		ok
+                    case 0x32: Ld_ni_A(); break;	// LD (nn),a	ok
+                    case 0x33: Inc_SP(); break;	// INC SP		ok
+                    case 0x34: Inc_HLi(); break; 	// INC (Hl)		ok
+                    case 0x35: Dec_HLi(); break; 	// DEC (Hl)		ok
+                    case 0x36: Ld_HLi_n(); break; 	// LD (Hl),n	ok
+                    case 0x37: Scf(); break;		// SCF			ok
+                    case 0x38: Jr_C_e(); break;	// JR C,e		ok
+                    case 0x39: Add_HL_SP(); break; // ADD Hl,SP	ok
+                    case 0x3a: Ld_A_ni(); break;	// LD a,(nn)	ok
+                    case 0x3b: Dec_SP(); break; 	// DEC SP		ok
+                    case 0x3C: Inc_A(); break;		// INC a		ok
+                    case 0x3D: Dec_A(); break;		// DEC a		ok
+                    case 0x3e: Ld_A_n(); break;	// LD a,n		ok
+                    case 0x3f: Ccf(); break;		// CCF			ok
+                    case 0x40: Nop(); break;		// LD B,B		ok
+                    case 0x41: Ld_B(C, 4); break; 	// LD B,C		ok
+                    case 0x42: Ld_B(D, 4); break; 	// LD B,D		ok
+                    case 0x43: Ld_B(E, 4); break; 	// LD B,E		ok
+                    case 0x44: Ld_B(H, 4); break; 	// LD B,H		ok
+                    case 0x45: Ld_B(L, 4); break; 	// LD B,L		ok
+                    case 0x46: Ld_B(HLi(), 7); break; 	// LD B,(Hl)	ok
+                    case 0x47: Ld_B(A, 4); break; 	// LD B,a		ok
+                    case 0x48: Ld_C(B, 4); break;	// LD C,B		ok
+                    case 0x49: Nop(); break; 		// LD C,C		ok
+                    case 0x4a: Ld_C(D, 4); break; 	// LD C,D		ok
+                    case 0x4b: Ld_C(E, 4); break; 	// LD C,E		ok
+                    case 0x4c: Ld_C(H, 4); break; 	// LD C,H		ok
+                    case 0x4d: Ld_C(L, 4); break; 	// LD C,L		ok
+                    case 0x4e: Ld_C(HLi(), 7); break; 	// LD C,(Hl)	ok
+                    case 0x4f: Ld_C(A, 4); break; 	// LD C,a		ok
+                    case 0x50: Ld_D(B, 4); break;	// LD D,B		ok
+                    case 0x51: Ld_D(C, 4); break;	// LD D,C		ok
+                    case 0x52: Nop(); break;		// LD D,D		ok
+                    case 0x53: Ld_D(E, 4); break;	// LD D,E		ok
+                    case 0x54: Ld_D(H, 4); break;	// LD D,H		ok
+                    case 0x55: Ld_D(L, 4); break;	// LD D,L		ok
+                    case 0x56: Ld_D(HLi(), 7); break; 	// LD D,(Hl)	ok
+                    case 0x57: Ld_D(A, 4); break;	// LD D,a		ok
+                    case 0x58: Ld_E(B, 4); break; 	// LD E,B		ok
+                    case 0x59: Ld_E(C, 4); break; 	// LD E,C		ok
+                    case 0x5a: Ld_E(D, 4); break; 	// LD E,D		ok
+                    case 0x5b: Nop(); break; 		// LD E,E		ok
+                    case 0x5c: Ld_E(H, 4); break; 	// LD E,H		ok
+                    case 0x5d: Ld_E(L, 4); break; 	// LD E,L		ok
+                    case 0x5e: Ld_E(HLi(), 7); break; 	// LD E,(Hl)	ok
+                    case 0x5f: Ld_E(A, 4); break; 	// LD E,a		ok
+                    case 0x60: Ld_H(B, 4); break;	// LD H,B		ok
+                    case 0x61: Ld_H(C, 4); break;	// LD H,C		ok
+                    case 0x62: Ld_H(D, 4); break;	// LD H,D		ok
+                    case 0x63: Ld_H(E, 4); break;	// LD H,E		ok
+                    case 0x64: Nop(); break; 		// LD H,H		ok
+                    case 0x65: Ld_H(L, 4); break;	// LD H,L		ok
+                    case 0x66: Ld_H(HLi(), 7); break;	// LD H,(Hl)	ok
+                    case 0x67: Ld_H(A, 4); break;	// LD H,a		ok
+                    case 0x68: Ld_L(B, 4); break;	// LD L,B		ok
+                    case 0x69: Ld_L(C, 4); break;	// LD L,C		ok
+                    case 0x6a: Ld_L(D, 4); break; 	// LD L,D		ok
+                    case 0x6b: Ld_L(E, 4); break; 	// LD L,E		ok
+                    case 0x6c: Ld_L(H, 4); break; 	// LD L,H		ok
+                    case 0x6d: Nop(); break; 		// LD L,L		ok
+                    case 0x6e: Ld_L(HLi(), 7); break;	// LD L,(Hl)	ok
+                    case 0x6f: Ld_L(A, 4); break;	// LD L,a		ok
+                    case 0x70: Ld_HLi(B, 7); break; // LD (Hl),B	ok
+                    case 0x71: Ld_HLi(C, 7); break; // LD (Hl),C	ok
+                    case 0x72: Ld_HLi(D, 7); break; // LD (Hl),D	ok
+                    case 0x73: Ld_HLi(E, 7); break; // LD (Hl),E	ok
+                    case 0x74: Ld_HLi(H, 7); break; // LD (Hl),H	ok
+                    case 0x75: Ld_HLi(L, 7); break; // LD (Hl),L	ok
+                    case 0x76: Halt(); break;		// HALT			ok
+                    case 0x77: Ld_HLi(A, 7); break; // LD (Hl),a	ok
+                    case 0x78: Ld_A(B, 4); break; 	// LD a,B		ok
+                    case 0x79: Ld_A(C, 4); break; 	// LD a,C		ok
+                    case 0x7a: Ld_A(D, 4); break; 	// LD a,D		ok
+                    case 0x7b: Ld_A(E, 4); break; 	// LD a,E		ok
+                    case 0x7c: Ld_A(H, 4); break; 	// LD a,H		ok
+                    case 0x7d: Ld_A(L, 4); break; 	// LD a,L		ok
+                    case 0x7e: Ld_A(HLi(), 7); break; 	// LD a,(Hl)	ok
+                    case 0x7f: Nop(); break; 		// LD a,a		ok
+                    case 0x80: Add_A(B, 4); break;	// ADD a,B		ok
+                    case 0x81: Add_A(C, 4); break; 	// ADD a,C		ok
+                    case 0x82: Add_A(D, 4); break; 	// ADD a,D		ok
+                    case 0x83: Add_A(E, 4); break; 	// ADD a,E		ok
+                    case 0x84: Add_A(H, 4); break; 	// ADD a,H		ok
+                    case 0x85: Add_A(L, 4); break; 	// ADD a,L		ok
+                    case 0x86: Add_A(HLi(), 7); break; 	// ADD a,(Hl)	ok
+                    case 0x87: Add_A(A, 4); break; 	// ADD a,a		ok
+                    case 0x88: Adc_A(B, 4); break;	// ADC a,B		ok
+                    case 0x89: Adc_A(C, 4); break;	// ADC a,C		ok
+                    case 0x8a: Adc_A(D, 4); break;	// ADC a,D		ok
+                    case 0x8b: Adc_A(E, 4); break;	// ADC a,E		ok
+                    case 0x8c: Adc_A(H, 4); break;	// ADC a,H		ok
+                    case 0x8d: Adc_A(L, 4); break;	// ADC a,L		ok
+                    case 0x8e: Adc_A(HLi(), 7); break; 	// ADC a,(Hl)	ok
+                    case 0x8f: Adc_A(A, 4); break;	// ADC a,a		ok
+                    case 0x90: Sub_A(B, 4); break; 	// SUB a,B		ok
+                    case 0x91: Sub_A(C, 4); break; 	// SUB a,C		ok
+                    case 0x92: Sub_A(D, 4); break; 	// SUB a,D		ok
+                    case 0x93: Sub_A(E, 4); break; 	// SUB a,E		ok
+                    case 0x94: Sub_A(H, 4); break; 	// SUB a,H		ok
+                    case 0x95: Sub_A(L, 4); break; 	// SUB a,L		ok
+                    case 0x96: Sub_A(HLi(), 7); break; 	// SUB a,(Hl)	ok
+                    case 0x97: Sub_A(A, 4); break; 	// SUB a,a		ok
+                    case 0x98: Sbc_A(B, 4); break; 	// SBC a,B		ok
+                    case 0x99: Sbc_A(C, 4); break; 	// SBC a,C		ok
+                    case 0x9a: Sbc_A(D, 4); break; 	// SBC a,D		ok
+                    case 0x9b: Sbc_A(E, 4); break; 	// SBC a,E		ok
+                    case 0x9c: Sbc_A(H, 4); break; 	// SBC a,H		ok
+                    case 0x9d: Sbc_A(L, 4); break; 	// SBC a,L		ok
+                    case 0x9e: Sbc_A(HLi(), 7); break; 	// SBC a,(Hl)	ok
+                    case 0x9f: Sbc_A(A, 4); break; 	// SBC a,a		ok
+                    case 0xa0: And_A(B, 4); break; 	// AND B		ok
+                    case 0xa1: And_A(C, 4); break; 	// AND C		ok
+                    case 0xa2: And_A(D, 4); break; 	// AND D		ok
+                    case 0xa3: And_A(E, 4); break; 	// AND E		ok
+                    case 0xa4: And_A(H, 4); break; 	// AND H		ok
+                    case 0xa5: And_A(L, 4); break; 	// AND L		ok
+                    case 0xa6: And_A(HLi(), 7); break; 	// AND (Hl)	ok
+                    case 0xa7: And_A(A, 4); break; 	// AND a		ok
+                    case 0xa8: Xor_A(B, 4); break; 	// XOR B		ok
+                    case 0xa9: Xor_A(C, 4); break; 	// XOR C		ok
+                    case 0xaa: Xor_A(D, 4); break; 	// XOR D		ok
+                    case 0xab: Xor_A(E, 4); break; 	// XOR E		ok
+                    case 0xac: Xor_A(H, 4); break; 	// XOR H		ok
+                    case 0xad: Xor_A(L, 4); break; 	// XOR L		ok
+                    case 0xae: Xor_A(HLi(), 7); break; 	// XOR (Hl)	ok
+                    case 0xaf: Xor_A(A, 4); break; 	// XOR a		ok
+                    case 0xb0: Or_A(B, 4); break; 	// OR B			ok
+                    case 0xb1: Or_A(C, 4); break; 	// OR C			ok
+                    case 0xb2: Or_A(D, 4); break; 	// OR D			ok
+                    case 0xb3: Or_A(E, 4); break; 	// OR E			ok
+                    case 0xb4: Or_A(H, 4); break; 	// OR H			ok
+                    case 0xb5: Or_A(L, 4); break; 	// OR L			ok
+                    case 0xb6: Or_A(HLi(), 7); break; 	// OR (Hl)	ok
+                    case 0xb7: Or_A(A, 4); break; 	// OR a			ok
+                    case 0xb8: Cp_A(B, 4); break;	// CP B			ok
+                    case 0xb9: Cp_A(C, 4); break;	// CP C			ok
+                    case 0xba: Cp_A(D, 4); break;	// CP D			ok
+                    case 0xbb: Cp_A(E, 4); break;	// CP E			ok
+                    case 0xbc: Cp_A(H, 4); break;	// CP H			ok
+                    case 0xbd: Cp_A(L, 4); break;	// CP L			ok
+                    case 0xbe: Cp_A(HLi(), 7); break;  	// CP a,(Hl)ok
+                    case 0xbf: Cp_A(A, 4); break;	// CP a			ok
+                    case 0xc0: Ret_NZ(); break; 	// RET NZ		ok
+                    case 0xc1: Pop_BC(); break; 	// POP Bc		ok
+                    case 0xc2: Jp_NZ_nn(); break; 	// JP NZ,nn		ok
+                    case 0xc3: Jp_nn(); break; 	// JP nn		ok
+                    case 0xc4: Call_NZ_nn(); break;// CALL NZ,nn	ok
+                    case 0xc5: Push_BC(); break; 	// PUSH Bc		ok
+                    case 0xc6: Add_A_n(); break; 	// ADD a,n		ok
+                    case 0xc7: Rst(0x00); break; 	// RST $00		ok
+                    case 0xc8: Ret_Z(); break;		// RET Z		ok
+                    case 0xc9: Ret(); break; 		// RET			ok
+                    case 0xca: Jp_Z_nn(); break; 	// JP Z,nn 		ok
                     case 0xcb: Prefix_BC(); break;	// Opcodes with $CB prefix opcodes
-                    case 0xcc: call_Z_nn(); break;	// CALL Z,nn	ok
-                    case 0xcd: call_nn(); break; 	// CALL nn		ok
-                    case 0xce: adc_A_n(); break; 	// ADC A,n		ok
-                    case 0xcf: rst(0x08); break; 	// RST $08		ok
-                    case 0xd0: ret_NC(); break;	// RET NC		ok
-                    case 0xd1: pop_DE(); break;	// POP DE		ok
-                    case 0xd2: jp_NC_nn(); break; 	// JP NC,nn		ok
-                    case 0xd3: out_n_A(); break;	// OUT (n),A	ok
-                    case 0xd4: call_NC_nn(); break; // CALL NC,nn	ok
-                    case 0xd5: push_DE(); break; 	// PUSH DE		ok
-                    case 0xd6: sub_A_n(); break; 	// SUB A,n		ok
-                    case 0xd7: rst(0x10); break; 	// RST $10		ok
-                    case 0xd8: ret_C(); break;		// RET C		ok
-                    case 0xd9: exx(); break; 		// EXX			ok
-                    case 0xda: jp_C_nn(); break; 	// JP C,nn		ok
-                    case 0xdb: in_A_n(); break;	// IN A,(n)		ok
-                    case 0xdc: call_C_nn(); break; // CALL C,nn	ok
-                    case 0xdd: _IX = ExecXY(_IX); break;	// Opcodes with $DD prefix
-                    case 0xde: sbc_A_n(); break; 	// SBC A,n		ok
-                    case 0xdf: rst(0x18); break; 	// RST $18		ok
-                    case 0xe0: ret_PO(); break;	// RET PO		ok
-                    case 0xe1: pop_HL(); break; 	// POP HL		ok
-                    case 0xe2: jp_PO_nn(); break; 	// JP PO,nn		ok
-                    case 0xe3: ex_SPi_HL(); break;	// EX (SP),HL	ok
-                    case 0xe4: call_PO_nn(); break;// CALL PO,nn	ok
-                    case 0xe5: push_HL(); break;	// PUSH HL		ok
-                    case 0xe6: and_A_n(); break;	// AND A,n		ok
-                    case 0xe7: rst(0x20); break;	// RST $20		ok
-                    case 0xe8: ret_PE(); break;	// RET PE		ok
-                    case 0xe9: jp_HLi(); break; 	// JP (HL)		ok
-                    case 0xea: jp_PE_nn(); break; 	// JP PE,nn		ok
-                    case 0xeb: ex_DE_HL(); break; 	// EX DE,HL		ok
-                    case 0xec: call_PE_nn(); break;// CALL PE,nn	ok
+                    case 0xcc: Call_Z_nn(); break;	// CALL Z,nn	ok
+                    case 0xcd: Call_nn(); break; 	// CALL nn		ok
+                    case 0xce: adc_A_n(); break; 	// ADC a,n		ok
+                    case 0xcf: Rst(0x08); break; 	// RST $08		ok
+                    case 0xd0: Ret_NC(); break;	// RET NC		ok
+                    case 0xd1: Pop_DE(); break;	// POP De		ok
+                    case 0xd2: Jp_NC_nn(); break; 	// JP NC,nn		ok
+                    case 0xd3: out_n_A(); break;	// OUT (n),a	ok
+                    case 0xd4: Call_NC_nn(); break; // CALL NC,nn	ok
+                    case 0xd5: Push_DE(); break; 	// PUSH De		ok
+                    case 0xd6: sub_A_n(); break; 	// SUB a,n		ok
+                    case 0xd7: Rst(0x10); break; 	// RST $10		ok
+                    case 0xd8: Ret_C(); break;		// RET C		ok
+                    case 0xd9: Exx(); break; 		// EXX			ok
+                    case 0xda: Jp_C_nn(); break; 	// JP C,nn		ok
+                    case 0xdb: In_A_n(); break;	// IN a,(n)		ok
+                    case 0xdc: Call_C_nn(); break; // CALL C,nn	ok
+                    case 0xdd: IX = ExecXy(IX); break;	// Opcodes with $DD prefix
+                    case 0xde: Sbc_A_n(); break; 	// SBC a,n		ok
+                    case 0xdf: Rst(0x18); break; 	// RST $18		ok
+                    case 0xe0: Ret_PO(); break;	// RET PO		ok
+                    case 0xe1: Pop_HL(); break; 	// POP Hl		ok
+                    case 0xe2: Jp_PO_nn(); break; 	// JP PO,nn		ok
+                    case 0xe3: Ex_SPi_HL(); break;	// EX (SP),Hl	ok
+                    case 0xe4: Call_PO_nn(); break;// CALL PO,nn	ok
+                    case 0xe5: Push_HL(); break;	// PUSH Hl		ok
+                    case 0xe6: And_A_n(); break;	// AND a,n		ok
+                    case 0xe7: Rst(0x20); break;	// RST $20		ok
+                    case 0xe8: Ret_PE(); break;	// RET PE		ok
+                    case 0xe9: Jp_HLi(); break; 	// JP (Hl)		ok
+                    case 0xea: Jp_PE_nn(); break; 	// JP PE,nn		ok
+                    case 0xeb: Ex_DE_HL(); break; 	// EX De,Hl		ok
+                    case 0xec: Call_PE_nn(); break;// CALL PE,nn	ok
                     case 0xed: Prefix_ED(); break;	// Opcodes with $ED prefix
-                    case 0xee: xor_n(); break; 	// XOR A,n		ok
-                    case 0xef: rst(0x28); break; 	// RST $28		ok
-                    case 0xf0: ret_P(); break;		// RET P		ok
-                    case 0xf1: pop_AF(); break;	// POP AF		ok
-                    case 0xf2: jp_P_nn(); break; 	// JP P,nn		ok
-                    case 0xf3: di(); break; 		// DI			ok
-                    case 0xf4: call_P_nn(); break; // CALL P,nn	ok
-                    case 0xf5: push_AF(); break;	// PUSH AF		ok
-                    case 0xf6: or_n(); break;		// OR A,n		ok
-                    case 0xf7: rst(0x30); break;	// RST $30		ok
-                    case 0xf8: ret_M(); break;		// RET M		ok
-                    case 0xf9: ld_SP_HL(); break;	// LD SP,HL		ok
-                    case 0xfa: jp_M_nn(); break; 	// JP M,nn		ok
-                    case 0xfb: ei(); break;		// EI			ok
-                    case 0xfc: call_M_nn(); break;	// CALL M,nn	ok
-                    case 0xfd: _IY = ExecXY(_IY); break;	// Opcodes with $FD prefix
-                    case 0xfe: cp_n(); break; 		// CP A,n		ok
-                    case 0xff: rst(0x38); break;	// RST $38		ok
+                    case 0xee: Xor_n(); break; 	// XOR a,n		ok
+                    case 0xef: Rst(0x28); break; 	// RST $28		ok
+                    case 0xf0: Ret_P(); break;		// RET P		ok
+                    case 0xf1: Pop_AF(); break;	// POP Af		ok
+                    case 0xf2: Jp_P_nn(); break; 	// JP P,nn		ok
+                    case 0xf3: Di(); break; 		// DI			ok
+                    case 0xf4: Call_P_nn(); break; // CALL P,nn	ok
+                    case 0xf5: Push_AF(); break;	// PUSH Af		ok
+                    case 0xf6: Or_n(); break;		// OR a,n		ok
+                    case 0xf7: Rst(0x30); break;	// RST $30		ok
+                    case 0xf8: Ret_M(); break;		// RET M		ok
+                    case 0xf9: Ld_SP_HL(); break;	// LD SP,Hl		ok
+                    case 0xfa: Jp_M_nn(); break; 	// JP M,nn		ok
+                    case 0xfb: Ei(); break;		// EI			ok
+                    case 0xfc: Call_M_nn(); break;	// CALL M,nn	ok
+                    case 0xfd: IY = ExecXy(IY); break;	// Opcodes with $FD prefix
+                    case 0xfe: Cp_n(); break; 		// CP a,n		ok
+                    case 0xff: Rst(0x38); break;	// RST $38		ok
                 }
 
-                //if (DEBUG) debug(instruction, PPC, A, F, B, C, D, E, H, L, SP, _IX, _IY, I, cycle);
+                //if (DEBUG) debug(inst, _PPC, a, F, B, C, D, E, H, L, SP, IX, IY, I, cyc);
 
-            }	// end if (cycle ==0)
+            }	// end if (cyc ==0)
 
         }	// end void exec()
 
@@ -763,78 +765,78 @@ namespace E_Z80.Emulator
         private void Prefix_ED()
         {
             int tmp1, tmp2, tmp3;
-            instruction = (instruction << 8) + MemProvider.Peek(PC);
+            _instruction = (_instruction << 8) + MemProvider.Peek(PC);
             PC = (PC + 1) & 0xffff;
-            switch (instruction & 0xff)
+            switch (_instruction & 0xff)
             {
-                case 0x40: cycle -= 12; B = portIn(C, B); break;			// IN B,(C)		ok
-                case 0x41: cycle -= 12; portOut(C, B); break; 			// OUT (C),B	ok
-                case 0x42: cycle -= 15; sbcHL(BC()); break; 			// SBC HL,BC	ok
-                case 0x43: cycle -= 20; pokew(peekw(PC), BC()); PC += 2; break;// LD (nn),BC
-                case 0x44: cycle -= 13; tmp1 = A; A = 0; A = subA_8(tmp1, A); break; 		// NEG
-                case 0x45: cycle -= 14; PC = peekw(SP); SP += 2; IFF0 = IFF1; 		// RET N
-                    cycle = checkInterrupt(cycle); break;
-                case 0x46: cycle -= 8; IM = 0; break; 				// IM 0
-                case 0x47: cycle -= 9; I = A; break;					// LD I,A
+                case 0x40: Cycle -= 12; B = PortIn(C, B); break;			// IN B,(C)		ok
+                case 0x41: Cycle -= 12; PortOut(C, B); break; 			// OUT (C),B	ok
+                case 0x42: Cycle -= 15; SbcHl(Bc()); break; 			// SBC Hl,Bc	ok
+                case 0x43: Cycle -= 20; PokeW(PeekW(PC), Bc()); PC += 2; break;// LD (nn),Bc
+                case 0x44: Cycle -= 13; tmp1 = A; A = 0; A = SubA_8(tmp1, A); break; 		// NEG
+                case 0x45: Cycle -= 14; PC = PeekW(SP); SP += 2; IFF0 = IFF1; 		// RET N
+                    Cycle = CheckInterrupt(Cycle); break;
+                case 0x46: Cycle -= 8; IM = 0; break; 				// IM 0
+                case 0x47: Cycle -= 9; I = A; break;					// LD I,a
 
-                case 0x48: cycle -= 12; C = portIn(C, B); break;			// IN C,(C)		ok
-                case 0x49: cycle -= 12; portOut(C, D); break; 			// OUT (C),D	ok
-                case 0x4a: cycle -= 15; adcHL(BC()); break; 			// ADC HL,BC
-                case 0x4b: cycle -= 20; B = MemProvider.Peek(peekw(PC) + 1); C = MemProvider.Peek(peekw(PC)); PC += 2; break; // LD BC,(nn)
-                case 0x4c: cycle -= 13; tmp1 = A; A = 0; A = subA_8(tmp1, A); break; 				// NEG
-                case 0x4d: cycle -= 14; PC = peekw(SP); SP += 2; break; 					// RETI
-                case 0x4e: cycle -= 8; IM = 0; break; 				// IM 0
-                case 0x4f: cycle -= 9; _R = A; break; 					// LD R,A
+                case 0x48: Cycle -= 12; C = PortIn(C, B); break;			// IN C,(C)		ok
+                case 0x49: Cycle -= 12; PortOut(C, D); break; 			// OUT (C),D	ok
+                case 0x4a: Cycle -= 15; AdcHl(Bc()); break; 			// ADC Hl,Bc
+                case 0x4b: Cycle -= 20; B = MemProvider.Peek(PeekW(PC) + 1); C = MemProvider.Peek(PeekW(PC)); PC += 2; break; // LD Bc,(nn)
+                case 0x4c: Cycle -= 13; tmp1 = A; A = 0; A = SubA_8(tmp1, A); break; 				// NEG
+                case 0x4d: Cycle -= 14; PC = PeekW(SP); SP += 2; break; 					// RETI
+                case 0x4e: Cycle -= 8; IM = 0; break; 				// IM 0
+                case 0x4f: Cycle -= 9; _R = A; break; 					// LD R,a
 
-                case 0x50: cycle -= 12; D = portIn(C, B); break;			// IN D,(C)		ok
-                case 0x51: cycle -= 12; portOut(C, D); break; 			// OUT (C),E
-                case 0x52: cycle -= 15; sbcHL(DE()); break; 			// SBC HL,DE	ok
-                case 0x53: cycle -= 20; pokew(peekw(PC), DE()); PC += 2; break;// LD (nn),DE
-                case 0x54: cycle -= 13; tmp1 = A; A = 0; A = subA_8(tmp1, A); break; 				// NEG
-                case 0x55: cycle -= 14; PC = peekw(SP); SP += 2; IFF0 = IFF1; 				// RET N
-                    cycle = checkInterrupt(cycle); break;
-                case 0x56: cycle -= 8; //System.out.println("IM 1");
+                case 0x50: Cycle -= 12; D = PortIn(C, B); break;			// IN D,(C)		ok
+                case 0x51: Cycle -= 12; PortOut(C, D); break; 			// OUT (C),E
+                case 0x52: Cycle -= 15; SbcHl(De()); break; 			// SBC Hl,De	ok
+                case 0x53: Cycle -= 20; PokeW(PeekW(PC), De()); PC += 2; break;// LD (nn),De
+                case 0x54: Cycle -= 13; tmp1 = A; A = 0; A = SubA_8(tmp1, A); break; 				// NEG
+                case 0x55: Cycle -= 14; PC = PeekW(SP); SP += 2; IFF0 = IFF1; 				// RET N
+                    Cycle = CheckInterrupt(Cycle); break;
+                case 0x56: Cycle -= 8; //System.out.println("IM 1");
                     IM = 1; break; 				// IM 1
-                case 0x57: cycle -= 9; A = I; break;					// LD A,I
+                case 0x57: Cycle -= 9; A = I; break;					// LD a,I
 
-                case 0x58: cycle -= 12; E = portIn(C, B); break;			// IN E,(C)		ok
-                case 0x59: cycle -= 12; portOut(C, E); break; 			// OUT (C),E
-                case 0x5a: cycle -= 15; adcHL(DE()); break; 			// ADC HL,DE
-                case 0x5B: cycle -= 20; D = MemProvider.Peek(peekw(PC) + 1); E = MemProvider.Peek(peekw(PC)); PC += 2; break; // LD DE,(nn)
-                case 0x5c: cycle -= 13; tmp1 = A; A = 0; A = subA_8(tmp1, A); break; 				// NEG
-                case 0x5d: cycle -= 14; PC = peekw(SP); SP += 2; break; 					// RETI
-                case 0x5e: cycle -= 8; IM = 2; break; 				// IM 2
-                case 0x5f: cycle -= 9; A = R(); break; 				// LD A,R
+                case 0x58: Cycle -= 12; E = PortIn(C, B); break;			// IN E,(C)		ok
+                case 0x59: Cycle -= 12; PortOut(C, E); break; 			// OUT (C),E
+                case 0x5a: Cycle -= 15; AdcHl(De()); break; 			// ADC Hl,De
+                case 0x5B: Cycle -= 20; D = MemProvider.Peek(PeekW(PC) + 1); E = MemProvider.Peek(PeekW(PC)); PC += 2; break; // LD De,(nn)
+                case 0x5c: Cycle -= 13; tmp1 = A; A = 0; A = SubA_8(tmp1, A); break; 				// NEG
+                case 0x5d: Cycle -= 14; PC = PeekW(SP); SP += 2; break; 					// RETI
+                case 0x5e: Cycle -= 8; IM = 2; break; 				// IM 2
+                case 0x5f: Cycle -= 9; A = R(); break; 				// LD a,R
 
-                case 0x60: cycle -= 12; H = portIn(C, B); break;			// IN H,(C)		ok
-                case 0x61: cycle -= 12; portOut(C, H); break; 			// OUT (C),H
-                case 0x62: cycle -= 15; sbcHL(HL()); break; 			// SBC HL,HL	ok
-                case 0x63: cycle -= 20; pokew(peekw(PC), HL()); PC += 2; break;	// LD (nn),HL
-                case 0x64: cycle -= 13; tmp1 = A; A = 0; A = subA_8(tmp1, A); break; 				// NEG
-                case 0x65: cycle -= 14; PC = peekw(SP); SP += 2; IFF0 = IFF1; 				// RET N
-                    cycle = checkInterrupt(cycle); break;
-                case 0x66: cycle -= 8; IM = 0; break; 				// IM 0
-                case 0x67: cycle -= 18; A = rrd_A(A, H, L); break;		// RRD
+                case 0x60: Cycle -= 12; H = PortIn(C, B); break;			// IN H,(C)		ok
+                case 0x61: Cycle -= 12; PortOut(C, H); break; 			// OUT (C),H
+                case 0x62: Cycle -= 15; SbcHl(Hl()); break; 			// SBC Hl,Hl	ok
+                case 0x63: Cycle -= 20; PokeW(PeekW(PC), Hl()); PC += 2; break;	// LD (nn),Hl
+                case 0x64: Cycle -= 13; tmp1 = A; A = 0; A = SubA_8(tmp1, A); break; 				// NEG
+                case 0x65: Cycle -= 14; PC = PeekW(SP); SP += 2; IFF0 = IFF1; 				// RET N
+                    Cycle = CheckInterrupt(Cycle); break;
+                case 0x66: Cycle -= 8; IM = 0; break; 				// IM 0
+                case 0x67: Cycle -= 18; A = rrd_A(A, H, L); break;		// RRD
 
-                case 0x68: cycle -= 12; L = portIn(C, B); break;			// IN L,(C)		ok
-                case 0x69: cycle -= 12; portOut(C, L); break; 			// OUT (C),L
-                case 0x6a: cycle -= 15; adcHL(HL()); break; 			// ADC HL,HL
-                case 0x6B: cycle -= 20; H = MemProvider.Peek(peekw(PC) + 1); L = MemProvider.Peek(peekw(PC)); PC += 2; break; // LD HL,(nn)
-                case 0x6c: cycle -= 13; tmp1 = A; A = 0; A = subA_8(tmp1, A); break; 				// NEG
-                case 0x6d: cycle -= 14; PC = peekw(SP); SP += 2; break; 					// RETI
-                case 0x6e: cycle -= 8; IM = 0; break; 				// IM 0
-                case 0x6f: cycle -= 18; A = rld_A(A, H, L); break; 		// RLD
+                case 0x68: Cycle -= 12; L = PortIn(C, B); break;			// IN L,(C)		ok
+                case 0x69: Cycle -= 12; PortOut(C, L); break; 			// OUT (C),L
+                case 0x6a: Cycle -= 15; AdcHl(Hl()); break; 			// ADC Hl,Hl
+                case 0x6B: Cycle -= 20; H = MemProvider.Peek(PeekW(PC) + 1); L = MemProvider.Peek(PeekW(PC)); PC += 2; break; // LD Hl,(nn)
+                case 0x6c: Cycle -= 13; tmp1 = A; A = 0; A = SubA_8(tmp1, A); break; 				// NEG
+                case 0x6d: Cycle -= 14; PC = PeekW(SP); SP += 2; break; 					// RETI
+                case 0x6e: Cycle -= 8; IM = 0; break; 				// IM 0
+                case 0x6f: Cycle -= 18; A = rld_A(A, H, L); break; 		// RLD
 
-                case 0x72: cycle -= 15; sbcHL(SP); break; 			// SBC HL,SP	ok
-                case 0x73: cycle -= 20; pokew(peekw(PC), SP); PC += 2; break; 		// LD (nn),SP
+                case 0x72: Cycle -= 15; SbcHl(SP); break; 			// SBC Hl,SP	ok
+                case 0x73: Cycle -= 20; PokeW(PeekW(PC), SP); PC += 2; break; 		// LD (nn),SP
 
-                case 0x78: cycle -= 12; A = portIn(C, B); break;			// IN A,(C)
-                case 0x79: cycle -= 11; portOut(C, A, B); break; 			// OUT (C),A
-                case 0x7a: cycle -= 15; adcHL(SP); break; 			// ADC HL,SP
-                case 0x7B: cycle -= 20; SP = peekw(peekw(PC)); PC += 2; break;			// LD SP,(nn)
+                case 0x78: Cycle -= 12; A = PortIn(C, B); break;			// IN a,(C)
+                case 0x79: Cycle -= 11; PortOut(C, A, B); break; 			// OUT (C),a
+                case 0x7a: Cycle -= 15; AdcHl(SP); break; 			// ADC Hl,SP
+                case 0x7B: Cycle -= 20; SP = PeekW(PeekW(PC)); PC += 2; break;			// LD SP,(nn)
 
-                case 0xa0: cycle -= 21; 								// LDI
-                    tmp1 = DE(); tmp2 = HL(); tmp3 = BC(); MemProvider.Poke(tmp1, MemProvider.Peek(tmp2++)); tmp1 = (tmp1 + 1) & 0xffff; tmp3 = (tmp3 - 1) & 0xffff;
+                case 0xa0: Cycle -= 21; 								// LDI
+                    tmp1 = De(); tmp2 = Hl(); tmp3 = Bc(); MemProvider.Poke(tmp1, MemProvider.Peek(tmp2++)); tmp1 = (tmp1 + 1) & 0xffff; tmp3 = (tmp3 - 1) & 0xffff;
                     E = tmp1 & 0xff; D = tmp1 >> 8; L = tmp2 & 0xff; H = tmp2 >> 8; C = tmp3 & 0xff; B = tmp3 >> 8;
                     F &= 0x80 | 0x40 | 0x01;
                     if (tmp3 != 0)
@@ -842,37 +844,37 @@ namespace E_Z80.Emulator
                         F |= 0x04;
                     }
                     break;
-                case 0xa1: cycle -= 21;								// CPI
-                    tmp1 = HL(); tmp2 = BC();
+                case 0xa1: Cycle -= 21;								// CPI
+                    tmp1 = Hl(); tmp2 = Bc();
                     int value = MemProvider.Peek(tmp1);
                     int result = (A - value) & 0xff;
                     tmp1++; tmp2++;
-                    F = (F & 1) | (SZ[result] & ~(0x28)) | ((A ^ value ^ result) & 0x10) | 0x02;
+                    F = (F & 1) | (_SZ[result] & ~(0x28)) | ((A ^ value ^ result) & 0x10) | 0x02;
                     if ((F & 0x10) != 0) { result = (result - 1) & 0xff; }
                     if ((result & 0x02) != 0) { F |= 0x20; }
                     if ((result & 0x08) != 0) { F |= 0x08; }
                     if (tmp2 != 0) { F |= 0x04; }
                     H = tmp1 >> 8; L = tmp1 & 0xff; B = tmp2 >> 8; C = tmp2 & 0xff;
                     break;
-                case 0xa2: cycle -= 16;								// INI
-                    tmp1 = HL();
+                case 0xa2: Cycle -= 16;								// INI
+                    tmp1 = Hl();
                     B = (B - 1) & 0xff;
-                    MemProvider.Poke(tmp1++, portIn(B, A));
+                    MemProvider.Poke(tmp1++, PortIn(B, A));
                     tmp1 &= 0xffff;
                     H = tmp1 >> 8; L = tmp1 & 0xff;
                     if (B == 0) { F |= 0x40; } else { F &= ~0x40; }
                     F |= 2;
                     break;
-                case 0xa3: cycle -= 16;								// OUTI
-                    tmp1 = HL();
-                    portOut(B, MemProvider.Peek(tmp1++));
+                case 0xa3: Cycle -= 16;								// OUTI
+                    tmp1 = Hl();
+                    PortOut(B, MemProvider.Peek(tmp1++));
                     B = (B - 1) & 0xff;
                     H = tmp1 >> 8; L = tmp1 & 0xff;
                     if (B == 0) { F |= 0x40; } else { F &= ~0x40; }
                     F |= 2;
                     break;
-                case 0xa8: cycle -= 21; 								// LDD
-                    tmp1 = DE(); tmp2 = HL(); tmp3 = BC(); MemProvider.Poke(tmp1, MemProvider.Peek(tmp2--)); tmp1 = (tmp1 - 1) & 0xffff; tmp3 = (tmp3 - 1) & 0xffff;
+                case 0xa8: Cycle -= 21; 								// LDD
+                    tmp1 = De(); tmp2 = Hl(); tmp3 = Bc(); MemProvider.Poke(tmp1, MemProvider.Peek(tmp2--)); tmp1 = (tmp1 - 1) & 0xffff; tmp3 = (tmp3 - 1) & 0xffff;
                     E = tmp1 & 0xff; D = tmp1 >> 8; L = tmp2 & 0xff; H = tmp2 >> 8; C = tmp3 & 0xff; B = tmp3 >> 8;
                     F &= 0x80 | 0x40 | 0x01;
                     if (tmp3 != 0)
@@ -880,32 +882,32 @@ namespace E_Z80.Emulator
                         F |= 0x04;
                     }
                     break;
-                case 0xaa: cycle -= 16;								// IND
-                    tmp1 = HL();
+                case 0xaa: Cycle -= 16;								// IND
+                    tmp1 = Hl();
                     B = (B - 1) & 0xff;
-                    MemProvider.Poke(tmp1--, portIn(B, A));
+                    MemProvider.Poke(tmp1--, PortIn(B, A));
                     tmp1 &= 0xffff;
                     H = tmp1 >> 8; L = tmp1 & 0xff;
                     if (B == 0) { F |= 0x40; } else { F &= ~0x40; }
                     F |= 2;
                     break;
-                case 0xb0: cycle = cycle - (5 + 16 * (BC())); tmp1 = DE(); tmp2 = HL();	// LDIR - ok
-                    for (int n = (BC()); n > 0; n--)
+                case 0xb0: Cycle = Cycle - (5 + 16 * (Bc())); tmp1 = De(); tmp2 = Hl();	// LDIR - ok
+                    for (int n = (Bc()); n > 0; n--)
                     {
                         MemProvider.Poke(tmp1, MemProvider.Peek(tmp2)); tmp1 = (tmp1 + 1) & 0xffff; tmp2 = (tmp2 + 1) & 0xffff;
                     }
                     E = tmp1 & 0xff; D = tmp1 >> 8; B = C = 0; L = tmp2 & 0xff; H = tmp2 >> 8; F &= 0xe9; break;
-                case 0xb1: tmp2 = F & 1; tmp1 = BC(); tmp3 = HL(); 						// CPIR - ok
-                    cycle -= 4; cpA_8(MemProvider.Peek(tmp3), A); tmp3++; tmp1--;
+                case 0xb1: tmp2 = F & 1; tmp1 = Bc(); tmp3 = Hl(); 						// CPIR - ok
+                    Cycle -= 4; CpA_8(MemProvider.Peek(tmp3), A); tmp3++; tmp1--;
                     H = tmp3 >> 8; L = tmp3 & 0xff; B = tmp1 >> 8; C = tmp1 & 0xff;
                     F = (F & 0xfe) | tmp2;
-                    if ((tmp1 != 0) && (F & 0x40) == 0) { PC -= 2; F |= 4; cycle -= 21; } else { F &= 0xfb; cycle -= 16; }
+                    if ((tmp1 != 0) && (F & 0x40) == 0) { PC -= 2; F |= 4; Cycle -= 21; } else { F &= 0xfb; Cycle -= 16; }
                     break;
-                case 0xb3: cycle = cycle - (5 + 16 * B);					// OTIR
+                case 0xb3: Cycle = Cycle - (5 + 16 * B);					// OTIR
                     while (B > 0)
                     {
-                        tmp1 = HL();
-                        portOut(B, MemProvider.Peek(tmp1++));
+                        tmp1 = Hl();
+                        PortOut(B, MemProvider.Peek(tmp1++));
                         B = (B - 1) & 0xff;
                         H = tmp1 >> 8; L = tmp1 & 0xff;
                         if (B == 0) { F |= 0x40; } else { F &= ~0x40; }
@@ -913,327 +915,327 @@ namespace E_Z80.Emulator
                     F |= 2;
                     break;
 
-                case 0xb8: cycle = cycle - (5 + 16 * (BC())); tmp1 = DE(); tmp2 = HL();	// LDDR - ok
-                    for (int n = (BC()); n > 0; n--)
+                case 0xb8: Cycle = Cycle - (5 + 16 * (Bc())); tmp1 = De(); tmp2 = Hl();	// LDDR - ok
+                    for (int n = (Bc()); n > 0; n--)
                     {
                         MemProvider.Poke(tmp1--, MemProvider.Peek(tmp2--));
                     }
                     E = tmp1 & 0xff; D = tmp1 >> 8; B = C = 0; L = tmp2 & 0xff; H = tmp2 >> 8; F &= 0xe9; break;
 
-                case 0xb9: tmp2 = F & 1; tmp1 = BC(); tmp3 = HL(); 						// CPIR - ok
-                    cycle -= 4; cpA_8(MemProvider.Peek(tmp3), A); tmp3--; tmp1--;
+                case 0xb9: tmp2 = F & 1; tmp1 = Bc(); tmp3 = Hl(); 						// CPIR - ok
+                    Cycle -= 4; CpA_8(MemProvider.Peek(tmp3), A); tmp3--; tmp1--;
                     H = tmp3 >> 8; L = tmp3 & 0xff; B = tmp1 >> 8; C = tmp1 & 0xff;
                     F = (F & 0xfe) | tmp2;
-                    if ((tmp1 != 0) && (F & 0x40) == 0) { PC -= 2; F |= 4; cycle -= 21; } else { F &= 0xfb; cycle -= 16; }
+                    if ((tmp1 != 0) && (F & 0x40) == 0) { PC -= 2; F |= 4; Cycle -= 21; } else { F &= 0xfb; Cycle -= 16; }
                     break;
 
-                default: error(instruction, PPC); break; // Not implemented
+                default: Error(_instruction, _PPC); break; // Not implemented
             }
         }
 
         /** $CB prefix opcodes */
         private void Prefix_BC()
         {
-            instruction = (instruction << 8) + MemProvider.Peek(PC++);
-            switch (instruction & 0xff)
+            _instruction = (_instruction << 8) + MemProvider.Peek(PC++);
+            switch (_instruction & 0xff)
             {
-                case 0x00: cycle -= 8; B = rlc(B); break;
-                case 0x01: cycle -= 8; C = rlc(C); break;
-                case 0x02: cycle -= 8; D = rlc(D); break;
-                case 0x03: cycle -= 8; E = rlc(E); break;
-                case 0x04: cycle -= 8; H = rlc(H); break;
-                case 0x05: cycle -= 8; L = rlc(L); break;
-                case 0x06: cycle -= 15; MemProvider.Poke(HL(), rlc(HLi())); break;
-                case 0x07: cycle -= 8; A = rlc(A); break;
+                case 0x00: Cycle -= 8; B = Rlc(B); break;
+                case 0x01: Cycle -= 8; C = Rlc(C); break;
+                case 0x02: Cycle -= 8; D = Rlc(D); break;
+                case 0x03: Cycle -= 8; E = Rlc(E); break;
+                case 0x04: Cycle -= 8; H = Rlc(H); break;
+                case 0x05: Cycle -= 8; L = Rlc(L); break;
+                case 0x06: Cycle -= 15; MemProvider.Poke(Hl(), Rlc(HLi())); break;
+                case 0x07: Cycle -= 8; A = Rlc(A); break;
 
-                case 0x08: cycle -= 8; B = rrc(B); break;
-                case 0x09: cycle -= 8; C = rrc(C); break;
-                case 0x0a: cycle -= 8; D = rrc(D); break;
-                case 0x0b: cycle -= 8; E = rrc(E); break;
-                case 0x0c: cycle -= 8; H = rrc(H); break;
-                case 0x0d: cycle -= 8; L = rrc(L); break;
-                case 0x0e: cycle -= 15; MemProvider.Poke(HL(), rrc(HLi())); break;
-                case 0x0f: cycle -= 8; A = rrc(A); break;
+                case 0x08: Cycle -= 8; B = Rrc(B); break;
+                case 0x09: Cycle -= 8; C = Rrc(C); break;
+                case 0x0a: Cycle -= 8; D = Rrc(D); break;
+                case 0x0b: Cycle -= 8; E = Rrc(E); break;
+                case 0x0c: Cycle -= 8; H = Rrc(H); break;
+                case 0x0d: Cycle -= 8; L = Rrc(L); break;
+                case 0x0e: Cycle -= 15; MemProvider.Poke(Hl(), Rrc(HLi())); break;
+                case 0x0f: Cycle -= 8; A = Rrc(A); break;
 
-                case 0x10: cycle -= 8; B = rl(B); break;
-                case 0x11: cycle -= 8; C = rl(C); break;
-                case 0x12: cycle -= 8; D = rl(D); break;
-                case 0x13: cycle -= 8; E = rl(E); break;
-                case 0x14: cycle -= 8; H = rl(H); break;
-                case 0x15: cycle -= 8; L = rl(L); break;
-                case 0x16: cycle -= 15; MemProvider.Poke((HL()), rl(HLi())); break;
-                case 0x17: cycle -= 8; A = rl(A); break;
+                case 0x10: Cycle -= 8; B = Rl(B); break;
+                case 0x11: Cycle -= 8; C = Rl(C); break;
+                case 0x12: Cycle -= 8; D = Rl(D); break;
+                case 0x13: Cycle -= 8; E = Rl(E); break;
+                case 0x14: Cycle -= 8; H = Rl(H); break;
+                case 0x15: Cycle -= 8; L = Rl(L); break;
+                case 0x16: Cycle -= 15; MemProvider.Poke((Hl()), Rl(HLi())); break;
+                case 0x17: Cycle -= 8; A = Rl(A); break;
 
-                case 0x18: cycle -= 8; B = rr(B); break;
-                case 0x19: cycle -= 8; C = rr(C); break;
-                case 0x1A: cycle -= 8; D = rr(D); break;
-                case 0x1B: cycle -= 8; E = rr(E); break;
-                case 0x1C: cycle -= 8; H = rr(H); break;
-                case 0x1D: cycle -= 8; L = rr(L); break;
-                case 0x1E: cycle -= 15; MemProvider.Poke((HL()), rr(HLi())); break;
-                case 0x1F: cycle -= 8; A = rr(A); break;
+                case 0x18: Cycle -= 8; B = Rr(B); break;
+                case 0x19: Cycle -= 8; C = Rr(C); break;
+                case 0x1A: Cycle -= 8; D = Rr(D); break;
+                case 0x1B: Cycle -= 8; E = Rr(E); break;
+                case 0x1C: Cycle -= 8; H = Rr(H); break;
+                case 0x1D: Cycle -= 8; L = Rr(L); break;
+                case 0x1E: Cycle -= 15; MemProvider.Poke((Hl()), Rr(HLi())); break;
+                case 0x1F: Cycle -= 8; A = Rr(A); break;
 
-                case 0x20: cycle -= 8; B = sla(B); break;
-                case 0x21: cycle -= 8; C = sla(C); break;
-                case 0x22: cycle -= 8; D = sla(D); break;
-                case 0x23: cycle -= 8; E = sla(E); break;
-                case 0x24: cycle -= 8; H = sla(H); break;
-                case 0x25: cycle -= 8; L = sla(L); break;
-                case 0x26: cycle -= 12; MemProvider.Poke((HL()), sla(HLi())); break;
-                case 0x27: cycle -= 8; A = sla(A); break;
+                case 0x20: Cycle -= 8; B = Sla(B); break;
+                case 0x21: Cycle -= 8; C = Sla(C); break;
+                case 0x22: Cycle -= 8; D = Sla(D); break;
+                case 0x23: Cycle -= 8; E = Sla(E); break;
+                case 0x24: Cycle -= 8; H = Sla(H); break;
+                case 0x25: Cycle -= 8; L = Sla(L); break;
+                case 0x26: Cycle -= 12; MemProvider.Poke((Hl()), Sla(HLi())); break;
+                case 0x27: Cycle -= 8; A = Sla(A); break;
 
-                case 0x28: cycle -= 8; B = sra(B); break;
-                case 0x29: cycle -= 8; C = sra(C); break;
-                case 0x2a: cycle -= 8; D = sra(D); break;
-                case 0x2b: cycle -= 8; E = sra(E); break;
-                case 0x2c: cycle -= 8; H = sra(H); break;
-                case 0x2d: cycle -= 8; L = sra(L); break;
-                case 0x2e: cycle -= 12; MemProvider.Poke((HL()), sra(HLi())); break;
-                case 0x2f: cycle -= 8; A = sra(A); break;
+                case 0x28: Cycle -= 8; B = Sra(B); break;
+                case 0x29: Cycle -= 8; C = Sra(C); break;
+                case 0x2a: Cycle -= 8; D = Sra(D); break;
+                case 0x2b: Cycle -= 8; E = Sra(E); break;
+                case 0x2c: Cycle -= 8; H = Sra(H); break;
+                case 0x2d: Cycle -= 8; L = Sra(L); break;
+                case 0x2e: Cycle -= 12; MemProvider.Poke((Hl()), Sra(HLi())); break;
+                case 0x2f: Cycle -= 8; A = Sra(A); break;
 
-                case 0x30: cycle -= 8; B = sll(B); break;
-                case 0x31: cycle -= 8; C = sll(C); break;
-                case 0x32: cycle -= 8; D = sll(D); break;
-                case 0x33: cycle -= 8; E = sll(E); break;
-                case 0x34: cycle -= 8; H = sll(H); break;
-                case 0x35: cycle -= 8; L = sll(L); break;
-                case 0x36: cycle -= 12; MemProvider.Poke((HL()), sll(HLi())); break;
-                case 0x37: cycle -= 8; A = sll(A); break;
+                case 0x30: Cycle -= 8; B = Sll(B); break;
+                case 0x31: Cycle -= 8; C = Sll(C); break;
+                case 0x32: Cycle -= 8; D = Sll(D); break;
+                case 0x33: Cycle -= 8; E = Sll(E); break;
+                case 0x34: Cycle -= 8; H = Sll(H); break;
+                case 0x35: Cycle -= 8; L = Sll(L); break;
+                case 0x36: Cycle -= 12; MemProvider.Poke((Hl()), Sll(HLi())); break;
+                case 0x37: Cycle -= 8; A = Sll(A); break;
 
-                case 0x38: cycle -= 8; B = srl(B); break;
-                case 0x39: cycle -= 8; C = srl(C); break;
-                case 0x3a: cycle -= 8; D = srl(D); break;
-                case 0x3b: cycle -= 8; E = srl(E); break;
-                case 0x3c: cycle -= 8; H = srl(H); break;
-                case 0x3d: cycle -= 8; L = srl(L); break;
-                case 0x3e: cycle -= 12; MemProvider.Poke((HL()), srl(HLi())); break;
-                case 0x3f: cycle -= 8; A = srl(A); break;
+                case 0x38: Cycle -= 8; B = Srl(B); break;
+                case 0x39: Cycle -= 8; C = Srl(C); break;
+                case 0x3a: Cycle -= 8; D = Srl(D); break;
+                case 0x3b: Cycle -= 8; E = Srl(E); break;
+                case 0x3c: Cycle -= 8; H = Srl(H); break;
+                case 0x3d: Cycle -= 8; L = Srl(L); break;
+                case 0x3e: Cycle -= 12; MemProvider.Poke((Hl()), Srl(HLi())); break;
+                case 0x3f: Cycle -= 8; A = Srl(A); break;
 
-                case 0x40: cycle -= 8; bit(0, B); break;
-                case 0x41: cycle -= 8; bit(0, C); break;
-                case 0x42: cycle -= 8; bit(0, D); break;
-                case 0x43: cycle -= 8; bit(0, E); break;
-                case 0x44: cycle -= 8; bit(0, H); break;
-                case 0x45: cycle -= 8; bit(0, L); break;
-                case 0x46: cycle -= 12; bit(0, HLi()); break;
-                case 0x47: cycle -= 8; bit(0, A); break;
+                case 0x40: Cycle -= 8; Bit(0, B); break;
+                case 0x41: Cycle -= 8; Bit(0, C); break;
+                case 0x42: Cycle -= 8; Bit(0, D); break;
+                case 0x43: Cycle -= 8; Bit(0, E); break;
+                case 0x44: Cycle -= 8; Bit(0, H); break;
+                case 0x45: Cycle -= 8; Bit(0, L); break;
+                case 0x46: Cycle -= 12; Bit(0, HLi()); break;
+                case 0x47: Cycle -= 8; Bit(0, A); break;
 
-                case 0x48: cycle -= 8; bit(1, B); break;
-                case 0x49: cycle -= 8; bit(1, C); break;
-                case 0x4a: cycle -= 8; bit(1, D); break;
-                case 0x4b: cycle -= 8; bit(1, E); break;
-                case 0x4c: cycle -= 8; bit(1, H); break;
-                case 0x4d: cycle -= 8; bit(1, L); break;
-                case 0x4e: cycle -= 12; bit(1, HLi()); break;
-                case 0x4f: cycle -= 8; bit(1, A); break;
+                case 0x48: Cycle -= 8; Bit(1, B); break;
+                case 0x49: Cycle -= 8; Bit(1, C); break;
+                case 0x4a: Cycle -= 8; Bit(1, D); break;
+                case 0x4b: Cycle -= 8; Bit(1, E); break;
+                case 0x4c: Cycle -= 8; Bit(1, H); break;
+                case 0x4d: Cycle -= 8; Bit(1, L); break;
+                case 0x4e: Cycle -= 12; Bit(1, HLi()); break;
+                case 0x4f: Cycle -= 8; Bit(1, A); break;
 
-                case 0x50: cycle -= 8; bit(2, B); break;
-                case 0x51: cycle -= 8; bit(2, C); break;
-                case 0x52: cycle -= 8; bit(2, D); break;
-                case 0x53: cycle -= 8; bit(2, E); break;
-                case 0x54: cycle -= 8; bit(2, H); break;
-                case 0x55: cycle -= 8; bit(2, L); break;
-                case 0x56: cycle -= 12; bit(2, HLi()); break;
-                case 0x57: cycle -= 8; bit(2, A); break;
+                case 0x50: Cycle -= 8; Bit(2, B); break;
+                case 0x51: Cycle -= 8; Bit(2, C); break;
+                case 0x52: Cycle -= 8; Bit(2, D); break;
+                case 0x53: Cycle -= 8; Bit(2, E); break;
+                case 0x54: Cycle -= 8; Bit(2, H); break;
+                case 0x55: Cycle -= 8; Bit(2, L); break;
+                case 0x56: Cycle -= 12; Bit(2, HLi()); break;
+                case 0x57: Cycle -= 8; Bit(2, A); break;
 
-                case 0x58: cycle -= 8; bit(3, B); break;
-                case 0x59: cycle -= 8; bit(3, C); break;
-                case 0x5a: cycle -= 8; bit(3, D); break;
-                case 0x5b: cycle -= 8; bit(3, E); break;
-                case 0x5c: cycle -= 8; bit(3, H); break;
-                case 0x5d: cycle -= 8; bit(3, L); break;
-                case 0x5e: cycle -= 12; bit(3, HLi()); break;
-                case 0x5f: cycle -= 8; bit(3, A); break;
+                case 0x58: Cycle -= 8; Bit(3, B); break;
+                case 0x59: Cycle -= 8; Bit(3, C); break;
+                case 0x5a: Cycle -= 8; Bit(3, D); break;
+                case 0x5b: Cycle -= 8; Bit(3, E); break;
+                case 0x5c: Cycle -= 8; Bit(3, H); break;
+                case 0x5d: Cycle -= 8; Bit(3, L); break;
+                case 0x5e: Cycle -= 12; Bit(3, HLi()); break;
+                case 0x5f: Cycle -= 8; Bit(3, A); break;
 
-                case 0x60: cycle -= 8; bit(4, B); break;
-                case 0x61: cycle -= 8; bit(4, C); break;
-                case 0x62: cycle -= 8; bit(4, D); break;
-                case 0x63: cycle -= 8; bit(4, E); break;
-                case 0x64: cycle -= 8; bit(4, H); break;
-                case 0x65: cycle -= 8; bit(4, L); break;
-                case 0x66: cycle -= 12; bit(4, HLi()); break;
-                case 0x67: cycle -= 8; bit(4, A); break;
+                case 0x60: Cycle -= 8; Bit(4, B); break;
+                case 0x61: Cycle -= 8; Bit(4, C); break;
+                case 0x62: Cycle -= 8; Bit(4, D); break;
+                case 0x63: Cycle -= 8; Bit(4, E); break;
+                case 0x64: Cycle -= 8; Bit(4, H); break;
+                case 0x65: Cycle -= 8; Bit(4, L); break;
+                case 0x66: Cycle -= 12; Bit(4, HLi()); break;
+                case 0x67: Cycle -= 8; Bit(4, A); break;
 
-                case 0x68: cycle -= 8; bit(5, B); break;
-                case 0x69: cycle -= 8; bit(5, C); break;
-                case 0x6a: cycle -= 8; bit(5, D); break;
-                case 0x6b: cycle -= 8; bit(5, E); break;
-                case 0x6c: cycle -= 8; bit(5, H); break;
-                case 0x6d: cycle -= 8; bit(5, L); break;
-                case 0x6e: cycle -= 12; bit(5, HLi()); break;
-                case 0x6f: cycle -= 8; bit(5, A); break;
+                case 0x68: Cycle -= 8; Bit(5, B); break;
+                case 0x69: Cycle -= 8; Bit(5, C); break;
+                case 0x6a: Cycle -= 8; Bit(5, D); break;
+                case 0x6b: Cycle -= 8; Bit(5, E); break;
+                case 0x6c: Cycle -= 8; Bit(5, H); break;
+                case 0x6d: Cycle -= 8; Bit(5, L); break;
+                case 0x6e: Cycle -= 12; Bit(5, HLi()); break;
+                case 0x6f: Cycle -= 8; Bit(5, A); break;
 
-                case 0x70: cycle -= 8; bit(6, B); break;
-                case 0x71: cycle -= 8; bit(6, C); break;
-                case 0x72: cycle -= 8; bit(6, D); break;
-                case 0x73: cycle -= 8; bit(6, E); break;
-                case 0x74: cycle -= 8; bit(6, H); break;
-                case 0x75: cycle -= 8; bit(6, L); break;
-                case 0x76: cycle -= 12; bit(6, HLi()); break;
-                case 0x77: cycle -= 8; bit(6, A); break;
+                case 0x70: Cycle -= 8; Bit(6, B); break;
+                case 0x71: Cycle -= 8; Bit(6, C); break;
+                case 0x72: Cycle -= 8; Bit(6, D); break;
+                case 0x73: Cycle -= 8; Bit(6, E); break;
+                case 0x74: Cycle -= 8; Bit(6, H); break;
+                case 0x75: Cycle -= 8; Bit(6, L); break;
+                case 0x76: Cycle -= 12; Bit(6, HLi()); break;
+                case 0x77: Cycle -= 8; Bit(6, A); break;
 
-                case 0x78: cycle -= 8; bit(7, B); break;
-                case 0x79: cycle -= 8; bit(7, C); break;
-                case 0x7a: cycle -= 8; bit(7, D); break;
-                case 0x7b: cycle -= 8; bit(7, E); break;
-                case 0x7c: cycle -= 8; bit(7, H); break;
-                case 0x7d: cycle -= 8; bit(7, L); break;
-                case 0x7e: cycle -= 12; bit(7, HLi()); break;
-                case 0x7f: cycle -= 8; bit(7, A); break;
+                case 0x78: Cycle -= 8; Bit(7, B); break;
+                case 0x79: Cycle -= 8; Bit(7, C); break;
+                case 0x7a: Cycle -= 8; Bit(7, D); break;
+                case 0x7b: Cycle -= 8; Bit(7, E); break;
+                case 0x7c: Cycle -= 8; Bit(7, H); break;
+                case 0x7d: Cycle -= 8; Bit(7, L); break;
+                case 0x7e: Cycle -= 12; Bit(7, HLi()); break;
+                case 0x7f: Cycle -= 8; Bit(7, A); break;
 
-                case 0x80: cycle -= 8; B = res(0, B); break;
-                case 0x81: cycle -= 8; C = res(0, C); break;
-                case 0x82: cycle -= 8; D = res(0, D); break;
-                case 0x83: cycle -= 8; E = res(0, E); break;
-                case 0x84: cycle -= 8; H = res(0, H); break;
-                case 0x85: cycle -= 8; L = res(0, L); break;
-                case 0x86: cycle -= 12; MemProvider.Poke(HL(), res(0, HLi())); break;
-                case 0x87: cycle -= 8; A = res(0, A); break;
+                case 0x80: Cycle -= 8; B = Res(0, B); break;
+                case 0x81: Cycle -= 8; C = Res(0, C); break;
+                case 0x82: Cycle -= 8; D = Res(0, D); break;
+                case 0x83: Cycle -= 8; E = Res(0, E); break;
+                case 0x84: Cycle -= 8; H = Res(0, H); break;
+                case 0x85: Cycle -= 8; L = Res(0, L); break;
+                case 0x86: Cycle -= 12; MemProvider.Poke(Hl(), Res(0, HLi())); break;
+                case 0x87: Cycle -= 8; A = Res(0, A); break;
 
-                case 0x88: cycle -= 8; B = res(1, B); break;
-                case 0x89: cycle -= 8; C = res(1, C); break;
-                case 0x8a: cycle -= 8; D = res(1, D); break;
-                case 0x8b: cycle -= 8; E = res(1, E); break;
-                case 0x8c: cycle -= 8; H = res(1, H); break;
-                case 0x8d: cycle -= 8; L = res(1, L); break;
-                case 0x8e: cycle -= 12; MemProvider.Poke(HL(), res(1, HLi())); break;
-                case 0x8f: cycle -= 8; A = res(1, A); break;
+                case 0x88: Cycle -= 8; B = Res(1, B); break;
+                case 0x89: Cycle -= 8; C = Res(1, C); break;
+                case 0x8a: Cycle -= 8; D = Res(1, D); break;
+                case 0x8b: Cycle -= 8; E = Res(1, E); break;
+                case 0x8c: Cycle -= 8; H = Res(1, H); break;
+                case 0x8d: Cycle -= 8; L = Res(1, L); break;
+                case 0x8e: Cycle -= 12; MemProvider.Poke(Hl(), Res(1, HLi())); break;
+                case 0x8f: Cycle -= 8; A = Res(1, A); break;
 
-                case 0x90: cycle -= 8; B = res(2, B); break;
-                case 0x91: cycle -= 8; C = res(2, C); break;
-                case 0x92: cycle -= 8; D = res(2, D); break;
-                case 0x93: cycle -= 8; E = res(2, E); break;
-                case 0x94: cycle -= 8; H = res(2, H); break;
-                case 0x95: cycle -= 8; L = res(2, L); break;
-                case 0x96: cycle -= 12; MemProvider.Poke(HL(), res(2, HLi())); break;
-                case 0x97: cycle -= 8; A = res(2, A); break;
+                case 0x90: Cycle -= 8; B = Res(2, B); break;
+                case 0x91: Cycle -= 8; C = Res(2, C); break;
+                case 0x92: Cycle -= 8; D = Res(2, D); break;
+                case 0x93: Cycle -= 8; E = Res(2, E); break;
+                case 0x94: Cycle -= 8; H = Res(2, H); break;
+                case 0x95: Cycle -= 8; L = Res(2, L); break;
+                case 0x96: Cycle -= 12; MemProvider.Poke(Hl(), Res(2, HLi())); break;
+                case 0x97: Cycle -= 8; A = Res(2, A); break;
 
-                case 0x98: cycle -= 8; B = res(3, B); break;
-                case 0x99: cycle -= 8; C = res(3, C); break;
-                case 0x9a: cycle -= 8; D = res(3, D); break;
-                case 0x9b: cycle -= 8; E = res(3, E); break;
-                case 0x9c: cycle -= 8; H = res(3, H); break;
-                case 0x9d: cycle -= 8; L = res(3, L); break;
-                case 0x9e: cycle -= 12; MemProvider.Poke(HL(), res(3, HLi())); break;
-                case 0x9f: cycle -= 8; A = res(3, A); break;
+                case 0x98: Cycle -= 8; B = Res(3, B); break;
+                case 0x99: Cycle -= 8; C = Res(3, C); break;
+                case 0x9a: Cycle -= 8; D = Res(3, D); break;
+                case 0x9b: Cycle -= 8; E = Res(3, E); break;
+                case 0x9c: Cycle -= 8; H = Res(3, H); break;
+                case 0x9d: Cycle -= 8; L = Res(3, L); break;
+                case 0x9e: Cycle -= 12; MemProvider.Poke(Hl(), Res(3, HLi())); break;
+                case 0x9f: Cycle -= 8; A = Res(3, A); break;
 
-                case 0xa0: cycle -= 8; B = res(4, B); break;
-                case 0xa1: cycle -= 8; C = res(4, C); break;
-                case 0xa2: cycle -= 8; D = res(4, D); break;
-                case 0xa3: cycle -= 8; E = res(4, E); break;
-                case 0xa4: cycle -= 8; H = res(4, H); break;
-                case 0xa5: cycle -= 8; L = res(4, L); break;
-                case 0xa6: cycle -= 12; MemProvider.Poke(HL(), res(4, HLi())); break;
-                case 0xa7: cycle -= 8; A = res(4, A); break;
+                case 0xa0: Cycle -= 8; B = Res(4, B); break;
+                case 0xa1: Cycle -= 8; C = Res(4, C); break;
+                case 0xa2: Cycle -= 8; D = Res(4, D); break;
+                case 0xa3: Cycle -= 8; E = Res(4, E); break;
+                case 0xa4: Cycle -= 8; H = Res(4, H); break;
+                case 0xa5: Cycle -= 8; L = Res(4, L); break;
+                case 0xa6: Cycle -= 12; MemProvider.Poke(Hl(), Res(4, HLi())); break;
+                case 0xa7: Cycle -= 8; A = Res(4, A); break;
 
-                case 0xa8: cycle -= 8; B = res(5, B); break;
-                case 0xa9: cycle -= 8; C = res(5, C); break;
-                case 0xaa: cycle -= 8; D = res(5, D); break;
-                case 0xab: cycle -= 8; E = res(5, E); break;
-                case 0xac: cycle -= 8; H = res(5, H); break;
-                case 0xad: cycle -= 8; L = res(5, L); break;
-                case 0xae: cycle -= 12; MemProvider.Poke(HL(), res(5, HLi())); break;
-                case 0xaf: cycle -= 8; A = res(5, A); break;
+                case 0xa8: Cycle -= 8; B = Res(5, B); break;
+                case 0xa9: Cycle -= 8; C = Res(5, C); break;
+                case 0xaa: Cycle -= 8; D = Res(5, D); break;
+                case 0xab: Cycle -= 8; E = Res(5, E); break;
+                case 0xac: Cycle -= 8; H = Res(5, H); break;
+                case 0xad: Cycle -= 8; L = Res(5, L); break;
+                case 0xae: Cycle -= 12; MemProvider.Poke(Hl(), Res(5, HLi())); break;
+                case 0xaf: Cycle -= 8; A = Res(5, A); break;
 
-                case 0xb0: cycle -= 8; B = res(6, B); break;
-                case 0xb1: cycle -= 8; C = res(6, C); break;
-                case 0xb2: cycle -= 8; D = res(6, D); break;
-                case 0xb3: cycle -= 8; E = res(6, E); break;
-                case 0xb4: cycle -= 8; H = res(6, H); break;
-                case 0xb5: cycle -= 8; L = res(6, L); break;
-                case 0xb6: cycle -= 12; MemProvider.Poke(HL(), res(6, HLi())); break;
-                case 0xb7: cycle -= 8; A = res(6, A); break;
+                case 0xb0: Cycle -= 8; B = Res(6, B); break;
+                case 0xb1: Cycle -= 8; C = Res(6, C); break;
+                case 0xb2: Cycle -= 8; D = Res(6, D); break;
+                case 0xb3: Cycle -= 8; E = Res(6, E); break;
+                case 0xb4: Cycle -= 8; H = Res(6, H); break;
+                case 0xb5: Cycle -= 8; L = Res(6, L); break;
+                case 0xb6: Cycle -= 12; MemProvider.Poke(Hl(), Res(6, HLi())); break;
+                case 0xb7: Cycle -= 8; A = Res(6, A); break;
 
-                case 0xb8: cycle -= 8; B = res(7, B); break;
-                case 0xb9: cycle -= 8; C = res(7, C); break;
-                case 0xba: cycle -= 8; D = res(7, D); break;
-                case 0xbb: cycle -= 8; E = res(7, E); break;
-                case 0xbc: cycle -= 8; H = res(7, H); break;
-                case 0xbd: cycle -= 8; L = res(7, L); break;
-                case 0xbe: cycle -= 12; MemProvider.Poke(HL(), res(7, HLi())); break;
-                case 0xbf: cycle -= 8; A = res(7, A); break;
+                case 0xb8: Cycle -= 8; B = Res(7, B); break;
+                case 0xb9: Cycle -= 8; C = Res(7, C); break;
+                case 0xba: Cycle -= 8; D = Res(7, D); break;
+                case 0xbb: Cycle -= 8; E = Res(7, E); break;
+                case 0xbc: Cycle -= 8; H = Res(7, H); break;
+                case 0xbd: Cycle -= 8; L = Res(7, L); break;
+                case 0xbe: Cycle -= 12; MemProvider.Poke(Hl(), Res(7, HLi())); break;
+                case 0xbf: Cycle -= 8; A = Res(7, A); break;
 
-                case 0xc0: cycle -= 8; B = set(0, B); break;
-                case 0xc1: cycle -= 8; C = set(0, C); break;
-                case 0xc2: cycle -= 8; D = set(0, D); break;
-                case 0xc3: cycle -= 8; E = set(0, E); break;
-                case 0xc4: cycle -= 8; H = set(0, H); break;
-                case 0xc5: cycle -= 8; L = set(0, L); break;
-                case 0xc6: cycle -= 12; MemProvider.Poke(HL(), set(0, HLi())); break;
-                case 0xc7: cycle -= 8; A = set(0, A); break;
+                case 0xc0: Cycle -= 8; B = Set(0, B); break;
+                case 0xc1: Cycle -= 8; C = Set(0, C); break;
+                case 0xc2: Cycle -= 8; D = Set(0, D); break;
+                case 0xc3: Cycle -= 8; E = Set(0, E); break;
+                case 0xc4: Cycle -= 8; H = Set(0, H); break;
+                case 0xc5: Cycle -= 8; L = Set(0, L); break;
+                case 0xc6: Cycle -= 12; MemProvider.Poke(Hl(), Set(0, HLi())); break;
+                case 0xc7: Cycle -= 8; A = Set(0, A); break;
 
-                case 0xc8: cycle -= 8; B = set(1, B); break;
-                case 0xc9: cycle -= 8; C = set(1, C); break;
-                case 0xca: cycle -= 8; D = set(1, D); break;
-                case 0xcb: cycle -= 8; E = set(1, E); break;
-                case 0xcc: cycle -= 8; H = set(1, H); break;
-                case 0xcd: cycle -= 8; L = set(1, L); break;
-                case 0xce: cycle -= 12; MemProvider.Poke(HL(), set(1, HLi())); break;
-                case 0xcf: cycle -= 8; A = set(1, A); break;
+                case 0xc8: Cycle -= 8; B = Set(1, B); break;
+                case 0xc9: Cycle -= 8; C = Set(1, C); break;
+                case 0xca: Cycle -= 8; D = Set(1, D); break;
+                case 0xcb: Cycle -= 8; E = Set(1, E); break;
+                case 0xcc: Cycle -= 8; H = Set(1, H); break;
+                case 0xcd: Cycle -= 8; L = Set(1, L); break;
+                case 0xce: Cycle -= 12; MemProvider.Poke(Hl(), Set(1, HLi())); break;
+                case 0xcf: Cycle -= 8; A = Set(1, A); break;
 
-                case 0xd0: cycle -= 8; B = set(2, B); break;
-                case 0xd1: cycle -= 8; C = set(2, C); break;
-                case 0xd2: cycle -= 8; D = set(2, D); break;
-                case 0xd3: cycle -= 8; E = set(2, E); break;
-                case 0xd4: cycle -= 8; H = set(2, H); break;
-                case 0xd5: cycle -= 8; L = set(2, L); break;
-                case 0xd6: cycle -= 12; MemProvider.Poke(HL(), set(2, HLi())); break;
-                case 0xd7: cycle -= 8; A = set(2, A); break;
+                case 0xd0: Cycle -= 8; B = Set(2, B); break;
+                case 0xd1: Cycle -= 8; C = Set(2, C); break;
+                case 0xd2: Cycle -= 8; D = Set(2, D); break;
+                case 0xd3: Cycle -= 8; E = Set(2, E); break;
+                case 0xd4: Cycle -= 8; H = Set(2, H); break;
+                case 0xd5: Cycle -= 8; L = Set(2, L); break;
+                case 0xd6: Cycle -= 12; MemProvider.Poke(Hl(), Set(2, HLi())); break;
+                case 0xd7: Cycle -= 8; A = Set(2, A); break;
 
-                case 0xd8: cycle -= 8; B = set(3, B); break;
-                case 0xd9: cycle -= 8; C = set(3, C); break;
-                case 0xda: cycle -= 8; D = set(3, D); break;
-                case 0xdb: cycle -= 8; E = set(3, E); break;
-                case 0xdc: cycle -= 8; H = set(3, H); break;
-                case 0xdd: cycle -= 8; L = set(3, L); break;
-                case 0xde: cycle -= 12; MemProvider.Poke(HL(), set(3, HLi())); break;
-                case 0xdf: cycle -= 8; A = set(3, A); break;
+                case 0xd8: Cycle -= 8; B = Set(3, B); break;
+                case 0xd9: Cycle -= 8; C = Set(3, C); break;
+                case 0xda: Cycle -= 8; D = Set(3, D); break;
+                case 0xdb: Cycle -= 8; E = Set(3, E); break;
+                case 0xdc: Cycle -= 8; H = Set(3, H); break;
+                case 0xdd: Cycle -= 8; L = Set(3, L); break;
+                case 0xde: Cycle -= 12; MemProvider.Poke(Hl(), Set(3, HLi())); break;
+                case 0xdf: Cycle -= 8; A = Set(3, A); break;
 
-                case 0xe0: cycle -= 8; B = set(4, B); break;
-                case 0xe1: cycle -= 8; C = set(4, C); break;
-                case 0xe2: cycle -= 8; D = set(4, D); break;
-                case 0xe3: cycle -= 8; E = set(4, E); break;
-                case 0xe4: cycle -= 8; H = set(4, H); break;
-                case 0xe5: cycle -= 8; L = set(4, L); break;
-                case 0xe6: cycle -= 12; MemProvider.Poke(HL(), set(4, HLi())); break;
-                case 0xe7: cycle -= 8; A = set(4, A); break;
+                case 0xe0: Cycle -= 8; B = Set(4, B); break;
+                case 0xe1: Cycle -= 8; C = Set(4, C); break;
+                case 0xe2: Cycle -= 8; D = Set(4, D); break;
+                case 0xe3: Cycle -= 8; E = Set(4, E); break;
+                case 0xe4: Cycle -= 8; H = Set(4, H); break;
+                case 0xe5: Cycle -= 8; L = Set(4, L); break;
+                case 0xe6: Cycle -= 12; MemProvider.Poke(Hl(), Set(4, HLi())); break;
+                case 0xe7: Cycle -= 8; A = Set(4, A); break;
 
-                case 0xe8: cycle -= 8; B = set(5, B); break;
-                case 0xe9: cycle -= 8; C = set(5, C); break;
-                case 0xea: cycle -= 8; D = set(5, D); break;
-                case 0xeb: cycle -= 8; E = set(5, E); break;
-                case 0xec: cycle -= 8; H = set(5, H); break;
-                case 0xed: cycle -= 8; L = set(5, L); break;
-                case 0xee: cycle -= 12; MemProvider.Poke(HL(), set(5, HLi())); break;
-                case 0xef: cycle -= 8; A = set(5, A); break;
+                case 0xe8: Cycle -= 8; B = Set(5, B); break;
+                case 0xe9: Cycle -= 8; C = Set(5, C); break;
+                case 0xea: Cycle -= 8; D = Set(5, D); break;
+                case 0xeb: Cycle -= 8; E = Set(5, E); break;
+                case 0xec: Cycle -= 8; H = Set(5, H); break;
+                case 0xed: Cycle -= 8; L = Set(5, L); break;
+                case 0xee: Cycle -= 12; MemProvider.Poke(Hl(), Set(5, HLi())); break;
+                case 0xef: Cycle -= 8; A = Set(5, A); break;
 
-                case 0xf0: cycle -= 8; B = set(6, B); break;
-                case 0xf1: cycle -= 8; C = set(6, C); break;
-                case 0xf2: cycle -= 8; D = set(6, D); break;
-                case 0xf3: cycle -= 8; E = set(6, E); break;
-                case 0xf4: cycle -= 8; H = set(6, H); break;
-                case 0xf5: cycle -= 8; L = set(6, L); break;
-                case 0xf6: cycle -= 12; MemProvider.Poke(HL(), set(6, HLi())); break;
-                case 0xf7: cycle -= 8; A = set(6, A); break;
+                case 0xf0: Cycle -= 8; B = Set(6, B); break;
+                case 0xf1: Cycle -= 8; C = Set(6, C); break;
+                case 0xf2: Cycle -= 8; D = Set(6, D); break;
+                case 0xf3: Cycle -= 8; E = Set(6, E); break;
+                case 0xf4: Cycle -= 8; H = Set(6, H); break;
+                case 0xf5: Cycle -= 8; L = Set(6, L); break;
+                case 0xf6: Cycle -= 12; MemProvider.Poke(Hl(), Set(6, HLi())); break;
+                case 0xf7: Cycle -= 8; A = Set(6, A); break;
 
-                case 0xf8: cycle -= 8; B = set(7, B); break;
-                case 0xf9: cycle -= 8; C = set(7, C); break;
-                case 0xfa: cycle -= 8; D = set(7, D); break;
-                case 0xfb: cycle -= 8; E = set(7, E); break;
-                case 0xfc: cycle -= 8; H = set(7, H); break;
-                case 0xfd: cycle -= 8; L = set(7, L); break;
-                case 0xfe: cycle -= 12; MemProvider.Poke(HL(), set(7, HLi())); break;
-                case 0xff: cycle -= 8; A = set(7, A); break;
+                case 0xf8: Cycle -= 8; B = Set(7, B); break;
+                case 0xf9: Cycle -= 8; C = Set(7, C); break;
+                case 0xfa: Cycle -= 8; D = Set(7, D); break;
+                case 0xfb: Cycle -= 8; E = Set(7, E); break;
+                case 0xfc: Cycle -= 8; H = Set(7, H); break;
+                case 0xfd: Cycle -= 8; L = Set(7, L); break;
+                case 0xfe: Cycle -= 12; MemProvider.Poke(Hl(), Set(7, HLi())); break;
+                case 0xff: Cycle -= 8; A = Set(7, A); break;
             }
         }
 
         /** $DD and $FD prefix opcodes (index instructions) */
-        private int ExecXY(int XY)
+        private int ExecXy(int xy)
         {
             int tmp1, tmp2;
-            instruction = (instruction << 8) + MemProvider.Peek(PC++);
-            IXYd = (XY + sign(MemProvider.Peek(PC))) & 0xffff;
-            switch (instruction & 0xff)
+            _instruction = (_instruction << 8) + MemProvider.Peek(PC++);
+            IXYd = (xy + Sign(MemProvider.Peek(PC))) & 0xffff;
+            switch (_instruction & 0xff)
             {
                 case 0x00:
                 case 0x01:
@@ -1243,8 +1245,8 @@ namespace E_Z80.Emulator
                 case 0x05:
                 case 0x06:
                 case 0x07:
-                case 0x08: error(instruction, PPC); break; // Not implemented
-                case 0x09: cycle -= 15; XY = add16(XY, BC()); break; 						// ADD XY,BC	ok
+                case 0x08: Error(_instruction, _PPC); break; // Not implemented
+                case 0x09: Cycle -= 15; xy = Add16(xy, Bc()); break; 						// ADD xy,Bc	ok
                 case 0x0a:
                 case 0x0b:
                 case 0x0c:
@@ -1259,40 +1261,40 @@ namespace E_Z80.Emulator
                 case 0x15:
                 case 0x16:
                 case 0x17:
-                case 0x18: error(instruction, PPC); break; // Not implemented
-                case 0x19: cycle -= 15; XY = add16(XY, DE()); break; 						// ADD XY,DE	ok
+                case 0x18: Error(_instruction, _PPC); break; // Not implemented
+                case 0x19: Cycle -= 15; xy = Add16(xy, De()); break; 						// ADD xy,De	ok
                 case 0x1a:
                 case 0x1b:
                 case 0x1c:
                 case 0x1d:
                 case 0x1e:
                 case 0x1f:
-                case 0x20: error(instruction, PPC); break; // Not implemented
-                case 0x21: cycle -= 14; XY = peekw(PC); PC += 2; break; 				// LD XY,nn		ok
-                case 0x22: cycle -= 20; pokew(peekw(PC), XY); PC += 2; break; 	// LD (nn),XY	ok
-                case 0x23: cycle -= 10; XY = (XY + 1) & 0xffff; break; // INC XY		ok
+                case 0x20: Error(_instruction, _PPC); break; // Not implemented
+                case 0x21: Cycle -= 14; xy = PeekW(PC); PC += 2; break; 				// LD xy,nn		ok
+                case 0x22: Cycle -= 20; PokeW(PeekW(PC), xy); PC += 2; break; 	// LD (nn),xy	ok
+                case 0x23: Cycle -= 10; xy = (xy + 1) & 0xffff; break; // INC xy		ok
                 case 0x24:
-                case 0x25: error(instruction, PPC); break; // Not implemented
-                case 0x26: cycle -= 11; XY = (XY & 0x00ff) | (MemProvider.Peek(PC++) << 8); break;		// LD HXY,n		ok
+                case 0x25: Error(_instruction, _PPC); break; // Not implemented
+                case 0x26: Cycle -= 11; xy = (xy & 0x00ff) | (MemProvider.Peek(PC++) << 8); break;		// LD HXY,n		ok
                 case 0x27:
-                case 0x28: error(instruction, PPC); break; // Not implemented
-                case 0x29: cycle -= 15; XY = add16(XY, XY); break;	// ADD XY,XY		ok
-                case 0x2a: cycle -= 20; XY = peekw(peekw(PC)); PC += 2; break; 	// LD XY,(nn)	ok
-                case 0x2b: cycle -= 10; XY = (XY - 1) & 0xffff; break; // DEC XY		ok
-                case 0x2c: cycle -= 15; XY = incL16(XY); break;
-                case 0x2d: cycle -= 15; XY = decL16(XY); break;
-                case 0x2e: cycle -= 11; XY = (XY & 0xff00) | MemProvider.Peek(PC++); break;
+                case 0x28: Error(_instruction, _PPC); break; // Not implemented
+                case 0x29: Cycle -= 15; xy = Add16(xy, xy); break;	// ADD xy,xy		ok
+                case 0x2a: Cycle -= 20; xy = PeekW(PeekW(PC)); PC += 2; break; 	// LD xy,(nn)	ok
+                case 0x2b: Cycle -= 10; xy = (xy - 1) & 0xffff; break; // DEC xy		ok
+                case 0x2c: Cycle -= 15; xy = IncL16(xy); break;
+                case 0x2d: Cycle -= 15; xy = DecL16(xy); break;
+                case 0x2e: Cycle -= 11; xy = (xy & 0xff00) | MemProvider.Peek(PC++); break;
                 case 0x2f:
                 case 0x30:
                 case 0x31:
                 case 0x32:
-                case 0x33: error(instruction, PPC); break; // Not implemented
-                case 0x34: cycle -= 15; MemProvider.Poke(IXYd, inc8(MemProvider.Peek(IXYd))); PC++; break; // INC (XY+d)	ok
-                case 0x35: cycle -= 15; MemProvider.Poke(IXYd, dec8(MemProvider.Peek(IXYd))); PC++; break; // DEC (XY+d)	ok
-                case 0x36: cycle -= 19; MemProvider.Poke(IXYd, MemProvider.Peek(PC + 1)); PC += 2; break; 	// LD (XY+d),n
+                case 0x33: Error(_instruction, _PPC); break; // Not implemented
+                case 0x34: Cycle -= 15; MemProvider.Poke(IXYd, Inc8(MemProvider.Peek(IXYd))); PC++; break; // INC (xy+d)	ok
+                case 0x35: Cycle -= 15; MemProvider.Poke(IXYd, Dec8(MemProvider.Peek(IXYd))); PC++; break; // DEC (xy+d)	ok
+                case 0x36: Cycle -= 19; MemProvider.Poke(IXYd, MemProvider.Peek(PC + 1)); PC += 2; break; 	// LD (xy+d),n
                 case 0x37:
-                case 0x38: error(instruction, PPC); break; // Not implemented
-                case 0x39: cycle -= 15; tmp2 = XY; XY = (XY + SP) & 0xffff; if (XY < tmp2) { F = (F & 0xFD) | 1; } else { F = (F & 0xFD); } break;// ADD XY,SP	ok
+                case 0x38: Error(_instruction, _PPC); break; // Not implemented
+                case 0x39: Cycle -= 15; tmp2 = xy; xy = (xy + SP) & 0xffff; if (xy < tmp2) { F = (F & 0xFD) | 1; } else { F = (F & 0xFD); } break;// ADD xy,SP	ok
                 case 0x3a:
                 case 0x3b:
                 case 0x3c:
@@ -1304,140 +1306,140 @@ namespace E_Z80.Emulator
                 case 0x42:
                 case 0x43:
                 case 0x44:
-                case 0x45: error(instruction, PPC); break; // Not implemented
-                case 0x46: cycle -= 11; B = MemProvider.Peek(IXYd); PC++; break; 						// LD B,(XY+d)	ok
+                case 0x45: Error(_instruction, _PPC); break; // Not implemented
+                case 0x46: Cycle -= 11; B = MemProvider.Peek(IXYd); PC++; break; 						// LD B,(xy+d)	ok
                 case 0x47:
                 case 0x48:
                 case 0x49:
                 case 0x4a:
-                case 0x4b: error(instruction, PPC); break; // Not implemented
-                case 0x4c: cycle -= 11; C = (XY >> 8); break;
-                case 0x4d: cycle -= 11; C = (XY & 0xff); break;
-                case 0x4e: cycle -= 11; C = MemProvider.Peek(IXYd); PC++; break; 					// LD C,(XY+d)	ok
+                case 0x4b: Error(_instruction, _PPC); break; // Not implemented
+                case 0x4c: Cycle -= 11; C = (xy >> 8); break;
+                case 0x4d: Cycle -= 11; C = (xy & 0xff); break;
+                case 0x4e: Cycle -= 11; C = MemProvider.Peek(IXYd); PC++; break; 					// LD C,(xy+d)	ok
                 case 0x4f:
                 case 0x50:
                 case 0x51:
                 case 0x52:
-                case 0x53: error(instruction, PPC); break; // Not implemented
-                case 0x54: cycle -= 11; D = (XY >> 8); break;
-                case 0x55: cycle -= 11; D = (XY & 0xff); break;
-                case 0x56: cycle -= 11; D = MemProvider.Peek(IXYd); PC++; break; 					// LD D,(XY+d)	ok
+                case 0x53: Error(_instruction, _PPC); break; // Not implemented
+                case 0x54: Cycle -= 11; D = (xy >> 8); break;
+                case 0x55: Cycle -= 11; D = (xy & 0xff); break;
+                case 0x56: Cycle -= 11; D = MemProvider.Peek(IXYd); PC++; break; 					// LD D,(xy+d)	ok
                 case 0x57:
                 case 0x58:
                 case 0x59:
                 case 0x5a:
-                case 0x5b: error(instruction, PPC); break; // Not implemented
-                case 0x5c: cycle -= 11; E = (XY >> 8); break;
-                case 0x5d: cycle -= 11; E = (XY & 0xff); break;
-                case 0x5e: cycle -= 11; E = MemProvider.Peek(IXYd); PC++; break; 					// LD E,(XY+d)	ok
-                case 0x5f: error(instruction, PPC); break; // Not implemented
-                case 0x60: cycle -= 11; XY = ldXYH_8(XY, B); break;
-                case 0x61: cycle -= 11; XY = ldXYH_8(XY, C); break;
-                case 0x62: cycle -= 11; XY = ldXYH_8(XY, D); break;
-                case 0x63: cycle -= 11; XY = ldXYH_8(XY, E); break;
+                case 0x5b: Error(_instruction, _PPC); break; // Not implemented
+                case 0x5c: Cycle -= 11; E = (xy >> 8); break;
+                case 0x5d: Cycle -= 11; E = (xy & 0xff); break;
+                case 0x5e: Cycle -= 11; E = MemProvider.Peek(IXYd); PC++; break; 					// LD E,(xy+d)	ok
+                case 0x5f: Error(_instruction, _PPC); break; // Not implemented
+                case 0x60: Cycle -= 11; xy = LdXYH_8(xy, B); break;
+                case 0x61: Cycle -= 11; xy = LdXYH_8(xy, C); break;
+                case 0x62: Cycle -= 11; xy = LdXYH_8(xy, D); break;
+                case 0x63: Cycle -= 11; xy = LdXYH_8(xy, E); break;
                 case 0x64:
-                case 0x65: error(instruction, PPC); break; // Not implemented
-                case 0x66: cycle -= 11; H = MemProvider.Peek(IXYd); PC++; break; 					// LD H,(XY+d)	ok
-                case 0x67: cycle -= 11; XY = (XY & 0xff) | (A << 8); break;
-                case 0x68: cycle -= 11; XY = ldXYL_8(XY, B); break;
-                case 0x69: cycle -= 11; XY = ldXYL_8(XY, C); break;
-                case 0x6a: cycle -= 11; XY = ldXYL_8(XY, D); break;
-                case 0x6b: cycle -= 11; XY = ldXYL_8(XY, E); break;
+                case 0x65: Error(_instruction, _PPC); break; // Not implemented
+                case 0x66: Cycle -= 11; H = MemProvider.Peek(IXYd); PC++; break; 					// LD H,(xy+d)	ok
+                case 0x67: Cycle -= 11; xy = (xy & 0xff) | (A << 8); break;
+                case 0x68: Cycle -= 11; xy = LdXYL_8(xy, B); break;
+                case 0x69: Cycle -= 11; xy = LdXYL_8(xy, C); break;
+                case 0x6a: Cycle -= 11; xy = LdXYL_8(xy, D); break;
+                case 0x6b: Cycle -= 11; xy = LdXYL_8(xy, E); break;
                 case 0x6c:
-                case 0x6d: error(instruction, PPC); break; // Not implemented
-                case 0x6e: cycle -= 11; L = MemProvider.Peek(IXYd); PC++; break; 					// LD L,(XY+d)	ok
-                case 0x6f: cycle -= 11; XY = (XY & 0xff00) | A; break;
-                case 0x70: cycle -= 11; MemProvider.Poke(IXYd, B); PC++; break; 					// LD (XY+d),B	ok
-                case 0x71: cycle -= 11; MemProvider.Poke(IXYd, C); PC++; break; 					// LD (XY+d),C	ok
-                case 0x72: cycle -= 11; MemProvider.Poke(IXYd, D); PC++; break; 					// LD (XY+d),D	ok
-                case 0x73: cycle -= 11; MemProvider.Poke(IXYd, E); PC++; break; 					// LD (XY+d),E	ok
-                case 0x74: cycle -= 11; MemProvider.Poke(IXYd, H); PC++; break; 					// LD (XY+d),H	ok
-                case 0x75: cycle -= 11; MemProvider.Poke(IXYd, L); PC++; break; 					// LD (XY+d),L	ok
-                case 0x77: cycle -= 11; MemProvider.Poke(IXYd, A); PC++; break; 					// LD (XY+d),A	ok
+                case 0x6d: Error(_instruction, _PPC); break; // Not implemented
+                case 0x6e: Cycle -= 11; L = MemProvider.Peek(IXYd); PC++; break; 					// LD L,(xy+d)	ok
+                case 0x6f: Cycle -= 11; xy = (xy & 0xff00) | A; break;
+                case 0x70: Cycle -= 11; MemProvider.Poke(IXYd, B); PC++; break; 					// LD (xy+d),B	ok
+                case 0x71: Cycle -= 11; MemProvider.Poke(IXYd, C); PC++; break; 					// LD (xy+d),C	ok
+                case 0x72: Cycle -= 11; MemProvider.Poke(IXYd, D); PC++; break; 					// LD (xy+d),D	ok
+                case 0x73: Cycle -= 11; MemProvider.Poke(IXYd, E); PC++; break; 					// LD (xy+d),E	ok
+                case 0x74: Cycle -= 11; MemProvider.Poke(IXYd, H); PC++; break; 					// LD (xy+d),H	ok
+                case 0x75: Cycle -= 11; MemProvider.Poke(IXYd, L); PC++; break; 					// LD (xy+d),L	ok
+                case 0x77: Cycle -= 11; MemProvider.Poke(IXYd, A); PC++; break; 					// LD (xy+d),a	ok
                 case 0x78:
                 case 0x79:
                 case 0x7a:
-                case 0x7b: error(instruction, PPC); break; // Not implemented
-                case 0x7c: cycle -= 11; A = (XY & 0xff00) >> 8; break;
-                case 0x7d: cycle -= 11; A = XY & 0xff; break;
-                case 0x7e: cycle -= 11; A = MemProvider.Peek(IXYd); PC++; break; 					// LD A,(XY+d)	ok
+                case 0x7b: Error(_instruction, _PPC); break; // Not implemented
+                case 0x7c: Cycle -= 11; A = (xy & 0xff00) >> 8; break;
+                case 0x7d: Cycle -= 11; A = xy & 0xff; break;
+                case 0x7e: Cycle -= 11; A = MemProvider.Peek(IXYd); PC++; break; 					// LD a,(xy+d)	ok
                 case 0x7f:
                 case 0x80:
                 case 0x81:
                 case 0x82:
-                case 0x83: error(instruction, PPC); break; // Not implemented
-                case 0x84: cycle -= 11; A = addA_8((XY >> 8), A); break;
-                case 0x85: cycle -= 11; A = addA_8((XY & 0xff), A); break;
-                case 0x86: cycle -= 11; A = addA_8(MemProvider.Peek(IXYd), A); PC++; break; 			// ADD A,(XY+d)	ok
+                case 0x83: Error(_instruction, _PPC); break; // Not implemented
+                case 0x84: Cycle -= 11; A = AddA_8((xy >> 8), A); break;
+                case 0x85: Cycle -= 11; A = AddA_8((xy & 0xff), A); break;
+                case 0x86: Cycle -= 11; A = AddA_8(MemProvider.Peek(IXYd), A); PC++; break; 			// ADD a,(xy+d)	ok
                 case 0x87:
                 case 0x88:
                 case 0x89:
                 case 0x8a:
                 case 0x8b:
                 case 0x8c:
-                case 0x8d: error(instruction, PPC); break; // Not implemented
-                case 0x8e: cycle -= 11; A = adcA_8(MemProvider.Peek(IXYd), A); PC++; break; 		// ADC A,(XY+d)	ok
+                case 0x8d: Error(_instruction, _PPC); break; // Not implemented
+                case 0x8e: Cycle -= 11; A = AdcA_8(MemProvider.Peek(IXYd), A); PC++; break; 		// ADC a,(xy+d)	ok
                 case 0x8f:
                 case 0x90:
                 case 0x91:
                 case 0x92:
-                case 0x93: error(instruction, PPC); break; // Not implemented
-                case 0x94: cycle -= 11; A = subA_8(XY >> 8, A); break;
-                case 0x95: cycle -= 11; A = subA_8(XY & 0xff, A); break;
-                case 0x96: cycle -= 11; A = subA_8(MemProvider.Peek(IXYd), A); PC++; break; 		// SUB A,(XY+d)	ok
+                case 0x93: Error(_instruction, _PPC); break; // Not implemented
+                case 0x94: Cycle -= 11; A = SubA_8(xy >> 8, A); break;
+                case 0x95: Cycle -= 11; A = SubA_8(xy & 0xff, A); break;
+                case 0x96: Cycle -= 11; A = SubA_8(MemProvider.Peek(IXYd), A); PC++; break; 		// SUB a,(xy+d)	ok
                 case 0x97:
                 case 0x98:
                 case 0x99:
                 case 0x9a:
                 case 0x9b:
                 case 0x9c:
-                case 0x9d: error(instruction, PPC); break; // Not implemented
-                case 0x9e: cycle -= 11; A = sbcA_8(MemProvider.Peek(IXYd), A); PC++; break; 		// SBC A,(XY+d)	ok
+                case 0x9d: Error(_instruction, _PPC); break; // Not implemented
+                case 0x9e: Cycle -= 11; A = SbcA_8(MemProvider.Peek(IXYd), A); PC++; break; 		// SBC a,(xy+d)	ok
                 case 0x9f:
                 case 0xa0:
                 case 0xa1:
                 case 0xa2:
                 case 0xa3:
                 case 0xa4:
-                case 0xa5: error(instruction, PPC); break; // Not implemented
-                case 0xa6: cycle -= 11; A = andA(MemProvider.Peek(IXYd), A); PC++; break; 			// AND (XY+d)	ok
+                case 0xa5: Error(_instruction, _PPC); break; // Not implemented
+                case 0xa6: Cycle -= 11; A = AndA(MemProvider.Peek(IXYd), A); PC++; break; 			// AND (xy+d)	ok
                 case 0xa7:
                 case 0xa8:
                 case 0xa9:
                 case 0xaa:
-                case 0xab: error(instruction, PPC); break; // Not implemented
-                case 0xac: cycle -= 11; A = xorA(XY >> 8, A); break;
-                case 0xad: error(instruction, PPC); break; // Not implemented
-                case 0xae: cycle -= 11; A = xorA(MemProvider.Peek(IXYd), A); PC++; break; 			// XOR (XY+d)	ok
+                case 0xab: Error(_instruction, _PPC); break; // Not implemented
+                case 0xac: Cycle -= 11; A = XorA(xy >> 8, A); break;
+                case 0xad: Error(_instruction, _PPC); break; // Not implemented
+                case 0xae: Cycle -= 11; A = XorA(MemProvider.Peek(IXYd), A); PC++; break; 			// XOR (xy+d)	ok
                 case 0xaf:
                 case 0xb0:
                 case 0xb1:
                 case 0xb2:
                 case 0xb3:
                 case 0xb4:
-                case 0xb5: error(instruction, PPC); break; // Not implemented
-                case 0xb6: cycle -= 11; A = orA(MemProvider.Peek(IXYd), A); PC++; break; 			// OR (XY+d)	ok
+                case 0xb5: Error(_instruction, _PPC); break; // Not implemented
+                case 0xb6: Cycle -= 11; A = OrA(MemProvider.Peek(IXYd), A); PC++; break; 			// OR (xy+d)	ok
                 case 0xb7:
                 case 0xb8:
                 case 0xb9:
                 case 0xba:
                 case 0xbb:
                 case 0xbc:
-                case 0xbd: error(instruction, PPC); break; // Not implemented
-                case 0xbe: cycle -= 11; cpA_8(MemProvider.Peek(IXYd), A); PC++; break; 			// CP (XY+d)	ok
+                case 0xbd: Error(_instruction, _PPC); break; // Not implemented
+                case 0xbe: Cycle -= 11; CpA_8(MemProvider.Peek(IXYd), A); PC++; break; 			// CP (xy+d)	ok
                 case 0xcb:	//---------------------------Second table-----------------------------
-                    IXYd = XY + sign(MemProvider.Peek(PC++));
-                    instruction = (instruction << 8) + MemProvider.Peek(PC++);
-                    switch (instruction & 0xff)
+                    IXYd = xy + Sign(MemProvider.Peek(PC++));
+                    _instruction = (_instruction << 8) + MemProvider.Peek(PC++);
+                    switch (_instruction & 0xff)
                     {
-                        case 0x06: cycle -= 15; MemProvider.Poke(IXYd, rlc(MemProvider.Peek(IXYd))); break; // RLC (IXYd)	ok
-                        case 0x0E: cycle -= 15; MemProvider.Poke(IXYd, rrc(MemProvider.Peek(IXYd))); break; // RRC (IXYd)	ok
-                        case 0x16: cycle -= 12; MemProvider.Poke(IXYd, rl(MemProvider.Peek(IXYd))); break; // RL (IXYd)		ok
-                        case 0x1E: cycle -= 12; MemProvider.Poke(IXYd, rr(MemProvider.Peek(IXYd))); break; // RR (IXYd)		ok
-                        case 0x26: cycle -= 12; MemProvider.Poke(IXYd, sla(MemProvider.Peek(IXYd))); break; // SLA (IXYd)	ok
-                        case 0x2e: cycle -= 12; MemProvider.Poke(IXYd, sra(MemProvider.Peek(IXYd))); break; // SRA (IXYd)	ok
-                        case 0x36: cycle -= 12; MemProvider.Poke(IXYd, sll(MemProvider.Peek(IXYd))); break; // SLL (IXYd)	ok
-                        case 0x3e: cycle -= 12; MemProvider.Poke(IXYd, srl(MemProvider.Peek(IXYd))); break; // SRL (IXYd)	ok
+                        case 0x06: Cycle -= 15; MemProvider.Poke(IXYd, Rlc(MemProvider.Peek(IXYd))); break; // RLC (IXYd)	ok
+                        case 0x0E: Cycle -= 15; MemProvider.Poke(IXYd, Rrc(MemProvider.Peek(IXYd))); break; // RRC (IXYd)	ok
+                        case 0x16: Cycle -= 12; MemProvider.Poke(IXYd, Rl(MemProvider.Peek(IXYd))); break; // RL (IXYd)		ok
+                        case 0x1E: Cycle -= 12; MemProvider.Poke(IXYd, Rr(MemProvider.Peek(IXYd))); break; // RR (IXYd)		ok
+                        case 0x26: Cycle -= 12; MemProvider.Poke(IXYd, Sla(MemProvider.Peek(IXYd))); break; // SLA (IXYd)	ok
+                        case 0x2e: Cycle -= 12; MemProvider.Poke(IXYd, Sra(MemProvider.Peek(IXYd))); break; // SRA (IXYd)	ok
+                        case 0x36: Cycle -= 12; MemProvider.Poke(IXYd, Sll(MemProvider.Peek(IXYd))); break; // SLL (IXYd)	ok
+                        case 0x3e: Cycle -= 12; MemProvider.Poke(IXYd, Srl(MemProvider.Peek(IXYd))); break; // SRL (IXYd)	ok
                         case 0x40:
                         case 0x41:
                         case 0x42:
@@ -1445,7 +1447,7 @@ namespace E_Z80.Emulator
                         case 0x44:
                         case 0x45:
                         case 0x46:
-                        case 0x47: cycle -= 12; bit(0, MemProvider.Peek(IXYd)); break;
+                        case 0x47: Cycle -= 12; Bit(0, MemProvider.Peek(IXYd)); break;
                         case 0x48:
                         case 0x49:
                         case 0x4a:
@@ -1453,7 +1455,7 @@ namespace E_Z80.Emulator
                         case 0x4c:
                         case 0x4d:
                         case 0x4e:
-                        case 0x4f: cycle -= 12; bit(1, MemProvider.Peek(IXYd)); break;
+                        case 0x4f: Cycle -= 12; Bit(1, MemProvider.Peek(IXYd)); break;
                         case 0x50:
                         case 0x51:
                         case 0x52:
@@ -1461,7 +1463,7 @@ namespace E_Z80.Emulator
                         case 0x54:
                         case 0x55:
                         case 0x56:
-                        case 0x57: cycle -= 12; bit(2, MemProvider.Peek(IXYd)); break;
+                        case 0x57: Cycle -= 12; Bit(2, MemProvider.Peek(IXYd)); break;
                         case 0x58:
                         case 0x59:
                         case 0x5a:
@@ -1469,7 +1471,7 @@ namespace E_Z80.Emulator
                         case 0x5c:
                         case 0x5d:
                         case 0x5e:
-                        case 0x5f: cycle -= 12; bit(3, MemProvider.Peek(IXYd)); break;
+                        case 0x5f: Cycle -= 12; Bit(3, MemProvider.Peek(IXYd)); break;
                         case 0x60:
                         case 0x61:
                         case 0x62:
@@ -1477,7 +1479,7 @@ namespace E_Z80.Emulator
                         case 0x64:
                         case 0x65:
                         case 0x66:
-                        case 0x67: cycle -= 12; bit(4, MemProvider.Peek(IXYd)); break;
+                        case 0x67: Cycle -= 12; Bit(4, MemProvider.Peek(IXYd)); break;
                         case 0x68:
                         case 0x69:
                         case 0x6a:
@@ -1485,7 +1487,7 @@ namespace E_Z80.Emulator
                         case 0x6c:
                         case 0x6d:
                         case 0x6e:
-                        case 0x6f: cycle -= 12; bit(5, MemProvider.Peek(IXYd)); break;
+                        case 0x6f: Cycle -= 12; Bit(5, MemProvider.Peek(IXYd)); break;
                         case 0x70:
                         case 0x71:
                         case 0x72:
@@ -1493,7 +1495,7 @@ namespace E_Z80.Emulator
                         case 0x74:
                         case 0x75:
                         case 0x76:
-                        case 0x77: cycle -= 12; bit(6, MemProvider.Peek(IXYd)); break;
+                        case 0x77: Cycle -= 12; Bit(6, MemProvider.Peek(IXYd)); break;
                         case 0x78:
                         case 0x79:
                         case 0x7a:
@@ -1501,375 +1503,375 @@ namespace E_Z80.Emulator
                         case 0x7c:
                         case 0x7d:
                         case 0x7e:
-                        case 0x7f: cycle -= 12; bit(7, MemProvider.Peek(IXYd)); break;
-                        case 0x86: cycle -= 12; MemProvider.Poke(IXYd, res(0, MemProvider.Peek(IXYd))); break;
-                        case 0x8e: cycle -= 12; MemProvider.Poke(IXYd, res(1, MemProvider.Peek(IXYd))); break;
-                        case 0x96: cycle -= 12; MemProvider.Poke(IXYd, res(2, MemProvider.Peek(IXYd))); break;
-                        case 0x9e: cycle -= 12; MemProvider.Poke(IXYd, res(3, MemProvider.Peek(IXYd))); break;
-                        case 0xa6: cycle -= 12; MemProvider.Poke(IXYd, res(4, MemProvider.Peek(IXYd))); break;
-                        case 0xae: cycle -= 12; MemProvider.Poke(IXYd, res(5, MemProvider.Peek(IXYd))); break;
-                        case 0xb6: cycle -= 12; MemProvider.Poke(IXYd, res(6, MemProvider.Peek(IXYd))); break;
-                        case 0xbe: cycle -= 12; MemProvider.Poke(IXYd, res(7, MemProvider.Peek(IXYd))); break;
-                        case 0xc6: cycle -= 12; MemProvider.Poke(IXYd, set(0, MemProvider.Peek(IXYd))); break;
-                        case 0xce: cycle -= 12; MemProvider.Poke(IXYd, set(1, MemProvider.Peek(IXYd))); break;
-                        case 0xd6: cycle -= 12; MemProvider.Poke(IXYd, set(2, MemProvider.Peek(IXYd))); break;
-                        case 0xde: cycle -= 12; MemProvider.Poke(IXYd, set(3, MemProvider.Peek(IXYd))); break;
-                        case 0xe6: cycle -= 12; MemProvider.Poke(IXYd, set(4, MemProvider.Peek(IXYd))); break;
-                        case 0xee: cycle -= 12; MemProvider.Poke(IXYd, set(5, MemProvider.Peek(IXYd))); break;
-                        //case 0xf4: cycle-=12; MemProvider.Poke(IXYd,set(6,MemProvider.Peek(IXYd))); // undocumented
+                        case 0x7f: Cycle -= 12; Bit(7, MemProvider.Peek(IXYd)); break;
+                        case 0x86: Cycle -= 12; MemProvider.Poke(IXYd, Res(0, MemProvider.Peek(IXYd))); break;
+                        case 0x8e: Cycle -= 12; MemProvider.Poke(IXYd, Res(1, MemProvider.Peek(IXYd))); break;
+                        case 0x96: Cycle -= 12; MemProvider.Poke(IXYd, Res(2, MemProvider.Peek(IXYd))); break;
+                        case 0x9e: Cycle -= 12; MemProvider.Poke(IXYd, Res(3, MemProvider.Peek(IXYd))); break;
+                        case 0xa6: Cycle -= 12; MemProvider.Poke(IXYd, Res(4, MemProvider.Peek(IXYd))); break;
+                        case 0xae: Cycle -= 12; MemProvider.Poke(IXYd, Res(5, MemProvider.Peek(IXYd))); break;
+                        case 0xb6: Cycle -= 12; MemProvider.Poke(IXYd, Res(6, MemProvider.Peek(IXYd))); break;
+                        case 0xbe: Cycle -= 12; MemProvider.Poke(IXYd, Res(7, MemProvider.Peek(IXYd))); break;
+                        case 0xc6: Cycle -= 12; MemProvider.Poke(IXYd, Set(0, MemProvider.Peek(IXYd))); break;
+                        case 0xce: Cycle -= 12; MemProvider.Poke(IXYd, Set(1, MemProvider.Peek(IXYd))); break;
+                        case 0xd6: Cycle -= 12; MemProvider.Poke(IXYd, Set(2, MemProvider.Peek(IXYd))); break;
+                        case 0xde: Cycle -= 12; MemProvider.Poke(IXYd, Set(3, MemProvider.Peek(IXYd))); break;
+                        case 0xe6: Cycle -= 12; MemProvider.Poke(IXYd, Set(4, MemProvider.Peek(IXYd))); break;
+                        case 0xee: Cycle -= 12; MemProvider.Poke(IXYd, Set(5, MemProvider.Peek(IXYd))); break;
+                        //case 0xf4: cyc-=12; MemProvider.Poke(IXYd,set(6,MemProvider.Peek(IXYd))); // undocumented
                         //						H=MemProvider.Peek(IXYd); break;
-                        case 0xf6: cycle -= 12; MemProvider.Poke(IXYd, set(6, MemProvider.Peek(IXYd))); break;
-                        case 0xfe: cycle -= 12; MemProvider.Poke(IXYd, set(7, MemProvider.Peek(IXYd))); break;
+                        case 0xf6: Cycle -= 12; MemProvider.Poke(IXYd, Set(6, MemProvider.Peek(IXYd))); break;
+                        case 0xfe: Cycle -= 12; MemProvider.Poke(IXYd, Set(7, MemProvider.Peek(IXYd))); break;
 
-                        default: error(instruction, PPC); break; // Not implemented
+                        default: Error(_instruction, _PPC); break; // Not implemented
                     }
                     break;
-                case 0xe1: cycle -= 14; XY = pop(); break; 					// POP XY	ok
-                case 0xe3: cycle -= 23; tmp1 = peekw(SP); pokew(SP, XY); XY = tmp1; break; 	// EX (SP),XY	ok
-                case 0xe5: cycle -= 14; pokew(SP - 2, XY); SP -= 2; break; 					// PUSH XY	ok
-                case 0xe9: cycle -= 8; PC = XY; break; 				// JP (XY)	ok
-                case 0xeb: cycle -= 8; tmp1 = DE(); D = XY >> 8; E = XY & 0xff; XY = tmp1; break; 	// EX DE,XY	ok
-                case 0xf9: cycle -= 10; SP = XY; break; 				// LD SP,XY	ok
+                case 0xe1: Cycle -= 14; xy = Pop(); break; 					// POP xy	ok
+                case 0xe3: Cycle -= 23; tmp1 = PeekW(SP); PokeW(SP, xy); xy = tmp1; break; 	// EX (SP),xy	ok
+                case 0xe5: Cycle -= 14; PokeW(SP - 2, xy); SP -= 2; break; 					// PUSH xy	ok
+                case 0xe9: Cycle -= 8; PC = xy; break; 				// JP (xy)	ok
+                case 0xeb: Cycle -= 8; tmp1 = De(); D = xy >> 8; E = xy & 0xff; xy = tmp1; break; 	// EX De,xy	ok
+                case 0xf9: Cycle -= 10; SP = xy; break; 				// LD SP,xy	ok
 
-                default: error(instruction, PPC); break; // Not implemented
+                default: Error(_instruction, _PPC); break; // Not implemented
             }
-            return XY;
+            return xy;
         }
 
 
         /** NOP */
-        private void nop()
+        private void Nop()
         {
-            cycle -= 4;
+            Cycle -= 4;
         }
 
-        /** LD BC, nn */
-        private void ld_BC_nn()
+        /** LD Bc, nn */
+        private void Ld_BC_nn()
         {
-            cycle -= 10;
+            Cycle -= 10;
             C = MemProvider.Peek(PC++);
             B = MemProvider.Peek(PC++);
         }
 
-        /** LD (BC),A */
-        private void ld_BCi_A()
+        /** LD (Bc),a */
+        private void Ld_BCi_A()
         {
-            cycle -= 7;
-            MemProvider.Poke(BC(), A);
+            Cycle -= 7;
+            MemProvider.Poke(Bc(), A);
         }
 
-        /** INC BC */
-        private void inc_BC()
+        /** INC Bc */
+        private void Inc_BC()
         {
-            cycle -= 6;
-            BC((BC() + 1) & 0xffff);
+            Cycle -= 6;
+            Bc((Bc() + 1) & 0xffff);
         }
 
         /** INC B */
-        private void inc_B()
+        private void Inc_B()
         {
-            cycle -= 4;
-            B = inc8(B);
+            Cycle -= 4;
+            B = Inc8(B);
         }
 
         /** DEC B */
-        private void dec_B()
+        private void Dec_B()
         {
-            cycle -= 4;
-            B = dec8(B);
+            Cycle -= 4;
+            B = Dec8(B);
         }
 
         /** LD B,n */
-        private void ld_B_n()
+        private void Ld_B_n()
         {
-            cycle -= 7;
+            Cycle -= 7;
             B = MemProvider.Peek(PC++);
         }
 
         /** RLCA */
-        private void rlca()
+        private void Rlca()
         {
-            cycle -= 4;
-            A = rlc_A(A);
+            Cycle -= 4;
+            A = Rlc_A(A);
         }
 
-        /** EX AF,AF' */
-        public void ex_AF_AF()
+        /** EX Af,Af' */
+        public void Ex_AF_AF()
         {
-            cycle -= 4;
-            tmp = A;
+            Cycle -= 4;
+            _tmp = A;
             A = A1;
-            A1 = tmp;
-            tmp = F;
+            A1 = _tmp;
+            _tmp = F;
             F = F1;
-            F1 = tmp;
+            F1 = _tmp;
         }
 
-        /** ADD HL,BC */
-        private void add_HL_BC()
+        /** ADD Hl,Bc */
+        private void Add_HL_BC()
         {
-            cycle -= 11;
-            HL(add16(HL(), BC()));
+            Cycle -= 11;
+            Hl(Add16(Hl(), Bc()));
         }
 
-        /** LD A,(BC) */
-        private void ld_A_BCi()
+        /** LD a,(Bc) */
+        private void Ld_A_BCi()
         {
-            cycle -= 7;
-            A = MemProvider.Peek(BC());
+            Cycle -= 7;
+            A = MemProvider.Peek(Bc());
         }
 
-        /** DEC BC */
-        private void dec_BC()
+        /** DEC Bc */
+        private void Dec_BC()
         {
-            cycle -= 6;
-            BC((BC() - 1) & 0xffff);
+            Cycle -= 6;
+            Bc((Bc() - 1) & 0xffff);
         }
 
         /** INC C */
-        private void inc_C()
+        private void Inc_C()
         {
-            cycle -= 4;
-            C = inc8(C);
+            Cycle -= 4;
+            C = Inc8(C);
         }
 
         /** DEC C */
-        private void dec_C()
+        private void Dec_C()
         {
-            cycle -= 4;
-            C = dec8(C);
+            Cycle -= 4;
+            C = Dec8(C);
         }
 
         /** LD C,n */
-        private void ld_C_n()
+        private void Ld_C_n()
         {
-            cycle -= 7;
+            Cycle -= 7;
             C = MemProvider.Peek(PC++);
         }
 
         /** RRCA */
-        private void rrca()
+        private void Rrca()
         {
-            cycle -= 4;
-            A = rrc_A(A);
+            Cycle -= 4;
+            A = Rrc_A(A);
         }
 
         /** DJNZ,n */
-        private void djnz_n()
+        private void Djnz_n()
         {
             B = (B - 1) & 0xff;
             if (B != 0)
             {
-                cycle -= 13;
-                PC += sign(MemProvider.Peek(PC));
+                Cycle -= 13;
+                PC += Sign(MemProvider.Peek(PC));
                 PC++;
             }
             else
             {
-                cycle -= 8;
+                Cycle -= 8;
                 PC++;
             }
         }
 
-        /** LD DE,nn */
-        private void ld_DE_nn()
+        /** LD De,nn */
+        private void Ld_DE_nn()
         {
-            cycle -= 10;
+            Cycle -= 10;
             E = MemProvider.Peek(PC++);
             D = MemProvider.Peek(PC++);
         }
 
-        /** LD (DE),A */
-        private void ld_DEi_A()
+        /** LD (De),a */
+        private void Ld_DEi_A()
         {
-            cycle -= 7;
-            MemProvider.Poke(DE(), A);
+            Cycle -= 7;
+            MemProvider.Poke(De(), A);
         }
 
-        /** INC DE */
-        private void inc_DE()
+        /** INC De */
+        private void Inc_DE()
         {
-            cycle -= 6;
-            DE((DE() + 1) & 0xffff);
+            Cycle -= 6;
+            De((De() + 1) & 0xffff);
         }
 
         /** INC D */
-        private void inc_D()
+        private void Inc_D()
         {
-            cycle -= 4;
-            D = inc8(D);
+            Cycle -= 4;
+            D = Inc8(D);
         }
 
         /** DEC D */
-        private void dec_D()
+        private void Dec_D()
         {
-            cycle -= 4;
-            D = dec8(D);
+            Cycle -= 4;
+            D = Dec8(D);
         }
 
         /** LD D,n */
-        private void ld_D_n()
+        private void Ld_D_n()
         {
-            cycle -= 7;
+            Cycle -= 7;
             D = MemProvider.Peek(PC++);
         }
 
         /** RLA */
-        private void rla()
+        private void Rla()
         {
-            cycle -= 4;
-            A = rl_A(A);
+            Cycle -= 4;
+            A = Rl_A(A);
         }
 
         /** JR e */
-        private void jr_e()
+        private void Jr_e()
         {
-            cycle -= 12;
-            PC += sign(MemProvider.Peek(PC));
+            Cycle -= 12;
+            PC += Sign(MemProvider.Peek(PC));
             PC++;
         }
 
-        /** ADD HL,DE */
-        private void add_HL_DE()
+        /** ADD Hl,De */
+        private void Add_HL_DE()
         {
-            cycle -= 11;
-            HL(add16(HL(), DE()));
+            Cycle -= 11;
+            Hl(Add16(Hl(), De()));
         }
 
-        /** LD A,(DE) */
-        private void ld_A_DEi()
+        /** LD a,(De) */
+        private void Ld_A_DEi()
         {
-            cycle -= 7;
-            A = MemProvider.Peek(DE());
+            Cycle -= 7;
+            A = MemProvider.Peek(De());
         }
 
-        /** DEC DE */
-        private void dec_DE()
+        /** DEC De */
+        private void Dec_DE()
         {
-            cycle -= 6;
-            DE((DE() - 1) & 0xffff);
+            Cycle -= 6;
+            De((De() - 1) & 0xffff);
         }
 
         /** INC E */
-        private void inc_E()
+        private void Inc_E()
         {
-            cycle -= 4;
-            E = inc8(E);
+            Cycle -= 4;
+            E = Inc8(E);
         }
 
         /** DEC E */
-        private void dec_E()
+        private void Dec_E()
         {
-            cycle -= 4;
-            E = dec8(E);
+            Cycle -= 4;
+            E = Dec8(E);
         }
 
         /** LD E,n */
-        private void ld_E_n()
+        private void Ld_E_n()
         {
-            cycle -= 7;
+            Cycle -= 7;
             E = MemProvider.Peek(PC++);
         }
 
         /** RRA */
-        private void rra()
+        private void Rra()
         {
-            cycle -= 4;
-            A = rr_A(A);
+            Cycle -= 4;
+            A = Rr_A(A);
         }
 
         /** JR NZ,e */
-        private void jr_NZ_e()
+        private void Jr_NZ_e()
         {
-            if ((F & ZF) == 0)
+            if ((F & _ZF) == 0)
             {
-                cycle -= 12;
-                PC += sign(MemProvider.Peek(PC));
+                Cycle -= 12;
+                PC += Sign(MemProvider.Peek(PC));
                 PC++;
             }
             else
             {
                 PC++;
-                cycle -= 7;
+                Cycle -= 7;
             }
         }
 
-        /** LD HL,nn */
-        private void ld_HL_nn()
+        /** LD Hl,nn */
+        private void Ld_HL_nn()
         {
-            cycle -= 10;
+            Cycle -= 10;
             L = MemProvider.Peek(PC++);
             H = MemProvider.Peek(PC++);
         }
 
-        /** LD (nn),HL */
-        private void ld_ni_HL()
+        /** LD (nn),Hl */
+        private void Ld_ni_HL()
         {
-            cycle -= 16;
-            ld_ea_ind16(HL());
+            Cycle -= 16;
+            Ld_ea_ind16(Hl());
         }
 
-        /** INC HL */
-        private void inc_HL()
+        /** INC Hl */
+        private void Inc_HL()
         {
-            cycle -= 6;
-            HL((HL() + 1) & 0xffff);
+            Cycle -= 6;
+            Hl((Hl() + 1) & 0xffff);
         }
 
         /** INC H */
-        private void inc_H()
+        private void Inc_H()
         {
-            cycle -= 4;
-            H = inc8(H);
+            Cycle -= 4;
+            H = Inc8(H);
         }
 
         /** DEC H */
-        private void dec_H()
+        private void Dec_H()
         {
-            cycle -= 4;
-            H = dec8(H);
+            Cycle -= 4;
+            H = Dec8(H);
         }
 
         /** LD H,n */
-        private void ld_H_n()
+        private void Ld_H_n()
         {
-            cycle -= 7;
+            Cycle -= 7;
             H = MemProvider.Peek(PC++);
         }
 
         /** DAA */
-        private void daa()
+        private void Daa()
         {
-            cycle -= 4;
-            tmp1 = A;
-            tmp2 = 0;
-            tmp3 = (F & 1);
-            int tmp = tmp3;
-            if (((F & 0x10) != 0) || ((tmp1 & 0x0f) > 0x09))
+            Cycle -= 4;
+            _tmp1 = A;
+            _tmp2 = 0;
+            _tmp3 = (F & 1);
+            int tmp = _tmp3;
+            if (((F & 0x10) != 0) || ((_tmp1 & 0x0f) > 0x09))
             {
-                tmp2 |= 0x06;
+                _tmp2 |= 0x06;
             }
-            if ((tmp3 == 1) || (tmp1 > 0x9f) || ((tmp1 > 0x8f) && ((tmp1 & 0x0f) > 0x09)))
+            if ((_tmp3 == 1) || (_tmp1 > 0x9f) || ((_tmp1 > 0x8f) && ((_tmp1 & 0x0f) > 0x09)))
             {
-                tmp2 |= 0x60;
+                _tmp2 |= 0x60;
                 tmp = 1;
             }
-            if (tmp1 > 0x99)
+            if (_tmp1 > 0x99)
             {
                 tmp = 1;
             }
             if ((F & 0x02) != 0)
             {
-                cycle -= 4;
-                A = subA_8(tmp2, A);
+                Cycle -= 4;
+                A = SubA_8(_tmp2, A);
             }
             else
             {
-                cycle -= 4;
-                A = addA_8(tmp2, A);
+                Cycle -= 4;
+                A = AddA_8(_tmp2, A);
             }
             F = (F & 0xfe) | tmp;
-            if (parity[A])
+            if (_parity[A])
             {
                 F = (F & 0xfb) | 4;
             }
@@ -1880,248 +1882,248 @@ namespace E_Z80.Emulator
         }
 
         /** JR Z,e */
-        private void jr_Z_e()
+        private void Jr_Z_e()
         {
-            if ((F & ZF) != 0)
+            if ((F & _ZF) != 0)
             {
-                cycle -= 12;
-                PC += sign(MemProvider.Peek(PC));
+                Cycle -= 12;
+                PC += Sign(MemProvider.Peek(PC));
                 PC++;
             }
             else
             {
                 PC++;
-                cycle -= 7;
+                Cycle -= 7;
             }
         }
 
-        /** ADD HL,HL */
-        private void add_HL_HL()
+        /** ADD Hl,Hl */
+        private void Add_HL_HL()
         {
-            cycle -= 11;
-            int hl = HL();
-            HL(add16(hl, hl));
+            Cycle -= 11;
+            int hl = Hl();
+            Hl(Add16(hl, hl));
         }
 
-        /** LD HL,(nn) */
-        private void ld_HL_ni()
+        /** LD Hl,(nn) */
+        private void Ld_HL_ni()
         {
-            cycle -= 16;
-            int ea = peekw(PC);
+            Cycle -= 16;
+            int ea = PeekW(PC);
             H = MemProvider.Peek(ea + 1);
             L = MemProvider.Peek(ea);
             PC += 2;
         }
 
-        /** DEC HL */
-        private void dec_HL()
+        /** DEC Hl */
+        private void Dec_HL()
         {
-            cycle -= 6;
-            HL((HL() - 1) & 0xffff);
+            Cycle -= 6;
+            Hl((Hl() - 1) & 0xffff);
         }
 
         /** INC L */
-        private void inc_L()
+        private void Inc_L()
         {
-            cycle -= 4;
-            L = inc8(L);
+            Cycle -= 4;
+            L = Inc8(L);
         }
 
         /** DEC L */
-        private void dec_L()
+        private void Dec_L()
         {
-            cycle -= 4;
-            L = dec8(L);
+            Cycle -= 4;
+            L = Dec8(L);
         }
 
         /** LD L,n */
-        private void ld_L_n()
+        private void Ld_L_n()
         {
-            cycle -= 7;
+            Cycle -= 7;
             L = MemProvider.Peek(PC++);
         }
 
         /** CPL */
-        private void cpl()
+        private void Cpl()
         {
-            cycle -= 4;
+            Cycle -= 4;
             A ^= 0xff;
             F = (F & (0xc5)) | 0x12 | (A & (0x28));
         }
 
         /** JR NC,e */
-        private void jr_NC_e()
+        private void Jr_NC_e()
         {
-            if ((F & CF) == 0)
+            if ((F & _CF) == 0)
             {
-                cycle -= 12;
-                PC += sign(MemProvider.Peek(PC));
+                Cycle -= 12;
+                PC += Sign(MemProvider.Peek(PC));
                 PC++;
             }
             else
             {
                 PC++;
-                cycle -= 7;
+                Cycle -= 7;
             }
         }
 
         /** LD SP,nn */
-        private void ld_SP_nn()
+        private void Ld_SP_nn()
         {
-            cycle -= 10;
-            SP = peekw(PC);
+            Cycle -= 10;
+            SP = PeekW(PC);
             PC += 2;
         }
 
-        /** LD (nn),A */
-        private void ld_ni_A()
+        /** LD (nn),a */
+        private void Ld_ni_A()
         {
-            cycle -= 13;
-            ld_ea_ind8(A);
+            Cycle -= 13;
+            Ld_ea_ind8(A);
         }
 
         /** INC SP */
-        private void inc_SP()
+        private void Inc_SP()
         {
-            cycle -= 6;
+            Cycle -= 6;
             SP = (SP + 1) & 0xffff;
         }
 
-        /** INC (HL) */
-        private void inc_HLi()
+        /** INC (Hl) */
+        private void Inc_HLi()
         {
-            cycle -= 11;
-            int hl = HL();
-            MemProvider.Poke(hl, inc8(MemProvider.Peek(hl)));
+            Cycle -= 11;
+            int hl = Hl();
+            MemProvider.Poke(hl, Inc8(MemProvider.Peek(hl)));
         }
 
-        /** DEC (HL) */
-        private void dec_HLi()
+        /** DEC (Hl) */
+        private void Dec_HLi()
         {
-            cycle -= 11;
-            int hl = HL();
-            MemProvider.Poke(hl, dec8(MemProvider.Peek(hl)));
+            Cycle -= 11;
+            int hl = Hl();
+            MemProvider.Poke(hl, Dec8(MemProvider.Peek(hl)));
         }
 
-        /** LD (HL),n */
-        private void ld_HLi_n()
+        /** LD (Hl),n */
+        private void Ld_HLi_n()
         {
-            cycle -= 10;
-            MemProvider.Poke(HL(), MemProvider.Peek(PC++));
+            Cycle -= 10;
+            MemProvider.Poke(Hl(), MemProvider.Peek(PC++));
         }
 
         /** SCF */
-        private void scf()
+        private void Scf()
         {
-            cycle -= 4;
+            Cycle -= 4;
             F = (F & 0xc4) | 1 | (A & (0x28));
         }
 
         /** JR C,e */
-        private void jr_C_e()
+        private void Jr_C_e()
         {
-            if ((F & CF) != 0)
+            if ((F & _CF) != 0)
             {
-                cycle -= 12;
-                PC += sign(MemProvider.Peek(PC));
+                Cycle -= 12;
+                PC += Sign(MemProvider.Peek(PC));
                 PC++;
             }
             else
             {
                 PC++;
-                cycle -= 7;
+                Cycle -= 7;
             }
         }
 
-        /** ADD HL,SP */
-        private void add_HL_SP()
+        /** ADD Hl,SP */
+        private void Add_HL_SP()
         {
-            cycle -= 11;
-            HL(add16(HL(), SP));
+            Cycle -= 11;
+            Hl(Add16(Hl(), SP));
         }
 
-        /** LD A,(nn) */
-        private void ld_A_ni()
+        /** LD a,(nn) */
+        private void Ld_A_ni()
         {
-            cycle -= 13;
-            A = MemProvider.Peek(peekw(PC));
+            Cycle -= 13;
+            A = MemProvider.Peek(PeekW(PC));
             PC += 2;
         }
 
         /** DEC SP */
-        private void dec_SP()
+        private void Dec_SP()
         {
-            cycle -= 6;
+            Cycle -= 6;
             SP = (SP - 1) & 0xffff;
         }
 
-        /** INC A */
-        private void inc_A()
+        /** INC a */
+        private void Inc_A()
         {
-            cycle -= 4;
-            A = inc8(A);
+            Cycle -= 4;
+            A = Inc8(A);
         }
 
-        /** DEC A */
-        private void dec_A()
+        /** DEC a */
+        private void Dec_A()
         {
-            cycle -= 4;
-            A = dec8(A);
+            Cycle -= 4;
+            A = Dec8(A);
         }
 
-        /** LD A,n */
-        private void ld_A_n()
+        /** LD a,n */
+        private void Ld_A_n()
         {
-            cycle -= 7;
+            Cycle -= 7;
             A = MemProvider.Peek(PC++);
         }
 
         /** CCF */
-        private void ccf()
+        private void Ccf()
         {
-            cycle -= 4;
+            Cycle -= 4;
             F = ((F & 0xc5) | ((F & 1) << 4) | (A & 0x28)) ^ 1;
         }
 
         /** HALT */
-        private void halt()
+        private void Halt()
         {
-            cycle -= 4;
+            Cycle -= 4;
             state_HALT = true;
             //goingToirq = false;
             //PC--;
-            cycle = 0;
+            Cycle = 0;
         }
 
         /** RET NZ */
-        private void ret_NZ()
+        private void Ret_NZ()
         {
-            if ((F & ZF) == 0)
+            if ((F & _ZF) == 0)
             {
-                cycle -= 11;
-                PC = pop();
+                Cycle -= 11;
+                PC = Pop();
             }
             else
             {
-                cycle -= 5;
+                Cycle -= 5;
             }
         }
 
-        /** POP BC */
-        private void pop_BC()
+        /** POP Bc */
+        private void Pop_BC()
         {
-            cycle -= 10;
+            Cycle -= 10;
             C = MemProvider.Peek(SP++);
             B = MemProvider.Peek(SP++);
         }
 
         /** JP NZ,nn */
-        private void jp_NZ_nn()
+        private void Jp_NZ_nn()
         {
-            cycle -= 10;
-            if ((F & ZF) == 0)
+            Cycle -= 10;
+            if ((F & _ZF) == 0)
             {
-                PC = peekw(PC);
+                PC = PeekW(PC);
             }
             else
             {
@@ -2130,70 +2132,70 @@ namespace E_Z80.Emulator
         }
 
         /** JP nn */
-        private void jp_nn()
+        private void Jp_nn()
         {
-            cycle -= 10;
-            PC = peekw(PC);
+            Cycle -= 10;
+            PC = PeekW(PC);
         }
 
         /** CALL NZ,nn */
-        private void call_NZ_nn()
+        private void Call_NZ_nn()
         {
-            if ((F & ZF) == 0)
+            if ((F & _ZF) == 0)
             {
-                cycle -= 17;
-                push(PC + 2);
-                PC = peekw(PC);
+                Cycle -= 17;
+                Push(PC + 2);
+                PC = PeekW(PC);
             }
             else
             {
-                cycle -= 10;
+                Cycle -= 10;
                 PC += 2;
             }
         }
 
-        /** PUSH BC */
-        private void push_BC()
+        /** PUSH Bc */
+        private void Push_BC()
         {
-            cycle -= 11;
-            push(BC());
+            Cycle -= 11;
+            Push(Bc());
         }
 
-        /** ADD A,n */
-        private void add_A_n()
+        /** ADD a,n */
+        private void Add_A_n()
         {
-            cycle -= 7;
-            A = addA_8(MemProvider.Peek(PC++), A);
+            Cycle -= 7;
+            A = AddA_8(MemProvider.Peek(PC++), A);
         }
 
         /** RET Z */
-        private void ret_Z()
+        private void Ret_Z()
         {
-            if ((F & ZF) != 0)
+            if ((F & _ZF) != 0)
             {
-                cycle -= 11;
-                PC = pop();
+                Cycle -= 11;
+                PC = Pop();
             }
             else
             {
-                cycle -= 5;
+                Cycle -= 5;
             }
         }
 
         /** RET */
-        private void ret()
+        private void Ret()
         {
-            cycle -= 10;
-            PC = pop();
+            Cycle -= 10;
+            PC = Pop();
         }
 
         /** JP Z,nn */
-        private void jp_Z_nn()
+        private void Jp_Z_nn()
         {
-            cycle -= 10;
-            if ((F & ZF) != 0)
+            Cycle -= 10;
+            if ((F & _ZF) != 0)
             {
-                PC = peekw(PC);
+                PC = PeekW(PC);
             }
             else
             {
@@ -2202,65 +2204,65 @@ namespace E_Z80.Emulator
         }
 
         /** CALL Z,nn */
-        private void call_Z_nn()
+        private void Call_Z_nn()
         {
-            if ((F & ZF) != 0)
+            if ((F & _ZF) != 0)
             {
-                cycle -= 17;
-                push(PC + 2);
-                PC = peekw(PC);
+                Cycle -= 17;
+                Push(PC + 2);
+                PC = PeekW(PC);
             }
             else
             {
-                cycle -= 10;
+                Cycle -= 10;
                 PC += 2;
             }
         }
 
         /** CALL nn */
-        private void call_nn()
+        private void Call_nn()
         {
-            cycle -= 17;
-            push(PC + 2);
-            PC = peekw(PC);
+            Cycle -= 17;
+            Push(PC + 2);
+            PC = PeekW(PC);
         }
 
-        /** ADC A,n */
+        /** ADC a,n */
         private void adc_A_n()
         {
-            cycle -= 7;
-            A = adcA_8(MemProvider.Peek(PC++), A);
+            Cycle -= 7;
+            A = AdcA_8(MemProvider.Peek(PC++), A);
         }
 
         /** RET NC */
-        private void ret_NC()
+        private void Ret_NC()
         {
-            if ((F & CF) == 0)
+            if ((F & _CF) == 0)
             {
-                cycle -= 11;
-                PC = pop();
+                Cycle -= 11;
+                PC = Pop();
             }
             else
             {
-                cycle -= 5;
+                Cycle -= 5;
             }
         }
 
-        /** POP DE */
-        private void pop_DE()
+        /** POP De */
+        private void Pop_DE()
         {
-            cycle -= 10;
+            Cycle -= 10;
             E = MemProvider.Peek(SP++);
             D = MemProvider.Peek(SP++);
         }
 
         /** JP NC,nn */
-        private void jp_NC_nn()
+        private void Jp_NC_nn()
         {
-            cycle -= 10;
-            if ((F & CF) == 0)
+            Cycle -= 10;
+            if ((F & _CF) == 0)
             {
-                PC = peekw(PC);
+                PC = PeekW(PC);
             }
             else
             {
@@ -2268,88 +2270,88 @@ namespace E_Z80.Emulator
             }
         }
 
-        /** OUT (n),A */
+        /** OUT (n),a */
         private void out_n_A()
         {
-            cycle -= 11;
-            portOut(MemProvider.Peek(PC++), A);
+            Cycle -= 11;
+            PortOut(MemProvider.Peek(PC++), A);
         }
 
         /** CALL NC, nn */
-        private void call_NC_nn()
+        private void Call_NC_nn()
         {
-            if ((F & CF) == 0)
+            if ((F & _CF) == 0)
             {
-                cycle -= 17;
-                push(PC + 2);
-                PC = peekw(PC);
+                Cycle -= 17;
+                Push(PC + 2);
+                PC = PeekW(PC);
             }
             else
             {
-                cycle -= 10;
+                Cycle -= 10;
                 PC += 2;
             }
         }
 
-        /** PUSH DE */
-        private void push_DE()
+        /** PUSH De */
+        private void Push_DE()
         {
-            cycle -= 11;
-            push(DE());
+            Cycle -= 11;
+            Push(De());
         }
 
-        /** SUB A,n */
+        /** SUB a,n */
         private void sub_A_n()
         {
-            cycle -= 7;
-            A = subA_8(MemProvider.Peek(PC++), A);
+            Cycle -= 7;
+            A = SubA_8(MemProvider.Peek(PC++), A);
         }
 
         /** RET C */
-        private void ret_C()
+        private void Ret_C()
         {
-            if ((F & CF) != 0)
+            if ((F & _CF) != 0)
             {
-                cycle -= 11;
-                PC = pop();
+                Cycle -= 11;
+                PC = Pop();
             }
             else
             {
-                cycle -= 5;
+                Cycle -= 5;
             }
         }
 
         /** EXX */
-        public void exx()
+        public void Exx()
         {
-            cycle -= 4;
-            tmp = B;
+            Cycle -= 4;
+            _tmp = B;
             B = B1;
-            B1 = tmp;
-            tmp = C;
+            B1 = _tmp;
+            _tmp = C;
             C = C1;
-            C1 = tmp;
-            tmp = D;
+            C1 = _tmp;
+            _tmp = D;
             D = D1;
-            D1 = tmp;
-            tmp = E;
+            D1 = _tmp;
+            _tmp = E;
             E = E1;
-            E1 = tmp;
-            tmp = H;
+            E1 = _tmp;
+            _tmp = H;
             H = H1;
-            H1 = tmp;
-            tmp = L;
+            H1 = _tmp;
+            _tmp = L;
             L = L1;
-            L1 = tmp;
+            L1 = _tmp;
         }
 
         /** JP C,nn */
-        private void jp_C_nn()
+        private void Jp_C_nn()
         {
-            cycle -= 10;
-            if ((F & CF) != 0)
+            Cycle -= 10;
+            if ((F & _CF) != 0)
             {
-                PC = peekw(PC);
+                PC = PeekW(PC);
             }
             else
             {
@@ -2357,66 +2359,66 @@ namespace E_Z80.Emulator
             }
         }
 
-        /* IN A,(n) */
-        private void in_A_n()
+        /* IN a,(n) */
+        private void In_A_n()
         {
-            cycle -= 11;
-            A = portIn(MemProvider.Peek(PC++), A);
+            Cycle -= 11;
+            A = PortIn(MemProvider.Peek(PC++), A);
         }
 
         /** CALL C,nn */
-        private void call_C_nn()
+        private void Call_C_nn()
         {
-            if ((F & CF) != 0)
+            if ((F & _CF) != 0)
             {
-                cycle -= 17;
-                push(PC + 2);
-                PC = peekw(PC);
+                Cycle -= 17;
+                Push(PC + 2);
+                PC = PeekW(PC);
             }
             else
             {
-                cycle -= 10;
+                Cycle -= 10;
                 PC += 2;
             }
         }
 
-        /** SBC A,n */
-        private void sbc_A_n()
+        /** SBC a,n */
+        private void Sbc_A_n()
         {
-            cycle -= 7;
-            A = sbcA_8(MemProvider.Peek(PC++), A);
+            Cycle -= 7;
+            A = SbcA_8(MemProvider.Peek(PC++), A);
         }
 
         /** RET PO */
-        private void ret_PO()
+        private void Ret_PO()
         {
-            if ((F & PF) == 0)
+            if ((F & _PF) == 0)
             {
-                cycle -= 11;
-                PC = peekw(SP);
+                Cycle -= 11;
+                PC = PeekW(SP);
                 SP += 2;
             }
             else
             {
-                cycle -= 5;
+                Cycle -= 5;
             }
         }
 
-        /** POP HL */
-        private void pop_HL()
+        /** POP Hl */
+        private void Pop_HL()
         {
-            cycle -= 10;
+            Cycle -= 10;
             L = MemProvider.Peek(SP++);
             H = MemProvider.Peek(SP++);
         }
 
         /** JP PO,nn */
-        private void jp_PO_nn()
+        private void Jp_PO_nn()
         {
-            cycle -= 10;
-            if ((F & PF) == 0)
+            Cycle -= 10;
+            if ((F & _PF) == 0)
             {
-                PC = peekw(PC);
+                PC = PeekW(PC);
             }
             else
             {
@@ -2424,76 +2426,76 @@ namespace E_Z80.Emulator
             }
         }
 
-        /** EX (SP),HL */
-        private void ex_SPi_HL()
+        /** EX (SP),Hl */
+        private void Ex_SPi_HL()
         {
-            cycle -= 19;
-            tmp = MemProvider.Peek(SP + 1);
+            Cycle -= 19;
+            _tmp = MemProvider.Peek(SP + 1);
             MemProvider.Poke(SP + 1, H);
-            H = tmp;
-            tmp = MemProvider.Peek(SP);
+            H = _tmp;
+            _tmp = MemProvider.Peek(SP);
             MemProvider.Poke(SP, L);
-            L = tmp;
+            L = _tmp;
         }
 
         /** CALL PO,nn */
-        private void call_PO_nn()
+        private void Call_PO_nn()
         {
-            if ((F & PF) == 0)
+            if ((F & _PF) == 0)
             {
-                cycle -= 17;
-                push(PC + 2);
-                PC = peekw(PC);
+                Cycle -= 17;
+                Push(PC + 2);
+                PC = PeekW(PC);
             }
             else
             {
-                cycle -= 10;
+                Cycle -= 10;
                 PC += 2;
             }
         }
 
-        /** PUSH HL */
-        private void push_HL()
+        /** PUSH Hl */
+        private void Push_HL()
         {
-            cycle -= 11;
-            push(HL());
+            Cycle -= 11;
+            Push(Hl());
         }
 
-        /** AND A,n */
-        private void and_A_n()
+        /** AND a,n */
+        private void And_A_n()
         {
-            cycle -= 7;
-            A = andA(MemProvider.Peek(PC++), A);
+            Cycle -= 7;
+            A = AndA(MemProvider.Peek(PC++), A);
         }
 
         /** RET PE */
-        private void ret_PE()
+        private void Ret_PE()
         {
-            if ((F & PF) != 0)
+            if ((F & _PF) != 0)
             {
-                cycle -= 11;
-                PC = pop();
+                Cycle -= 11;
+                PC = Pop();
             }
             else
             {
-                cycle -= 5;
+                Cycle -= 5;
             }
         }
 
-        /** JP (HL) */
-        private void jp_HLi()
+        /** JP (Hl) */
+        private void Jp_HLi()
         {
-            cycle -= 4;
-            PC = HL();
+            Cycle -= 4;
+            PC = Hl();
         }
 
         /** JP PE,nn */
-        private void jp_PE_nn()
+        private void Jp_PE_nn()
         {
-            cycle -= 10;
-            if ((F & PF) != 0)
+            Cycle -= 10;
+            if ((F & _PF) != 0)
             {
-                PC = peekw(PC);
+                PC = PeekW(PC);
             }
             else
             {
@@ -2501,71 +2503,71 @@ namespace E_Z80.Emulator
             }
         }
 
-        /** EX DE,HL */
-        private void ex_DE_HL()
+        /** EX De,Hl */
+        private void Ex_DE_HL()
         {
-            cycle -= 4;
-            tmp = D;
+            Cycle -= 4;
+            _tmp = D;
             D = H;
-            H = tmp;
-            tmp = E;
+            H = _tmp;
+            _tmp = E;
             E = L;
-            L = tmp;
+            L = _tmp;
         }
 
         /** CALL PE,nn */
-        private void call_PE_nn()
+        private void Call_PE_nn()
         {
-            if ((F & PF) != 0)
+            if ((F & _PF) != 0)
             {
-                cycle -= 17;
-                push(PC + 2);
-                PC = peekw(PC);
+                Cycle -= 17;
+                Push(PC + 2);
+                PC = PeekW(PC);
             }
             else
             {
-                cycle -= 10;
+                Cycle -= 10;
                 PC += 2;
             }
         }
 
 
-        /** XOR A,n */
-        private void xor_n()
+        /** XOR a,n */
+        private void Xor_n()
         {
-            cycle -= 7;
-            A = xorA(MemProvider.Peek(PC++), A);
+            Cycle -= 7;
+            A = XorA(MemProvider.Peek(PC++), A);
         }
 
         /** RET P */
-        private void ret_P()
+        private void Ret_P()
         {
-            if ((F & SF) == 0)
+            if ((F & _SF) == 0)
             {
-                cycle -= 11;
-                PC = pop();
+                Cycle -= 11;
+                PC = Pop();
             }
             else
             {
-                cycle -= 5;
+                Cycle -= 5;
             }
         }
 
-        /** POP AF */
-        private void pop_AF()
+        /** POP Af */
+        private void Pop_AF()
         {
-            cycle -= 10;
+            Cycle -= 10;
             F = MemProvider.Peek(SP++);
             A = MemProvider.Peek(SP++);
         }
 
         /** JP P,nn */
-        private void jp_P_nn()
+        private void Jp_P_nn()
         {
-            cycle -= 10;
-            if ((F & SF) == 0)
+            Cycle -= 10;
+            if ((F & _SF) == 0)
             {
-                PC = peekw(PC);
+                PC = PeekW(PC);
             }
             else
             {
@@ -2574,70 +2576,70 @@ namespace E_Z80.Emulator
         }
 
         /** DI */
-        private void di()
+        private void Di()
         {
-            cycle -= 4;
+            Cycle -= 4;
             IFF0 = IFF1 = false;
         }
 
         /** CALL P,nn */
-        private void call_P_nn()
+        private void Call_P_nn()
         {
-            if ((F & SF) == 0)
+            if ((F & _SF) == 0)
             {
-                cycle -= 17;
-                push(PC + 2);
-                PC = peekw(PC);
+                Cycle -= 17;
+                Push(PC + 2);
+                PC = PeekW(PC);
             }
             else
             {
-                cycle -= 10;
+                Cycle -= 10;
                 PC += 2;
             }
         }
 
-        /** PUSH AF */
-        private void push_AF()
+        /** PUSH Af */
+        private void Push_AF()
         {
-            cycle -= 11;
-            push(AF());
+            Cycle -= 11;
+            Push(Af());
         }
 
-        /** OR A,n */
-        private void or_n()
+        /** OR a,n */
+        private void Or_n()
         {
-            cycle -= 7;
-            A = orA(MemProvider.Peek(PC++), A);
+            Cycle -= 7;
+            A = OrA(MemProvider.Peek(PC++), A);
         }
 
         /** RET M */
-        private void ret_M()
+        private void Ret_M()
         {
-            if ((F & SF) != 0)
+            if ((F & _SF) != 0)
             {
-                cycle -= 11;
-                PC = pop();
+                Cycle -= 11;
+                PC = Pop();
             }
             else
             {
-                cycle -= 5;
+                Cycle -= 5;
             }
         }
 
-        /** LD SP,HL */
-        private void ld_SP_HL()
+        /** LD SP,Hl */
+        private void Ld_SP_HL()
         {
-            cycle -= 6;
-            SP = HL();
+            Cycle -= 6;
+            SP = Hl();
         }
 
         /** JP M,nn */
-        private void jp_M_nn()
+        private void Jp_M_nn()
         {
-            cycle -= 10;
-            if ((F & SF) != 0)
+            Cycle -= 10;
+            if ((F & _SF) != 0)
             {
-                PC = peekw(PC);
+                PC = PeekW(PC);
             }
             else
             {
@@ -2646,297 +2648,280 @@ namespace E_Z80.Emulator
         }
 
         /** EI */
-        private void ei()
+        private void Ei()
         {
-            cycle -= 4;
+            Cycle -= 4;
             IFF0 = IFF1 = true;
             //goingToirq = true;
-            cycle = checkInterrupt(cycle);
+            Cycle = CheckInterrupt(Cycle);
         }
 
         /** CALL M,nn */
-        private void call_M_nn()
+        private void Call_M_nn()
         {
-            if ((F & SF) != 0)
+            if ((F & _SF) != 0)
             {
-                cycle -= 17;
-                push(PC + 2);
-                PC = peekw(PC);
+                Cycle -= 17;
+                Push(PC + 2);
+                PC = PeekW(PC);
             }
             else
             {
-                cycle -= 10;
+                Cycle -= 10;
                 PC += 2;
             }
         }
 
-        /** CP A,n */
-        private void cp_n()
+        /** CP a,n */
+        private void Cp_n()
         {
-            cycle -= 7; cpA_8(MemProvider.Peek(PC++), A);
+            Cycle -= 7; CpA_8(MemProvider.Peek(PC++), A);
         }
 
-        private int AF()
-        {
-            return (A << 8) | F;
-        }
-        private int BC()
-        {
-            return (B << 8) | C;
-        }
-        private int DE()
-        {
-            return (D << 8) | E;
-        }
-        private int HL()
-        {
-            return (H << 8) | L;
-        }
+        private int Af() => (A << 8) | F;
+
+        private int Bc() => (B << 8) | C;
+
+        private int De() => (D << 8) | E;
+
+        private int Hl() => (H << 8) | L;
+
         private int HLi()
         {
-            return MemProvider.Peek(HL());
+            return MemProvider.Peek(Hl());
         }
 
-        public void AF(int nn)
+        public void Af(int nn)
         {
             A = nn >> 8;
             F = nn & 0xff;
         }
-        public void BC(int nn)
+        public void Bc(int nn)
         {
             B = nn >> 8;
             C = nn & 0xff;
         }
 
-        public void DE(int nn)
+        public void De(int nn)
         {
             D = nn >> 8;
             E = nn & 0xff;
         }
 
-        public void IX(int nn)
-        {
-            _IX = nn & 0xffff;
-        }
+        public void Ix(int nn) => IX = nn & 0xffff;
 
-        public void IY(int nn)
-        {
-            _IY = nn & 0xffff;
-        }
+        public void Iy(int nn) => IY = nn & 0xffff;
 
-        public void HL(int nn)
+        public void Hl(int nn)
         {
             H = nn >> 8;
             L = nn & 0xff;
         }
 
-        private void push(int nn)
+        private void Push(int nn)
         {
             SP = (SP - 2) & 0xffff;
-            pokew(SP, nn);
+            PokeW(SP, nn);
         }
 
-        public int pop()
+        public int Pop()
         {
-            int nn = peekw(SP);
+            int nn = PeekW(SP);
             SP = (SP + 2) & 0xffff;
             return nn;
         }
 
-        private int sign(int nn)
-        {
-            return nn - ((nn & 128) << 1);
-        }
+        private int Sign(int nn) => nn - ((nn & 128) << 1);
 
-        private void rst(int ea)
+        private void Rst(int ea)
         {
-            cycle -= 11;
-            push(PC);
+            Cycle -= 11;
+            Push(PC);
             PC = ea;
         }
 
-        private void ld_A(int n, int cycles)
+        private void Ld_A(int n, int cycles)
         {
-            cycle -= cycles;
+            Cycle -= cycles;
             A = n;
         }
 
-        private void ld_B(int n, int cycles)
+        private void Ld_B(int n, int cycles)
         {
-            cycle -= cycles;
+            Cycle -= cycles;
             B = n;
         }
 
-        private void ld_C(int n, int cycles)
+        private void Ld_C(int n, int cycles)
         {
-            cycle -= cycles;
+            Cycle -= cycles;
             C = n;
         }
 
-        private void ld_D(int n, int cycles)
+        private void Ld_D(int n, int cycles)
         {
-            cycle -= cycles;
+            Cycle -= cycles;
             D = n;
         }
 
-        private void ld_E(int n, int cycles)
+        private void Ld_E(int n, int cycles)
         {
-            cycle -= cycles;
+            Cycle -= cycles;
             E = n;
         }
 
-        private void ld_H(int n, int cycles)
+        private void Ld_H(int n, int cycles)
         {
-            cycle -= cycles;
+            Cycle -= cycles;
             H = n;
         }
 
-        private void ld_L(int n, int cycles)
+        private void Ld_L(int n, int cycles)
         {
-            cycle -= cycles;
+            Cycle -= cycles;
             L = n;
         }
 
-        private void ld_HLi(int n, int cycles)
+        private void Ld_HLi(int n, int cycles)
         {
-            cycle -= cycles;
-            MemProvider.Poke(HL(), n);
+            Cycle -= cycles;
+            MemProvider.Poke(Hl(), n);
         }
 
         /** LD (ea),nn */
-        private void ld_ea_ind16(int nn)
+        private void Ld_ea_ind16(int nn)
         {
-            pokew(peekw(PC), nn);
+            PokeW(PeekW(PC), nn);
             PC += 2;
         }
 
         /** LD (ea),n */
-        private void ld_ea_ind8(int n)
+        private void Ld_ea_ind8(int n)
         {
-            MemProvider.Poke(peekw(PC), n);
+            MemProvider.Poke(PeekW(PC), n);
             PC += 2;
         }
 
         /**
          * Add value to Accu and set flags accordingly
          */
-        private int addA_8(int value, int A)
+        private int AddA_8(int value, int a)
         {
-            tmp = (A + value) & 0xff;
-            F = SZHVC_Add[(A << 8) | tmp];
-            return tmp;
+            _tmp = (a + value) & 0xff;
+            F = _SZHVC_Add[(a << 8) | _tmp];
+            return _tmp;
         }
 
         /**
          * Add to accu and count cycles
          */
-        private void add_A(int n, int c)
+        private void Add_A(int n, int c)
         {
-            cycle -= c;
-            A = addA_8(n, A);
+            Cycle -= c;
+            A = AddA_8(n, A);
         }
 
         /**
          * Add value with carry to Accu and set flags accordingly
          */
-        private int adcA_8(int value, int A)
+        private int AdcA_8(int value, int a)
         {
             int c = F & 1;
-            int result = (A + value + c) & 0xff;
-            F = SZHVC_Add[(c << 16) | (A << 8) | result];
+            int result = (a + value + c) & 0xff;
+            F = _SZHVC_Add[(c << 16) | (a << 8) | result];
             return result;
         }
 
         /**
          * Add to accu and count cycles
          */
-        private void adc_A(int n, int c)
+        private void Adc_A(int n, int c)
         {
-            cycle -= c;
-            A = adcA_8(n, A);
+            Cycle -= c;
+            A = AdcA_8(n, A);
         }
 
         /**
          * 8 bit increment
          */
-        private int inc8(int value)
+        private int Inc8(int value)
         {
             value = (value + 1) & 0xff;
-            F = (F & 1) | SZHV_inc[value];
+            F = (F & 1) | _SZHV_inc[value];
             return value;
         }
 
         /**
          * 8 bit decrement
          */
-        private int dec8(int value)
+        private int Dec8(int value)
         {
             value = (value - 1) & 0xff;
-            F = (F & 1) | SZHV_dec[value];
+            F = (F & 1) | _SZHV_dec[value];
             return (value);
         }
 
         /**
          * Compare value with Accu
          */
-        private void cpA_8(int value, int A)
+        private void CpA_8(int value, int a)
         {
-            int result = (A - value) & 0xff;
-            F = SZHVC_sub[(A << 8) | result];
+            int result = (a - value) & 0xff;
+            F = _SZHVC_sub[(a << 8) | result];
         }
 
         /**
          * Compare with accu and count cycles
          */
-        private void cp_A(int n, int c)
+        private void Cp_A(int n, int c)
         {
-            cycle -= c;
-            cpA_8(n, A);
+            Cycle -= c;
+            CpA_8(n, A);
         }
 
         /**
          * Subtract value from Accu and set flags accordingly
          */
-        private int subA_8(int value, int A)
+        private int SubA_8(int value, int a)
         {
-            int result = (A - value) & 0xff;
-            F = SZHVC_sub[(A << 8) | result];
+            int result = (a - value) & 0xff;
+            F = _SZHVC_sub[(a << 8) | result];
             return result;
         }
 
         /**
          * Subtract from accu and count cycles
          */
-        private void sub_A(int n, int c)
+        private void Sub_A(int n, int c)
         {
-            cycle -= c;
-            A = subA_8(n, A);
+            Cycle -= c;
+            A = SubA_8(n, A);
         }
 
         /**
          * Subtract value with carry from Accu and set flags accordingly
          */
-        private int sbcA_8(int value, int A)
+        private int SbcA_8(int value, int a)
         {
             int c = F & 1;
-            int result = (A - value - c) & 0xff;
-            F = SZHVC_sub[(c << 16) | (A << 8) | result];
+            int result = (a - value - c) & 0xff;
+            F = _SZHVC_sub[(c << 16) | (a << 8) | result];
             return result;
         }
 
         /**
          * Subtract from accu and count cycles
          */
-        private void sbc_A(int n, int c)
+        private void Sbc_A(int n, int c)
         {
-            cycle -= c;
-            A = sbcA_8(n, A);
+            Cycle -= c;
+            A = SbcA_8(n, A);
         }
 
         /**
          * 16bit Add
          */
-        private int add16(int a, int b)
+        private int Add16(int a, int b)
         {
             int result = a + b;
             F = (F & 0xc4) | (((a ^ result ^ b) >> 8) & 0x10) | ((result >> 16) & 1);
@@ -2944,25 +2929,25 @@ namespace E_Z80.Emulator
         }
 
         /**
-         * SBC HL,nn
+         * SBC Hl,nn
          */
-        private void sbcHL(int value)
+        private void SbcHl(int value)
         {
-            int _HLD = HL();
-            int result = _HLD - value - (F & 1);
-            F = (((_HLD ^ result ^ value) >> 8) & 0x10) | 0x02 | ((result >> 16) & 1) | ((result >> 8) & 0x80) | (((result & 0xffff) != 0) ? 0 : 0x40) | (((value ^ _HLD) & (_HLD ^ result) & 0x8000) >> 13);
+            int hld = Hl();
+            int result = hld - value - (F & 1);
+            F = (((hld ^ result ^ value) >> 8) & 0x10) | 0x02 | ((result >> 16) & 1) | ((result >> 8) & 0x80) | (((result & 0xffff) != 0) ? 0 : 0x40) | (((value ^ hld) & (hld ^ result) & 0x8000) >> 13);
             H = (result >> 8) & 0xff;
             L = result & 0xff;
         }
 
         /**
-         * ADC HL,nn
+         * ADC Hl,nn
          */
-        private void adcHL(int value)
+        private void AdcHl(int value)
         {
-            int _HLD = HL();
-            int result = _HLD + value + (F & 1);
-            F = (((_HLD ^ result ^ value) >> 8) & 0x10) | ((result >> 16) & 1) | ((result >> 8) & 0x80) | (((result & 0xffff) != 0) ? 0 : 0x40) | (((value ^ _HLD ^ 0x8000) & (value ^ result) & 0x8000) >> 13);
+            int hld = Hl();
+            int result = hld + value + (F & 1);
+            F = (((hld ^ result ^ value) >> 8) & 0x10) | ((result >> 16) & 1) | ((result >> 8) & 0x80) | (((result & 0xffff) != 0) ? 0 : 0x40) | (((value ^ hld ^ 0x8000) & (value ^ result) & 0x8000) >> 13);
             H = (result >> 8) & 0xff;
             L = result & 0xff;
         }
@@ -2970,146 +2955,146 @@ namespace E_Z80.Emulator
         /**
          * Shift right	- ok
          */
-        private int srl(int value)
+        private int Srl(int value)
         {
             int c = value & 0x01;
             value = (value >> 1) & 0xff;
-            F = SZP[value] | c;
+            F = _SZP[value] | c;
             return value;
         }
 
         /**
          * Shift left	- ok
          */
-        private int sla(int value)
+        private int Sla(int value)
         {
             int c = (value & 0x80) >> 7;
             value = (value << 1) & 0xff;
-            F = SZP[value] | c;
+            F = _SZP[value] | c;
             return value;
         }
 
         /**
          * Shift left and insert a 1
          */
-        private int sll(int value)
+        private int Sll(int value)
         {
             int c = (value & 0x80) >> 7;
             value = ((value << 1) | 1) & 0xff;
-            F = SZP[value] | c;
+            F = _SZP[value] | c;
             return value;
         }
 
         /**
          * Shift right while keeping the correct sign
          */
-        private int sra(int value)
+        private int Sra(int value)
         {
             int c = value & 0x01;
             value = (value >> 1) | (value & 128);
-            F = SZP[value] | c;
+            F = _SZP[value] | c;
             return value;
         }
 
         /**
          * 9-bit left rotate	- ok
          */
-        private int rl(int value)
+        private int Rl(int value)
         {
             int c = (value & 0x80) >> 7;
             value = ((value << 1) | (F & 1)) & 0xff;
-            F = SZP[value] | c;
+            F = _SZP[value] | c;
             return value;
         }
 
         /**
-         * 9-bit left rotate A	- ok
+         * 9-bit left rotate a	- ok
          */
-        private int rl_A(int A)
+        private int Rl_A(int a)
         {
-            int old = A;
-            A = ((A << 1) | (F & 1)) & 0xff; 						// rotate
+            int old = a;
+            a = ((a << 1) | (F & 1)) & 0xff; 						// rotate
             F = (F & 0xec) | (old >> 7);
-            return A;
+            return a;
         }
 
         /**
          * 9-bit right rotate
          */
-        private int rr(int value)
+        private int Rr(int value)
         {
             int c = (value & 0x01);
             value = ((value >> 1) | (F << 7)) & 0xff;
-            F = SZP[value] | c;
+            F = _SZP[value] | c;
             return value;
         }
 
         /**
-         * 9-bit right rotate A
+         * 9-bit right rotate a
          */
-        private int rr_A(int A)
+        private int Rr_A(int a)
         {
-            int old = A;
-            A = ((A >> 1) | (F & 1) << 7) & 0xff; 					// rotate
+            int old = a;
+            a = ((a >> 1) | (F & 1) << 7) & 0xff; 					// rotate
             F = (F & 0xec) | (old & 1);
-            return A;
+            return a;
         }
 
         /**
          * left rotate	- ok
          */
-        private int rlc(int value)
+        private int Rlc(int value)
         {
             int c = (value & 0x80) >> 7;
             value = ((value << 1) | (value >> 7)) & 0xff;
-            F = SZP[value] | c;
+            F = _SZP[value] | c;
             return value;
         }
 
         /**
          * left rotate	- ok
          */
-        private int rlc_A(int A)
+        private int Rlc_A(int a)
         {
-            F = (F & 0xec) | (A >> 7);
-            //F = (F & 0xc5) | ((A >> 7) | (A & 0x28));		// including undocumented flags
-            return ((A << 1) + ((A & 128) >> 7)) & 0xff; 				// rotate
+            F = (F & 0xec) | (a >> 7);
+            //F = (F & 0xc5) | ((a >> 7) | (a & 0x28));		// including undocumented flags
+            return ((a << 1) + ((a & 128) >> 7)) & 0xff; 				// rotate
         }
 
         /**
          * right rotate	- ok
          */
-        private int rrc(int value)
+        private int Rrc(int value)
         {
             int c = (value & 0x01);
             value = ((value >> 1) | (value << 7)) & 0xff;
-            F = SZP[value] | c;
+            F = _SZP[value] | c;
             return value;
         }
 
         /**
-         * right rotate	A - ok
+         * right rotate	a - ok
          */
-        private int rrc_A(int A)
+        private int Rrc_A(int a)
         {
-            F = (F & 0xec) | (A & 0x29);
-            return ((A >> 1) + ((A & 1) << 7)) & 0xff; 				// rotate
+            F = (F & 0xec) | (a & 0x29);
+            return ((a >> 1) + ((a & 1) << 7)) & 0xff; 				// rotate
         }
 
         /**
          * RLD
          */
-        private int rld_A(int A, int H, int L)
+        private int rld_A(int a, int h, int l)
         {
-            int result = A;
-            int t = MemProvider.Peek(HL());
+            int result = a;
+            int t = MemProvider.Peek(Hl());
             int q = t;
 
             t = (t << 4) | (result & 0x0f);
             result = (result & 0xf0) | (q >> 4);
-            MemProvider.Poke(HL(), (t & 0xff));
+            MemProvider.Poke(Hl(), (t & 0xff));
 
-            F = (F & 1) | SZP[result];
+            F = (F & 1) | _SZP[result];
 
             return result;
         }
@@ -3117,17 +3102,17 @@ namespace E_Z80.Emulator
         /**
          * RRD
          */
-        private int rrd_A(int A, int H, int L)
+        private int rrd_A(int a, int h, int l)
         {
-            int result = A;
-            int t = MemProvider.Peek(HL());
+            int result = a;
+            int t = MemProvider.Peek(Hl());
             int q = t;
 
             t = (t >> 4) | (result << 4);
             result = (result & 0xf0) | (q & 0x0f);
-            MemProvider.Poke(HL(), t & 0xff);
+            MemProvider.Poke(Hl(), t & 0xff);
 
-            F = (F & 1) | SZP[result];
+            F = (F & 1) | _SZP[result];
 
             return result;
         }
@@ -3135,100 +3120,100 @@ namespace E_Z80.Emulator
         /**
          * test specified bit - ok
          */
-        private void bit(int bitNumber, int value)
+        private void Bit(int bitNumber, int value)
         {
-            F = (F & 1) | 0x10 | SZ_BIT[value & bitSet[bitNumber]];
+            F = (F & 1) | 0x10 | _SZ_BIT[value & BitSet[bitNumber]];
         }
 
         /**
          * set specified bit	- ok
          */
-        private int set(int bitNumber, int value)
+        private int Set(int bitNumber, int value)
         {
-            value = value | bitSet[bitNumber];
+            value = value | BitSet[bitNumber];
             return value;
         }
 
         /**
          * reset specified bit	- ok
          */
-        private int res(int bitNumber, int value)
+        private int Res(int bitNumber, int value)
         {
-            value = value & bitRes[bitNumber];
+            value = value & BitRes[bitNumber];
             return value;
         }
 
         /**
          * AND	- ok
          */
-        private int andA(int value, int A)
+        private int AndA(int value, int a)
         {
-            A &= value;
-            F = SZP[A] | 0x10;
-            return A;
+            a &= value;
+            F = _SZP[a] | 0x10;
+            return a;
         }
 
-        private void and_A(int n, int c)
+        private void And_A(int n, int c)
         {
-            cycle -= c;
-            A = andA(n, A);
+            Cycle -= c;
+            A = AndA(n, A);
         }
 
         /**
          * OR	- ok
          */
-        private int orA(int value, int A)
+        private int OrA(int value, int a)
         {
-            A |= value;
-            F = SZP[A];
-            return A;
+            a |= value;
+            F = _SZP[a];
+            return a;
         }
 
-        private void or_A(int n, int c)
+        private void Or_A(int n, int c)
         {
-            cycle -= c;
-            A = orA(n, A);
+            Cycle -= c;
+            A = OrA(n, A);
         }
 
         /**
          * XOR - ok
          */
-        private int xorA(int value, int A)
+        private int XorA(int value, int a)
         {
-            A ^= value;
-            F = SZP[A];
-            return A;
+            a ^= value;
+            F = _SZP[a];
+            return a;
         }
 
-        private void xor_A(int n, int c)
+        private void Xor_A(int n, int c)
         {
-            cycle -= c;
-            A = xorA(n, A);
+            Cycle -= c;
+            A = XorA(n, A);
         }
 
         /**
          * OUT
          */
-        private void portOut(int port, int value)
+        private void PortOut(int port, int value)
         {
             PortProvider.OutB(port, value, 0);
         }
 
-        private void portOut(int port, int value, int state)
+        private void PortOut(int port, int value, int state)
         {
             PortProvider.OutB(port, value, state);
         }
         /**
          * IN
          */
-        private int portIn(int port, int hi)
+        private int PortIn(int port, int hi)
         {
             int portIn = PortProvider.InB(port, hi);
-            F = (F & 1) | SZP[A];
+            F = (F & 1) | _SZP[A];
             return portIn;
         }
 
-        public int peekw(int add)
+        public int PeekW(int add)
         {
             int value = MemProvider.Peek(add);
             value |= MemProvider.Peek(add + 1) << 8;
@@ -3236,7 +3221,7 @@ namespace E_Z80.Emulator
             return value;
         }
 
-        public void pokew(int add, int value)
+        public void PokeW(int add, int value)
         {
             MemProvider.Poke(add, value);
             MemProvider.Poke(add + 1, value >> 8);
@@ -3245,22 +3230,22 @@ namespace E_Z80.Emulator
         /**
          * Undocumented
          */
-        private int incL16(int value)
+        private int IncL16(int value)
         {
-            return (value & 0xff00) | inc8(value & 0xff);
+            return (value & 0xff00) | Inc8(value & 0xff);
         }
 
-        private int decL16(int value)
+        private int DecL16(int value)
         {
-            return (value & 0xff00) | dec8(value & 0xff);
+            return (value & 0xff00) | Dec8(value & 0xff);
         }
 
-        private int ldXYH_8(int val16, int val8)
+        private int LdXYH_8(int val16, int val8)
         {
             return (val16 & 0xff) | (val8 << 8);
         }
 
-        private int ldXYL_8(int val16, int val8)
+        private int LdXYL_8(int val16, int val8)
         {
             return (val16 & 0xff00) | val8;
         }
@@ -3277,7 +3262,7 @@ namespace E_Z80.Emulator
         /**
          * check interrupt
          */
-        private int checkInterrupt(int cycle)
+        private int CheckInterrupt(int cyc)
         {
             if (NMI || (IFF0 && IRQ))
             {
@@ -3290,12 +3275,12 @@ namespace E_Z80.Emulator
                     IFF1 = IFF0;
                     NMI = IFF0 = false;
 
-                    push(PC);
+                    Push(PC);
                     PC = 0x0066; 					// ...and jump to 0x0066
 
-                    cycle -= 13;
+                    cyc -= 13;
                     //} else {
-                    //   goingToirq = false; /* CPU has to execute 1 more instruction */
+                    //   goingToirq = false; /* CPU has to execute 1 more inst */
                     //}
                 }
 
@@ -3306,48 +3291,46 @@ namespace E_Z80.Emulator
 
                     switch (IM)
                     {
-                        case 0:	// IM0  --> exec 1-byte instruction. Only calls are supported.
+                        case 0:	// IM0  --> exec 1-byte inst. Only calls are supported.
                             IRQ = IFF0 = false;
-                            push(PC);
+                            Push(PC);
                             if (I_Vector == 0 || I_Vector == 255) { PC = 0x0038; } else { PC = I_Vector; }
-                            cycle -= 13;
+                            cyc -= 13;
                             break;
                         case 1:	// IM1	--> RST &38
                             IRQ = IFF0 = false;
-                            push(PC);
+                            Push(PC);
                             PC = 0x0038;
-                            cycle -= 13; // RST &38 = 11 cycles    + 2 cycles
+                            cyc -= 13; // RST &38 = 11 cycles    + 2 cycles
                             break;
                         case 2:	// IM2  --> Call I:Vector
                             IRQ = IFF0 = false;
-                            push(PC);
-                            PC = peekw((I << 8) | I_Vector);
-                            cycle = cycle - 19; // Call = 17 cycles    + 2 cycles
-                            break;
-                        default:
+                            Push(PC);
+                            PC = PeekW((I << 8) | I_Vector);
+                            cyc = cyc - 19; // Call = 17 cycles    + 2 cycles
                             break;
                     }
                     //} else {
-                    //	goingToirq = false; // CPU has to execute 1 more instruction
+                    //	goingToirq = false; // CPU has to execute 1 more inst
                     //}
                 }
             }
-            return cycle;
+            return cyc;
         }
         /**
-         * Illegal instruction
+         * Illegal inst
          */
-        private void error(int instruction, int address)
+        private void Error(int inst, int address)
         {
-            Console.WriteLine("CPU error: illegal instruction $" + string.Format("{0:X} at ${1:X}", instruction, address));
+            Console.WriteLine($"CPU error: illegal inst ${inst:X} at ${address:X}");
             Environment.Exit(1);
         }
 
-        //private void debug(int instruction, int PPC, int A, int F, int B, int C, int D, int E,
-        //                   int H, int L, int SP, int IX, int IY, int I, int cycles)
+        //private void debug(int inst, int _PPC, int a, int F, int B, int C, int D, int E,
+        //                   int H, int L, int SP, int Ix, int IY, int I, int cycles)
         //{
 
-        //    if (PPC == debugBreakPoint)
+        //    if (_PPC == debugBreakPoint)
         //    {
         //        debugEnabled = true;
         //    }
@@ -3359,33 +3342,33 @@ namespace E_Z80.Emulator
         //            Console.WriteLine("*** " + tag + " ***");
         //            startSlice = false;
         //        }
-        //        int opcgroup = instruction & 65280;
+        //        int opcgroup = inst & 65280;
         //        String dataLog = string.Format("{0:X} : {1:X},{2:X},{3:X},{4:X}    \t",
-        //            PPC,
-        //            MemProvider.Peek(PPC),
-        //            MemProvider.Peek(PPC + 1),
-        //            MemProvider.Peek(PPC + 2),
-        //            MemProvider.Peek(PPC + 3)
+        //            _PPC,
+        //            MemProvider.Peek(_PPC),
+        //            MemProvider.Peek(_PPC + 1),
+        //            MemProvider.Peek(_PPC + 2),
+        //            MemProvider.Peek(_PPC + 3)
         //        );
-        //        if (instruction < 256)
+        //        if (inst < 256)
         //        {
-        //            dataLog = dataLog + Z80Debug.OpCode1[instruction];
+        //            dataLog = dataLog + Z80Debug.OpCode1[inst];
         //        }
         //        else if (opcgroup == (237 << 8))
         //        {
-        //            dataLog = dataLog + Z80Debug.OpCode3[(instruction & 0xff)];
+        //            dataLog = dataLog + Z80Debug.OpCode3[(inst & 0xff)];
         //        }
         //        else if (opcgroup == (203 << 8))
         //        {
-        //            dataLog = dataLog + Z80Debug.OpCode2[(instruction & 0xff)];
+        //            dataLog = dataLog + Z80Debug.OpCode2[(inst & 0xff)];
         //        }
-        //        dataLog = dataLog + string.Format("   AF:{0:X} BC:{1:X} DE:{2:X} HL:{3:X} SP:{4:X} IX:{5:X} IY:{6:X} I:{7:X} Cycles:{8}",
-        //            AF(),
-        //            BC(),
-        //            DE(),
-        //            HL(),
+        //        dataLog = dataLog + string.Format("   Af:{0:X} Bc:{1:X} De:{2:X} Hl:{3:X} SP:{4:X} Ix:{5:X} IY:{6:X} I:{7:X} Cycles:{8}",
+        //            Af(),
+        //            Bc(),
+        //            De(),
+        //            Hl(),
         //            SP,
-        //            IX,
+        //            Ix,
         //            IY,
         //            I,
         //            cycles);

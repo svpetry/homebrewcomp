@@ -5,8 +5,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewModels="clr-namespace:E_Z80.ViewModels"
-        Title="Z80 Computer Emulator"
-        Height="500" Width="680"
+        Title="homebrewcomp Computer Emulator"
+        Height="510" Width="680"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel, IsDesignTimeCreatable=False}"
         PreviewKeyDown="Window_PreviewKeyDown"
@@ -24,7 +24,7 @@
             <RowDefinition Height="45"/>
         </Grid.RowDefinitions>
         <Image x:Name="ImageScreen" Grid.Row="0" HorizontalAlignment="Left" Margin="10"
-               VerticalAlignment="Top" StretchDirection="Both" Stretch="None"
+               VerticalAlignment="Top" Width="640" Height="400"
                Focusable="True" FocusManager.IsFocusScope="True" Source="{Binding ScreenSource}">
         </Image>
         <Grid Grid.Row="1">

@@ -1,7 +1,6 @@
-﻿using System.ComponentModel;
-using E_Z80.ViewModels;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
+using E_Z80.ViewModels;
 
 namespace E_Z80.Views
 {
@@ -17,25 +16,25 @@ namespace E_Z80.Views
             DataContext = new MainViewModel(new ViewIoService()) { MainView = this };
         }
 
-        private void Window_TextInput(object _Sender, TextCompositionEventArgs _E)
+        private void Window_TextInput(object sender, TextCompositionEventArgs e)
         {
-            var hText = _E.Text;
+            var hText = e.Text;
             if (hText.Length > 0)
                 ((MainViewModel)DataContext).TextInputCommand.Execute(hText[0]);
         }
 
-        private void Window_PreviewKeyDown(object _Sender, KeyEventArgs _E)
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (_E.IsRepeat)
-                ((MainViewModel)DataContext).KeyRepeatCommand.Execute(_E.Key);
+            if (e.IsRepeat)
+                ((MainViewModel)DataContext).KeyRepeatCommand.Execute(e.Key);
             else
-                ((MainViewModel)DataContext).KeyDownCommand.Execute(_E.Key);
+                ((MainViewModel)DataContext).KeyDownCommand.Execute(e.Key);
         }
 
-        private void Window_PreviewKeyUp(object _Sender, KeyEventArgs _E)
+        private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
         {
-            if (!_E.IsRepeat)
-                ((MainViewModel)DataContext).KeyUpCommand.Execute(_E.Key);
+            if (!e.IsRepeat)
+                ((MainViewModel)DataContext).KeyUpCommand.Execute(e.Key);
         }
     }
 }

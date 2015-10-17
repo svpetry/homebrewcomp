@@ -7,5 +7,5 @@ sdcc -mz80 --fverbose-asm --no-std-crt0 --code-loc 0x0008 --code-size 0x07f7 --d
 
 if not exist main.ihx goto end
 ..\Tools\ihx2bin main.ihx main.bin > ihx2bin.log
-..\Tools\DZ80-32.EXE main.bin main_dis.asm
+..\Tools\dZ80c main.bin main_dis.asm
 :end

@@ -1,0 +1,19 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9BA99D2B-5AC3-4D1A-8BC0-BF101BBF5072}"
+	ProjectSection(SolutionItems) = preProject
+		3dmain.c = 3dmain.c
+		3dmain.h = 3dmain.h
+		3dtest.c = 3dtest.c
+		compile_app.bat = compile_app.bat
+		crt0.s = crt0.s
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -29,7 +29,7 @@ Output:
 		1: read sector
 		2: write sector
 		10: read first dir entry (sparam: filename, param1l: file size)
-		11: read next dir entry
+		11: read next dir entry (sparam: filename, param1l: file size)
 		20: open file for reading (outparam: 1=ok, param1l: file size)
 		21: open file for writing (create new)
 		22: open file for writing (append)
@@ -38,7 +38,7 @@ Output:
 		24: write block (param1: size in bytes)
 		25: load complete file into memory
 		26: read volume name
-		27: load program
+		(27: load program)
 		28: delete file (outparam: 1=file deleted)
 		29: check if file exists (outparam: 1=yes)
 	170	init RS232

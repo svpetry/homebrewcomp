@@ -4,19 +4,19 @@ static unsigned char io_val;
 static unsigned int io_addr;
 
 /******************************************************************************/
-//unsigned char io_read(unsigned char addr) {
-//	io_addr = addr;
-//	_asm
-//		push af
-//		push bc
-//		ld bc, (_io_addr)
-//		in a, (c)
-//		ld (_io_val), a
-//		pop bc
-//		pop af
-//	_endasm;
-//	return io_val;
-//}
+unsigned char io_read(unsigned char addr) {
+	io_addr = addr;
+	__asm
+		push af
+		push bc
+		ld bc, (_io_addr)
+		in a, (c)
+		ld (_io_val), a
+		pop bc
+		pop af
+	__endasm;
+	return io_val;
+}
 /******************************************************************************/
 void io_write(unsigned char addr, unsigned char val) {
 	io_addr = addr;
@@ -76,8 +76,8 @@ main() {
 
 	delay_ms(200);
 
-	memset(0x1000, 32, 0x0C80);
-	strcpy(0x1000, "Zilog Z84C0020PEC CPU, 131.072 Bytes RAM. Waiting for bios.bin...");
+	memset((void *)0x1000, 32, 0x0C80);
+	strcpy((void *)0x1000, "Zilog Z84C0020PEC CPU, 131.072 Bytes RAM. Waiting for bios.bin...");
 
 	delay_ms(300);
 

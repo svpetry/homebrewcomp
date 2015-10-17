@@ -10,12 +10,12 @@ namespace E_Z80.Views
     [ValueConversion(typeof(int), typeof(string))]
     public class LoadFactorToStringConverter : IValueConverter
     {
-        public object Convert(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            return string.Format("CPU load: {0} %", (int)_Value);
+            return $"CPU load: {(int) value} %";
         }
 
-        public object ConvertBack(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             return null;
         }
@@ -24,14 +24,14 @@ namespace E_Z80.Views
     [ValueConversion(typeof(int), typeof(string))]
     public class UpdateRateConverter : IValueConverter
     {
-        public object Convert(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            return string.Format("{0} Hz", (int)_Value);
+            return $"{ value} Hz";
         }
 
-        public object ConvertBack(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            var hStr = (string)_Value;
+            var hStr = (string)value;
             return int.Parse(hStr);
         }
     }
@@ -39,12 +39,12 @@ namespace E_Z80.Views
     [ValueConversion(typeof(bool), typeof(Brush))]
     public class LedColorConverter : IValueConverter
     {
-        public object Convert(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            return (bool)_Value ? Brushes.Red : Brushes.LightGray;
+            return (bool)value ? Brushes.Red : Brushes.LightGray;
         }
 
-        public object ConvertBack(object _Value, Type _TargetType, object _Parameter, System.Globalization.CultureInfo _Culture)
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             return null;
         }
@@ -52,9 +52,9 @@ namespace E_Z80.Views
 
     public class ViewIoService : IOService
     {
-        public bool OpenSelectFolderDialog(string _InitialDir)
+        public bool OpenSelectFolderDialog(string initialDir)
         {
-            var hDialog = new FolderBrowserDialog { SelectedPath = _InitialDir };
+            var hDialog = new FolderBrowserDialog { SelectedPath = initialDir };
             var hResult = hDialog.ShowDialog();
             if (hResult == DialogResult.OK)
             {
@@ -66,9 +66,9 @@ namespace E_Z80.Views
 
         public string SelectedDirectory { get; set; }
 
-        public void ShowError(string _ErrorMsg)
+        public void ShowError(string errorMsg)
         {
-            System.Windows.MessageBox.Show(_ErrorMsg, "Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(errorMsg, "Error!", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

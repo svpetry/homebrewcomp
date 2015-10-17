@@ -4,9 +4,9 @@
 
 	.area	_HEADER (ABS)
 
-	.org	0x0280
+	.org	0x1280
 init:
-	ld	sp,#0x77ff
+	ld	sp,#0x0280
         
 	call	gsinit
 	call	_main

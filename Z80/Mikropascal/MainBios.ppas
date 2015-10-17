@@ -127,6 +127,7 @@ begin
           disk_status := Mmc_Fat_Assign(bios_str, $A0);
           if disk_status = 1 then
             Mmc_Fat_Rewrite();
+          disk_status := 0;
           MemWrite(BUSY_ADDR, 0);
         end;
         
@@ -138,8 +139,9 @@ begin
           if mmc_changed = 1 then
             InitMmc();
           ReadBiosStr();
-          Mmc_Fat_Assign(bios_str, $A0);
-          Mmc_Fat_Append();
+          disk_status := Mmc_Fat_Assign(bios_str, $A0);
+          if disk_status = 0 then
+             Mmc_Fat_Append();
           MemWrite(BUSY_ADDR, 0);
         end;
 
@@ -178,7 +180,7 @@ begin
           if mmc_changed = 1 then
             InitMmc();
           ReadBiosStr();
-          // not implemented!
+          LoadFile(bios_str, MemReadW(BIOS_PARAM1_ADDR_LO));
           MemWrite(BUSY_ADDR, 0);
         end;
         
@@ -195,7 +197,7 @@ begin
         end;
 
         // load program
-        27: begin
+{        27: begin
           LATA.4 := 0;
           LATA.4 := 1;
           if mmc_changed = 1 then
@@ -203,7 +205,7 @@ begin
           ReadBiosStr();
           LoadProgram(bios_str);
         end;
-
+}
         // delete file
         28: begin
           LATA.4 := 0;

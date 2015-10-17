@@ -11,29 +11,29 @@ namespace E_Z80.ViewModels
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
-        protected virtual void OnPropertyChanged([CallerMemberName] string _PropertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             var hHandler = PropertyChanged;
-            if (hHandler != null) hHandler(this, new PropertyChangedEventArgs(_PropertyName));
+            hHandler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 
     public class ActionCommand : ICommand
     {
-        private readonly Action<object> FExecuteHandler;
-        private readonly Func<object, bool> FCanExecuteHandler;
+        private readonly Action<object> _executeHandler;
+        private readonly Func<object, bool> _canExecuteHandler;
 
-        public ActionCommand(Action<object> _Execute)
+        public ActionCommand(Action<object> execute)
         {
-            if (_Execute == null)
-                throw new ArgumentNullException("_Execute");
-            FExecuteHandler = _Execute;
+            if (execute == null)
+                throw new ArgumentNullException(nameof(execute));
+            _executeHandler = execute;
         }
 
-        public ActionCommand(Action<object> _Execute, Func<object, bool> _CanExecute)
-            : this(_Execute)
+        public ActionCommand(Action<object> execute, Func<object, bool> canExecute)
+            : this(execute)
         {
-            FCanExecuteHandler = _CanExecute;
+            _canExecuteHandler = canExecute;
         }
 
         public event EventHandler CanExecuteChanged
@@ -42,16 +42,16 @@ namespace E_Z80.ViewModels
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-        public void Execute(object _Parameter)
+        public void Execute(object parameter)
         {
-            FExecuteHandler(_Parameter);
+            _executeHandler(parameter);
         }
 
-        public bool CanExecute(object _Parameter)
+        public bool CanExecute(object parameter)
         {
-            if (FCanExecuteHandler == null)
+            if (_canExecuteHandler == null)
                 return true;
-            return FCanExecuteHandler(_Parameter);
+            return _canExecuteHandler(parameter);
         }
     }  
 }

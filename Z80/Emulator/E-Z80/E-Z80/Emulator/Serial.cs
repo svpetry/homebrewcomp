@@ -5,47 +5,46 @@ namespace E_Z80.Emulator
 {
     class Serial : IPortProvider
     {
-        private readonly IMemoryProvider FMemory;
-        private SerialPort FSerialPort;
+        private readonly IMemoryProvider _memory;
+        private SerialPort _serialPort;
 
-        private const int cAddrBuffer = 0x0080; // size of buffer: 512 bytes
+        private const int AddrBuffer = 0x0080; // size of buffer: 512 bytes
 
-        public Serial(IMemoryProvider _Memory)
+        public Serial(IMemoryProvider memory)
         {
-            FMemory = _Memory;
+            _memory = memory;
         }
 
         #region IPortProvider
 
-        public int InB(int _Addr, int _Hi)
+        public int InB(int addr, int hi)
         {
             // read byte from RS232
-            if (_Addr == 173)
+            if (addr == 173)
             {
-                if (FSerialPort == null) return 0;
+                if (_serialPort == null) return 0;
 
-                return FSerialPort.BytesToRead > 0 ? FSerialPort.ReadByte() : 0;
+                return _serialPort.BytesToRead > 0 ? _serialPort.ReadByte() : 0;
             }
             // read RS232 status (1 = data ready, 0 = no data)
-            if (_Addr == 174)
+            if (addr == 174)
             {
-                if (FSerialPort == null) return 0;
+                if (_serialPort == null) return 0;
 
-                return FSerialPort.BytesToRead > 0 ? 1 : 0;
+                return _serialPort.BytesToRead > 0 ? 1 : 0;
             }
             return 0;
         }
 
-        public void OutB(int _Addr, int _Value, int _State)
+        public void OutB(int addr, int value, int state)
         {
             // init RS232
-            if (_Addr == 170)
+            if (addr == 170)
             {
-                if (FSerialPort != null)
-                    FSerialPort.Dispose();
+                _serialPort?.Dispose();
 
                 int hBaudRate = 0;
-                switch (_Value)
+                switch (value)
                 {
                     case 1:
                         hBaudRate = 1200;
@@ -75,32 +74,30 @@ namespace E_Z80.Emulator
                 var hPortNames = SerialPort.GetPortNames();
                 if (hBaudRate != 0 && hPortNames.Length > 0)
                 {
-                    FSerialPort = new SerialPort(hPortNames[0], hBaudRate);
-                    FSerialPort.Open();
+                    _serialPort = new SerialPort(hPortNames[0], hBaudRate);
+                    _serialPort.Open();
                 }
             }
             // write byte to RS232
-            else if (_Addr == 171)
+            else if (addr == 171)
             {
-                if (FSerialPort == null) return;
-                
-                FSerialPort.Write(new byte[] { ((byte)_Value) }, 0, 1);
+                _serialPort?.Write(new[] { ((byte)value) }, 0, 1);
             }
             // write text to RS232
-            else if (_Addr == 172)
+            else if (addr == 172)
             {
-                if (FSerialPort == null) return;
+                if (_serialPort == null) return;
 
                 byte hValue;
                 var hData = new List<byte>();
                 var hIdx = 0;
                 do
                 {
-                    hValue = (byte)FMemory.Peek(cAddrBuffer + hIdx++);
+                    hValue = (byte)_memory.Peek(AddrBuffer + hIdx++);
                     hData.Add(hValue);
                 } while (hValue != 10 && hIdx < 512);
 
-                FSerialPort.Write(hData.ToArray(), 0, hData.Count);
+                _serialPort.Write(hData.ToArray(), 0, hData.Count);
             }
         }
 

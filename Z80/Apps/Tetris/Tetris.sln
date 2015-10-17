@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3E2A98B3-A710-40DF-9829-FC64AAE73B9A}"
+	ProjectSection(SolutionItems) = preProject
+		compile_app.bat = compile_app.bat
+		crt0.s = crt0.s
+		sintable.c = sintable.c
+		sintable.h = sintable.h
+		splashscreen.c = splashscreen.c
+		splashscreen.h = splashscreen.h
+		tetris.c = tetris.c
+		tmain.c = tmain.c
+		tmain.h = tmain.h
+		tsound.c = tsound.c
+		tsound.h = tsound.h
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -6,14 +6,14 @@ namespace E_Z80.Emulator
     {
         #region IPortProvider
 
-        public int InB(int _Addr, int _Hi)
+        public int InB(int addr, int hi)
         {
             return 0;
         }
 
-        public void OutB(int _Addr, int _Value, int _State)
+        public void OutB(int addr, int value, int state)
         {
-            if (_Addr == 4 && (_Value & 1) == 1)
+            if (addr == 4 && (value & 1) == 1)
                 SystemSounds.Beep.Play();
         }
 

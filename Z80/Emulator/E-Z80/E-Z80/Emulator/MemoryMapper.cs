@@ -4,8 +4,8 @@ namespace E_Z80.Emulator
 {
     public interface IMemRangeProvider
     {
-        bool Peek(int _Addr, out byte _Value);
-        bool Poke(int _Addr, byte _Value);
+        bool Peek(int addr, out byte value);
+        bool Poke(int addr, byte value);
     }
 
     internal class MemoryMapping
@@ -19,55 +19,58 @@ namespace E_Z80.Emulator
 
     public class MemoryMapper : IMemoryProvider
     {
-        private readonly List<MemoryMapping> FMemoryMappings = new List<MemoryMapping>();
-        private readonly List<MemoryMapping> FReadMappings = new List<MemoryMapping>(); 
-        private readonly List<MemoryMapping> FWriteMappings = new List<MemoryMapping>(); 
+        private readonly List<MemoryMapping> _memoryMappings = new List<MemoryMapping>();
+        private readonly List<MemoryMapping> _readMappings = new List<MemoryMapping>(); 
+        private readonly List<MemoryMapping> _writeMappings = new List<MemoryMapping>(); 
 
         #region IMemoryProvider
 
-        public int Peek(int _Addr)
+        public int Peek(int addr)
         {
-            foreach (var hMapping in FReadMappings)
+            for (var hIdx = 0; hIdx < _readMappings.Count; hIdx++)
             {
+                var hMapping = _readMappings[hIdx];
                 byte hResult;
-                if (hMapping.AddrLo <= _Addr && hMapping.AddrHi >= _Addr && hMapping.Provider.Peek(_Addr, out hResult))
+                if (hMapping.AddrLo <= addr && hMapping.AddrHi >= addr && hMapping.Provider.Peek(addr, out hResult))
                     return hResult;
             }
             return 0;
         }
 
-        public void Poke(int _Addr, int _Value)
+        public void Poke(int addr, int value)
         {
-            foreach (var hMapping in FWriteMappings)
+            for (var hIdx = 0; hIdx < _writeMappings.Count; hIdx++)
             {
-                if (hMapping.AddrLo <= _Addr && hMapping.AddrHi >= _Addr && hMapping.Provider.Poke(_Addr, (byte)(_Value & 0xff)))
+                var hMapping = _writeMappings[hIdx];
+                if (hMapping.AddrLo <= addr && hMapping.AddrHi >= addr &&
+                    hMapping.Provider.Poke(addr, (byte) (value & 0xff)))
                     return;
             }
         }
 
         #endregion
 
-        public void Register(int _AddrLo, int _AddrHigh, IMemRangeProvider _Provider, bool _SupportWrite, bool _SupportRead)
+        public void Register(int addrLo, int addrHigh, IMemRangeProvider provider, bool supportWrite, bool supportRead)
         {
-            FMemoryMappings.Add(
+            _memoryMappings.Add(
                 new MemoryMapping
                 {
-                    AddrLo = _AddrLo,
-                    AddrHi = _AddrHigh,
-                    Provider = _Provider,
-                    SupportRead = _SupportRead,
-                    SupportWrite = _SupportWrite
+                    AddrLo = addrLo,
+                    AddrHi = addrHigh,
+                    Provider = provider,
+                    SupportRead = supportRead,
+                    SupportWrite = supportWrite
                 });
         }
 
         public void FinishRegistration()
         {
-            foreach (var hMapping in FMemoryMappings)
+            foreach (var hMapping in _memoryMappings)
             {
                 if (hMapping.SupportRead)
-                    FReadMappings.Add(hMapping);
+                    _readMappings.Add(hMapping);
                 if (hMapping.SupportWrite)
-                    FWriteMappings.Add(hMapping);
+                    _writeMappings.Add(hMapping);
             } 
         }
     }

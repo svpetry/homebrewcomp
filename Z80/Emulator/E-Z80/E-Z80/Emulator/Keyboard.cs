@@ -5,35 +5,35 @@ namespace E_Z80.Emulator
 {
     class Keyboard : IPortProvider
     {
-        private static readonly Queue<byte> FKeyQueue = new Queue<byte>();
-        private static readonly Queue<byte> FScanCodeQueue = new Queue<byte>();
-        private readonly object FLockObj = new object();
+        private static readonly Queue<byte> KeyQueue = new Queue<byte>();
+        private static readonly Queue<byte> ScanCodeQueue = new Queue<byte>();
+        private readonly object _lockObj = new object();
 
         #region IPortProvider
 
-        public int InB(int _Addr, int _Hi)
+        public int InB(int addr, int hi)
         {
-            if (_Addr == 128)
+            if (addr == 128)
             {
-                lock (FLockObj)
+                lock (_lockObj)
                 {
-                    FScanCodeQueue.Clear();
-                    if (FKeyQueue.Count > 0)
+                    ScanCodeQueue.Clear();
+                    if (KeyQueue.Count > 0)
                     {
-                        var hKey = FKeyQueue.Dequeue();
+                        var hKey = KeyQueue.Dequeue();
                         return hKey;
                     }
                     return 255;
                 }
             }
-            if (_Addr == 129)
+            if (addr == 129)
             {
-                lock (FLockObj)
+                lock (_lockObj)
                 {
-                    FKeyQueue.Clear();
-                    if (FScanCodeQueue.Count > 0)
+                    KeyQueue.Clear();
+                    if (ScanCodeQueue.Count > 0)
                     {
-                        var hKey = FScanCodeQueue.Dequeue();
+                        var hKey = ScanCodeQueue.Dequeue();
                         return hKey;
                     }
                     return 0;
@@ -42,43 +42,43 @@ namespace E_Z80.Emulator
             return 0;
         }
 
-        public void OutB(int _Addr, int _Value, int _State)
+        public void OutB(int addr, int value, int state)
         {
         }
 
         #endregion
 
-        public void AddNewKey(char _Key)
+        public void AddNewKey(char key)
         {
-            AddNewKey((byte)_Key);
+            AddNewKey((byte)key);
         }
 
-        public void AddScanCodes(byte [] _Code)
+        public void AddScanCodes(byte [] code)
         {
-            lock (FLockObj)
+            lock (_lockObj)
             {
-                foreach (var hCode in _Code)
-                    FScanCodeQueue.Enqueue(hCode);
+                foreach (var hCode in code)
+                    ScanCodeQueue.Enqueue(hCode);
             }
         }
 
-        private void AddNewKey(byte _Key)
+        private void AddNewKey(byte key)
         {
-            if (_Key < 128)
+            if (key < 128)
             {
-                lock (FLockObj)
+                lock (_lockObj)
                 {
-                    var hKey = _Key;
+                    var hKey = key;
                     if (hKey == 13)
                         hKey = 10;
-                    FKeyQueue.Enqueue(hKey);
+                    KeyQueue.Enqueue(hKey);
                 }
             }
         }
 
-        public void AddNewSpecialKey(Key _Key)
+        public void AddNewSpecialKey(Key key)
         {
-            switch (_Key)
+            switch (key)
             {
                 case Key.Up:
                     AddNewKey(0);
@@ -173,9 +173,9 @@ namespace E_Z80.Emulator
             }
         }
 
-        public void KeyDown(Key _Key)
+        public void KeyDown(Key key)
         {
-            switch (_Key)
+            switch (key)
             {
                 case Key.Up:
                     AddScanCodes(new byte[] { 0xe0, 0x75 });
@@ -204,9 +204,9 @@ namespace E_Z80.Emulator
             }
         }
 
-        public void KeyUp(Key _Key)
+        public void KeyUp(Key key)
         {
-            switch (_Key)
+            switch (key)
             {
                 case Key.Up:
                     AddScanCodes(new byte[] { 0xe0, 0x75 + 0x80 });

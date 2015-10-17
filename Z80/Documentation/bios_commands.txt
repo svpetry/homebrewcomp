@@ -1,0 +1,81 @@
+BIOS commands - interrupt 01h
+--------------------------------------------------------------------------------
+
+function 01h - clear screen
+	
+	(no parameters)
+
+function 02h - cursor visibility control
+	
+	P1: 0 = disable cursor, 1 = enable cursor
+
+function 03h - set cursor position
+	
+	P1: column
+	P2: row
+
+function 04h - write character at cursor position
+
+	P1: character code
+
+function 05h - write text at cursor position
+
+	P1: address of string to write
+
+function 06h - scroll one line up
+	
+	(no parameters)
+
+function 07h - set text window dimensions
+	
+	P1: first line offset
+	P2: number of lines
+
+function 10h - read character from keyboard
+	
+	output: P1: character code
+
+function 20h - init drive
+
+	(no parameters)
+
+function 21h - read volume name
+
+	P1: address of output string (16 bytes)
+
+function 22h - read directory
+
+	P1: address of output structure
+		0x00 - 0x0F: file name
+		0x10 - 0x13: size
+		       0x14: attributes
+	P2: 0 = read first entry, 1 = read next entry
+
+function 23h - check if file exists
+
+	P1: address of string containing file name
+
+	output: P2: 0 = file does not exist, 1 = file exists
+
+function 24h - delete file
+
+	P1: address of string containing file name
+
+function 25h - open file
+
+	P1: address of string containing file name
+	P2: 0 = read, 1 = write new, 2 = write append
+
+	output: P1, P2: file size (DWORD)
+
+function 26h - read block
+
+	(no parameters)
+
+function 27h - write block
+
+	P1: size
+
+function 28h - load and start program
+
+	P1: address of string containing file name

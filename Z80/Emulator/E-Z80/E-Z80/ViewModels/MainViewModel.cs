@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -12,61 +11,60 @@ namespace E_Z80.ViewModels
 {
     internal class MainViewModel : BaseViewModel
     {
-        private readonly IOService FIoService;
+        private readonly IOService _ioService;
 
-        private readonly MainEmulator FEmulator;
+        private readonly MainEmulator _emulator;
 
-        private DispatcherTimer FScreenTimer;
+        private DispatcherTimer _screenTimer;
 
-        private int FUpdateCountdown;
+        private int _updateCountdown;
 
-        private bool FOriginalSpeed;
-        private int FLoadFactor;
+        private bool _originalSpeed;
+        private int _loadFactor;
 
-        private ImageSource FScreenSource;
+        private ImageSource _screenSource;
 
-        public MainViewModel(IOService _IoService)
+        public MainViewModel(IOService ioService)
         {
-            FIoService = _IoService;
+            _ioService = ioService;
             Settings.Load();
 
             InitCommands();
 
-            FEmulator = new MainEmulator();
+            _emulator = new MainEmulator();
 
             OriginalSpeed = true;
 
             InitScreenTimer();
 
             var hInterruptTimer = new DispatcherTimer { Interval = new TimeSpan(0, 0, 0, 0, 100) };
-            hInterruptTimer.Tick += (_Sender, _EventArgs) => FEmulator.InterruptIrq();
+            hInterruptTimer.Tick += (sender, eventArgs) => _emulator.InterruptIrq();
             hInterruptTimer.Start();
 
-            FEmulator.SdDirectory = Settings.SdDirectory;
-            FEmulator.Start();
+            _emulator.SdDirectory = Settings.SdDirectory;
+            _emulator.Start();
         }
 
         private void InitScreenTimer()
         {
-            if (FScreenTimer != null)
-                FScreenTimer.Stop();
+            _screenTimer?.Stop();
 
-            FScreenTimer = new DispatcherTimer { Interval = new TimeSpan(0, 0, 0, 0, 1000 / Settings.UpdateRate) };
-            FScreenTimer.Tick += UpdateScreen;
-            FScreenTimer.Start();
+            _screenTimer = new DispatcherTimer { Interval = new TimeSpan(0, 0, 0, 0, 1000 / Settings.UpdateRate) };
+            _screenTimer.Tick += UpdateScreen;
+            _screenTimer.Start();
         }
 
         public bool OriginalSpeed
         {
             get
             {
-                return FOriginalSpeed;
+                return _originalSpeed;
             }
             set
             {
-                if (FOriginalSpeed == value) return;
-                FOriginalSpeed = value;
-                FEmulator.OriginalSpeed = value;
+                if (_originalSpeed == value) return;
+                _originalSpeed = value;
+                _emulator.OriginalSpeed = value;
                 OnPropertyChanged();
             }
         }
@@ -75,12 +73,12 @@ namespace E_Z80.ViewModels
         {
             get
             {
-                return FLoadFactor;
+                return _loadFactor;
             }
             set
             {
-                if (FLoadFactor == value) return;
-                FLoadFactor = value;
+                if (_loadFactor == value) return;
+                _loadFactor = value;
                 OnPropertyChanged();
             }
         }
@@ -89,22 +87,16 @@ namespace E_Z80.ViewModels
         {
             get
             {
-                return FScreenSource;
+                return _screenSource;
             }
             set
             {
-                FScreenSource = value;
+                _screenSource = value;
                 OnPropertyChanged();
             }
         }
 
-        public Led Led
-        {
-            get
-            {
-                return FEmulator.Led;
-            }
-        }
+        public Led Led => _emulator.Led;
 
         public ActionCommand KeyDownCommand { get; private set; }
 
@@ -123,62 +115,62 @@ namespace E_Z80.ViewModels
         private void InitCommands()
         {
             KeyDownCommand = new ActionCommand(
-                _Obj =>
+                obj =>
                 {
-                    FEmulator.KeyDown((Key)_Obj);
-                    FEmulator.AddNewSpecialKey((Key)_Obj);
+                    _emulator.KeyDown((Key)obj);
+                    _emulator.AddNewSpecialKey((Key)obj);
                 });
 
-            KeyUpCommand = new ActionCommand(_Obj => FEmulator.KeyUp((Key)_Obj));
+            KeyUpCommand = new ActionCommand(obj => _emulator.KeyUp((Key)obj));
 
-            TextInputCommand = new ActionCommand(_Obj => FEmulator.AddNewKey((char)_Obj));
+            TextInputCommand = new ActionCommand(obj => _emulator.AddNewKey((char)obj));
 
-            KeyRepeatCommand = new ActionCommand(_Obj => FEmulator.AddNewSpecialKey((Key)_Obj));
+            KeyRepeatCommand = new ActionCommand(obj => _emulator.AddNewSpecialKey((Key)obj));
 
             SettingsCommand = new ActionCommand(ShowSettings);
 
             ResetCommand = new ActionCommand(Reset);
         }
 
-        private void Reset(object _Obj)
+        private void Reset(object obj)
         {
-            FEmulator.Reset();
+            _emulator.Reset();
         }
 
-        private void ShowSettings(object _Obj)
+        private void ShowSettings(object obj)
         {
-            if (OpenDialog(new SettingsView(), new SettingsViewModel(FIoService)) == true)
+            if (OpenDialog(new SettingsView(), new SettingsViewModel(_ioService)) == true)
             {
-                FEmulator.SdDirectory = Settings.SdDirectory;
+                _emulator.SdDirectory = Settings.SdDirectory;
                 InitScreenTimer();
             }
         }
 
-        private bool? OpenDialog(Window _DialogView, BaseViewModel _DialogViewModel)
+        private bool? OpenDialog(Window dialogView, BaseViewModel dialogViewModel)
         {
             try
             {
-                _DialogView.Owner = MainView;
-                _DialogView.DataContext = _DialogViewModel;
-                var hResult = _DialogView.ShowDialog();
+                dialogView.Owner = MainView;
+                dialogView.DataContext = dialogViewModel;
+                var hResult = dialogView.ShowDialog();
                 return hResult;
             }
             catch (Exception hEx)
             {
-                FIoService.ShowError(hEx.Message);
+                _ioService.ShowError(hEx.Message);
             }
             return null;
         }
 
-        private void UpdateScreen(object _Sender, EventArgs _E)
+        private void UpdateScreen(object sender, EventArgs e)
         {
-            FEmulator.UpdateScreen();
-            ScreenSource = FEmulator.Screen;
+            _emulator.UpdateScreen();
+            ScreenSource = _emulator.Screen;
 
-            if (FUpdateCountdown-- == 0)
+            if (_updateCountdown-- == 0)
             {
-                LoadFactor = (int)(FEmulator.LoadFactor * 100);
-                FUpdateCountdown = 20;
+                LoadFactor = (int)(_emulator.LoadFactor * 100);
+                _updateCountdown = 20;
             }
         }
     }

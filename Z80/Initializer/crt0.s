@@ -7,7 +7,7 @@
 	.org 	0
 
 	;; Stack at the top of memory.
-	ld	sp,#0x2fff
+	ld	sp,#0x3000
 
 	;; Initialize global variables
 	jp	_main

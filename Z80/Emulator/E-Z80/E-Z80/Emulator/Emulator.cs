@@ -9,63 +9,64 @@ namespace E_Z80.Emulator
 {
     public class MainEmulator
     {
-        private readonly Z80 FCpu;
-        private readonly MemoryMapper FMemoryMapper;
-        private readonly PortMapper FPortMapper;
-        private readonly Ram FRam;
-        private readonly Graphics FGraphics;
-        private readonly TickCounter FTickCounter;
-        private readonly DiskController FDiskController;
-        private readonly Serial FSerial;
-        private readonly Led FLed;
-        private readonly Speaker FSpeaker;
-        private readonly Keyboard FKeyboard;
-        private readonly BootLoader FBootLoader;
+        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private readonly Z80 _cpu;
+        private readonly MemoryMapper _memoryMapper;
+        private readonly PortMapper _portMapper;
+        private readonly Ram _ram;
+        private readonly Graphics _graphics;
+        private readonly TickCounter _tickCounter;
+        private readonly DiskController _diskController;
+        private readonly Serial _serial;
+        private readonly Led _led;
+        private readonly Speaker _speaker;
+        private readonly Keyboard _keyboard;
+        //private readonly BootLoader FBootLoader;
 
-        private bool FInterruptIrq;
-        private bool FInterruptNmi;
-        private bool FDoReset;
-        private Task FMainTask;
+        private bool _interruptIrq;
+        private bool _interruptNmi;
+        private bool _doReset;
+        private Task _mainTask;
 
-        private const int cFrameDurationMs = 25;
-        private const int cLoadMeasureFrameCount = 20;
-        private const int cCyclesPerMs = 20000;
+        private const int FrameDurationMs = 25;
+        private const int LoadMeasureFrameCount = 20;
+        private const int CyclesPerMs = 20000;
 
         public MainEmulator()
         {
-            FMemoryMapper = new MemoryMapper();
-            FPortMapper = new PortMapper();
-            FCpu = new Z80 { MemProvider = FMemoryMapper, PortProvider = FPortMapper };
+            _memoryMapper = new MemoryMapper();
+            _portMapper = new PortMapper();
+            _cpu = new Z80 { MemProvider = _memoryMapper, PortProvider = _portMapper };
 
-            FGraphics = new Graphics();
-            FMemoryMapper.Register(0x1000, 0x1fff, FGraphics, true, false);
-            FPortMapper.Register(5, 7, FGraphics);
+            _graphics = new Graphics();
+            _memoryMapper.Register(0x1000, 0x1fff, _graphics, true, false);
+            _portMapper.Register(5, 7, _graphics);
 
-            FRam = new Ram();
-            FMemoryMapper.Register(0, 0xffff, FRam, true, true);
-            FPortMapper.Register(0, 0, FRam);
+            _ram = new Ram();
+            _memoryMapper.Register(0, 0xffff, _ram, true, true);
+            _portMapper.Register(0, 0, _ram);
 
-            FTickCounter = new TickCounter();
-            FPortMapper.Register(130, 133, FTickCounter);
+            _tickCounter = new TickCounter(_cancellationTokenSource.Token);
+            _portMapper.Register(130, 133, _tickCounter);
 
-            FDiskController = new DiskController(FMemoryMapper, () => FCpu.Reset());
-            FPortMapper.Register(160, 169, FDiskController);
+            _diskController = new DiskController(_memoryMapper, () => _cpu.Reset());
+            _portMapper.Register(160, 169, _diskController);
 
-            FSerial = new Serial(FMemoryMapper);
-            FPortMapper.Register(170, 179, FSerial);
+            _serial = new Serial(_memoryMapper);
+            _portMapper.Register(170, 179, _serial);
 
-            FLed = new Led();
-            FPortMapper.Register(3, 3, FLed);
+            _led = new Led();
+            _portMapper.Register(3, 3, _led);
 
-            FSpeaker = new Speaker();
-            FPortMapper.Register(4, 4, FSpeaker);
+            _speaker = new Speaker();
+            _portMapper.Register(4, 4, _speaker);
 
-            FKeyboard = new Keyboard();
-            FPortMapper.Register(128, 129, FKeyboard);
+            _keyboard = new Keyboard();
+            _portMapper.Register(128, 129, _keyboard);
 
-            FBootLoader = new BootLoader(FMemoryMapper);
+            //FBootLoader = new BootLoader(FMemoryMapper);
 
-            FMemoryMapper.FinishRegistration();
+            _memoryMapper.FinishRegistration();
 
             OriginalSpeed = true;
         }
@@ -74,11 +75,11 @@ namespace E_Z80.Emulator
         { 
             get
             {
-                return FDiskController.DirName;
+                return _diskController.DirName;
             }
             set
             {
-                FDiskController.DirName = value;
+                _diskController.DirName = value;
             }
         }
 
@@ -86,56 +87,48 @@ namespace E_Z80.Emulator
 
         public Double LoadFactor { get; private set; }
 
-        public WriteableBitmap Screen
-        {
-            get
-            {
-                return FGraphics.Screen;
-            }
-        }
+        public WriteableBitmap Screen => _graphics.Screen;
 
-        public Led Led
-        {
-            get
-            {
-                return FLed;
-            }
-        }
+        public Led Led => _led;
 
-        private void ExecutionLoop()
+        private void ExecutionLoop(CancellationToken token)
         {
-            while (true)
+            Task.Run(() =>
             {
-                FBootLoader.Load();
-                FCpu.Reset();
-                FCpu.Exec(cCyclesPerMs * 1000); // 1 second
-                FCpu.Reset();
-                Thread.Sleep(500);
+                while (!token.IsCancellationRequested)
+                {
+                    Thread.Sleep(100);
+                    InterruptNmi();
+                }
+            }, token);
 
-                FDiskController.LoadProgram(DiskController.BiosFile);
-                FCpu.EnableLog = true;
+            while (!token.IsCancellationRequested)
+            {
+                _cpu.Reset();
+
+                _diskController.LoadFileIntoMemory(DiskController.BiosFile, 0);
 
                 var hFrameCount = 0;
                 var hTotalSleep = 0;
                 var hStopwatch = new Stopwatch();
 
-                while (!FDoReset)
+                while (!_doReset)
                 {
                     hStopwatch.Start();
-                    FCpu.Exec(cFrameDurationMs * cCyclesPerMs);
+                    _cpu.Exec(FrameDurationMs * CyclesPerMs);
                     hStopwatch.Stop();
 
                     var hSleepMs = 0;
-                    if (OriginalSpeed && hStopwatch.ElapsedMilliseconds < cFrameDurationMs)
+                    if (OriginalSpeed && hStopwatch.ElapsedMilliseconds < FrameDurationMs)
                     {
-                        hSleepMs = cFrameDurationMs - (int)hStopwatch.ElapsedMilliseconds;
+                        hSleepMs = FrameDurationMs - (int)hStopwatch.ElapsedMilliseconds;
                         Thread.Sleep(hSleepMs);
                     }
 
                     hTotalSleep += hSleepMs;
-                    if (++hFrameCount == cLoadMeasureFrameCount)
+                    if (++hFrameCount == LoadMeasureFrameCount)
                     {
-                        LoadFactor = 1.0 - (double)hTotalSleep / (hFrameCount * cFrameDurationMs);
+                        LoadFactor = 1.0 - (double)hTotalSleep / (hFrameCount * FrameDurationMs);
                         hTotalSleep = 0;
                         hFrameCount = 0;
                     }
@@ -143,68 +136,65 @@ namespace E_Z80.Emulator
                     hStopwatch.Reset();
 
 
-                    if (FInterruptIrq)
+                    if (_interruptIrq)
                     {
-                        FCpu.Interrupt(Z80.INTERRUPT_TYPE_IRQ, true);
-                        FInterruptIrq = false;
+                        _cpu.Interrupt(Z80.INTERRUPT_TYPE_IRQ, true);
+                        _interruptIrq = false;
                     }
-                    if (FInterruptNmi)
+                    if (_interruptNmi)
                     {
-                        FCpu.Interrupt(Z80.INTERRUPT_TYPE_NMI, true);
-                        FInterruptNmi = false;
+                        _cpu.Interrupt(Z80.INTERRUPT_TYPE_NMI, true);
+                        _interruptNmi = false;
                     }
                 }
-                FDoReset = false;
+                _doReset = false;
             }
         }
 
-        public void AddNewKey(char _Key)
+        public void AddNewKey(char key)
         {
-            FKeyboard.AddNewKey(_Key);
+            _keyboard.AddNewKey(key);
         }
 
-        public void AddNewSpecialKey(Key _Key)
+        public void AddNewSpecialKey(Key key)
         {
-            FKeyboard.AddNewSpecialKey(_Key);
+            _keyboard.AddNewSpecialKey(key);
         }
 
-        public void KeyDown(Key _Key)
+        public void KeyDown(Key key)
         {
-            FKeyboard.KeyDown(_Key);
+            _keyboard.KeyDown(key);
         }
 
-        public void KeyUp(Key _Key)
+        public void KeyUp(Key key)
         {
-            FKeyboard.KeyUp(_Key);
+            _keyboard.KeyUp(key);
         }
 
         public void UpdateScreen()
         {
-            FGraphics.UpdateScreen();
+            _graphics.UpdateScreen();
         }
 
         public void Start()
         {
-            if (FMainTask == null)
-            {
-                FMainTask = new Task(ExecutionLoop);
-                FMainTask.Start();
-            }
+            if (_mainTask == null)
+                _mainTask = Task.Run(() => ExecutionLoop(_cancellationTokenSource.Token));
         }
 
         public void InterruptIrq()
         {
-            FInterruptIrq = true;
+            _interruptIrq = true;
         }
 
         public void InterruptNmi()
         {
-            FInterruptNmi = true;
+            _interruptNmi = true;
         }
 
         public void Reset()
         {
-            FDoReset = true;
+            _doReset = true;
         }
     }
 }

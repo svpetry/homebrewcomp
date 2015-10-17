@@ -23,29 +23,29 @@ namespace E_Z80.Emulator
 
     internal class Graphics : IMemRangeProvider, IPortProvider
     {
-        private const int cVRamStart = 0x1000;
-        private const int cVRamSize = 0x1000;
-        private const int cRowSize = 128;
-        private const int cInvalidLimit = 200;
+        private const int VRamStart = 0x1000;
+        private const int VRamSize = 0x1000;
+        private const int RowSize = 128;
+        private const int InvalidLimit = 200;
 
-        private const int cScreenWidth = 640;
-        private const int cScreenHeight = 400;
+        private const int ScreenWidth = 640;
+        private const int ScreenHeight = 400;
         public static int RowCount = 25;
         public static int ColCount = 80;
 
-        private readonly byte[] FVideoRam = new byte[cVRamSize];
-        private readonly WriteableBitmap FScreen;
-        private readonly int FBytesPerPixel;
-        private Color FFgColor = Color.FromRgb(0xff, 0xff, 0xff);
-        private Color FBgColor = Color.FromRgb(0, 0, 0);
-        private readonly HashSet<int> FInvalidCharPositions = new HashSet<int>();
-        private bool FAllInvalid;
-        private GraMode FMode = GraMode.Text;
+        private readonly byte[] _videoRam = new byte[VRamSize];
+        private readonly WriteableBitmap _screen;
+        private readonly int _bytesPerPixel;
+        private Color _fgColor = Color.FromRgb(0xff, 0xff, 0xff);
+        private Color _bgColor = Color.FromRgb(0, 0, 0);
+        private readonly HashSet<int> _invalidCharPositions = new HashSet<int>();
+        private bool _allInvalid;
+        private GraMode _mode = GraMode.Text;
 
         public Graphics()
         {
-            FScreen = new WriteableBitmap(cScreenWidth, cScreenHeight, 96, 96, PixelFormats.Bgr32, null);
-            FBytesPerPixel = FScreen.Format.BitsPerPixel /  8;
+            _screen = new WriteableBitmap(ScreenWidth, ScreenHeight, 96, 96, PixelFormats.Bgr32, null);
+            _bytesPerPixel = _screen.Format.BitsPerPixel /  8;
         }
 
         public bool RamActive { get; private set; }
@@ -54,13 +54,13 @@ namespace E_Z80.Emulator
         {
             get
             {
-                return FMode;
+                return _mode;
             }
             set
             {
-                if (value == FMode) return;
+                if (value == _mode) return;
                 SetAllInvalid();
-                FMode = value;
+                _mode = value;
             }
         }
 
@@ -68,7 +68,7 @@ namespace E_Z80.Emulator
         {
             set
             {
-                FFgColor = value;
+                _fgColor = value;
                 SetAllInvalid();
             }
         }
@@ -77,33 +77,27 @@ namespace E_Z80.Emulator
         {
             set
             {
-                FBgColor = value;
+                _bgColor = value;
                 SetAllInvalid();
             }
         }
 
-        public WriteableBitmap Screen
-        {
-            get
-            {
-                return FScreen;
-            }
-        }
+        public WriteableBitmap Screen => _screen;
 
         private void SetAllInvalid()
         {
-            lock (FInvalidCharPositions)
+            lock (_invalidCharPositions)
             {
-                FAllInvalid = true;
-                FInvalidCharPositions.Clear();
+                _allInvalid = true;
+                _invalidCharPositions.Clear();
             }
         }
 
-        private static Color ValueToColor(int _Value)
+        private static Color ValueToColor(int value)
         {
             byte hRed, hGreen, hBlue;
 
-            switch (_Value & 3)
+            switch (value & 3)
             {
                 case 2:
                     hRed = 85;
@@ -119,7 +113,7 @@ namespace E_Z80.Emulator
                     break;
             }
 
-            switch (_Value & 12)
+            switch (value & 12)
             {
                 case 8:
                     hGreen = 85;
@@ -135,7 +129,7 @@ namespace E_Z80.Emulator
                     break;
             }
 
-            switch (_Value & 48)
+            switch (value & 48)
             {
                 case 32:
                     hBlue = 85;
@@ -154,38 +148,38 @@ namespace E_Z80.Emulator
             return Color.FromRgb(hRed, hGreen, hBlue);
         }
 
-        private WritePixelsInfo PrepareDrawChar(int _Col, int _Row)
+        private WritePixelsInfo PrepareDrawChar(int col, int row)
         {
-            if (_Col >= ColCount || _Row >= RowCount) return null;
+            if (col >= ColCount || row >= RowCount) return null;
 
-            var hRect = new Int32Rect(_Col * Characters.CharWidth, _Row * Characters.CharHeight, Characters.CharWidth, Characters.CharHeight);
-            var hStride = hRect.Width * FBytesPerPixel;
+            var hRect = new Int32Rect(col * Characters.CharWidth, row * Characters.CharHeight, Characters.CharWidth, Characters.CharHeight);
+            var hStride = hRect.Width * _bytesPerPixel;
 
             byte[] hPixels;
 
-            var hChar = FVideoRam[_Row * cRowSize + _Col];
-            if (FMode == GraMode.Text)
-                hPixels = Characters.GetChar(hChar, FFgColor, FBgColor);
+            var hChar = _videoRam[row * RowSize + col];
+            if (_mode == GraMode.Text)
+                hPixels = Characters.GetChar(hChar, _fgColor, _bgColor);
             else
             {
                 hPixels = new byte[hStride * Characters.CharHeight];
                 for (var hIdx = 0; hIdx < Characters.CharWidth * Characters.CharHeight; hIdx++)
                 {
-                    var hPixelIdx = hIdx * FBytesPerPixel;
+                    var hPixelIdx = hIdx * _bytesPerPixel;
                     var hRow = hIdx / (4 * Characters.CharWidth);
                     var hCol = (hIdx % Characters.CharWidth) / 4;
                     var hBitPos = hRow * 2 + hCol;
                     if ((hChar & (1 << hBitPos)) > 0)
                     {
-                        hPixels[hPixelIdx] = FFgColor.B;
-                        hPixels[hPixelIdx + 1] = FFgColor.G;
-                        hPixels[hPixelIdx + 2] = FFgColor.R;
+                        hPixels[hPixelIdx] = _fgColor.B;
+                        hPixels[hPixelIdx + 1] = _fgColor.G;
+                        hPixels[hPixelIdx + 2] = _fgColor.R;
                     }
                     else
                     {
-                        hPixels[hPixelIdx] = FBgColor.B;
-                        hPixels[hPixelIdx + 1] = FBgColor.G;
-                        hPixels[hPixelIdx + 2] = FBgColor.R;
+                        hPixels[hPixelIdx] = _bgColor.B;
+                        hPixels[hPixelIdx + 1] = _bgColor.G;
+                        hPixels[hPixelIdx + 2] = _bgColor.R;
                     }
                 }
             }
@@ -195,7 +189,7 @@ namespace E_Z80.Emulator
         //public void PutChar(int _Col, int _Row, byte _Char)
         //{
         //    var hCharIdx = _Row * cRowSize + _Col;
-        //    FVideoRam[hCharIdx] = _Char;
+        //    _videoRam[hCharIdx] = _Char;
 
         //    if (FAllInvalid) return;
 
@@ -218,82 +212,82 @@ namespace E_Z80.Emulator
         {
             WritePixelsInfo[] hWritePixelsInfos;
 
-            Monitor.Enter(FInvalidCharPositions);
-            if (FAllInvalid)
+            Monitor.Enter(_invalidCharPositions);
+            if (_allInvalid)
             {
-                FAllInvalid = false;
-                FInvalidCharPositions.Clear();
-                Monitor.Exit(FInvalidCharPositions);
+                _allInvalid = false;
+                _invalidCharPositions.Clear();
+                Monitor.Exit(_invalidCharPositions);
 
                 hWritePixelsInfos = new WritePixelsInfo[RowCount * ColCount];
                 Parallel.For(
                     0,
                     RowCount,
-                    _Row =>
+                    row =>
                     {
                         for (var hCol = 0; hCol < ColCount; hCol++)
                         {
-                            var hWritePixelsInfo = PrepareDrawChar(hCol, _Row);
+                            var hWritePixelsInfo = PrepareDrawChar(hCol, row);
                             if (hWritePixelsInfo != null)
-                                hWritePixelsInfos[_Row * ColCount + hCol] = hWritePixelsInfo;
+                                hWritePixelsInfos[row * ColCount + hCol] = hWritePixelsInfo;
                         }
                     });
             }
             else
             {
-                var hCharIndices = FInvalidCharPositions.ToArray();
-                FInvalidCharPositions.Clear();
-                Monitor.Exit(FInvalidCharPositions);
+                var hCharIndices = _invalidCharPositions.ToArray();
+                _invalidCharPositions.Clear();
+                Monitor.Exit(_invalidCharPositions);
 
                 hWritePixelsInfos = new WritePixelsInfo[hCharIndices.Length];
 
                 Parallel.For(
                     0,
                     hCharIndices.Length,
-                    _Idx =>
+                    idx =>
                     {
-                        var hCharIdx = hCharIndices[_Idx];
-                        var hWritePixelsInfo = PrepareDrawChar(hCharIdx % cRowSize, hCharIdx / cRowSize);
+                        var hCharIdx = hCharIndices[idx];
+                        var hWritePixelsInfo = PrepareDrawChar(hCharIdx % RowSize, hCharIdx / RowSize);
                         if (hWritePixelsInfo != null)
-                            hWritePixelsInfos[_Idx] = hWritePixelsInfo;
+                            hWritePixelsInfos[idx] = hWritePixelsInfo;
                     });
 
             }
 
-            foreach (var hWritePixelsInfo in hWritePixelsInfos.Where(_PixelInfo => _PixelInfo != null))
-                FScreen.WritePixels(hWritePixelsInfo.Rect, hWritePixelsInfo.Pixels, hWritePixelsInfo.Stride, 0);
+            foreach (var hWritePixelsInfo in hWritePixelsInfos.Where(pixelInfo => pixelInfo != null))
+                _screen.WritePixels(hWritePixelsInfo.Rect, hWritePixelsInfo.Pixels, hWritePixelsInfo.Stride, 0);
         }
 
         #region IMemRangeProvider
 
-        public bool Peek(int _Addr, out byte _Value)
+        public bool Peek(int addr, out byte value)
         {
-            _Value = 0;
+            value = 0;
             return false;
         }
 
-        public bool Poke(int _Addr, byte _Value)
+        public bool Poke(int addr, byte value)
         {
             if (!RamActive) return false;
 
-            var hCharIdx = _Addr - cVRamStart;
-            if (FVideoRam[hCharIdx] != _Value)
+            var hCharIdx = addr - VRamStart;
+            if (_videoRam[hCharIdx] != value)
             {
-                FVideoRam[hCharIdx] = _Value;
+                _videoRam[hCharIdx] = value;
 
-                if (FAllInvalid) return true;
+                if (_allInvalid) return true;
 
-                lock (FInvalidCharPositions)
+                lock (_invalidCharPositions)
                 {
-                    if (!FAllInvalid)
+                    if (!_allInvalid)
                     {
-                        if (FInvalidCharPositions.Count >= cInvalidLimit)
+                        if (_invalidCharPositions.Count >= InvalidLimit)
                         {
-                            FAllInvalid = true;
-                            FInvalidCharPositions.Clear();
+                            _allInvalid = true;
+                            _invalidCharPositions.Clear();
                         }
                         else
-                            FInvalidCharPositions.Add(hCharIdx);
+                            _invalidCharPositions.Add(hCharIdx);
                     }
                 }
             }
@@ -305,26 +299,26 @@ namespace E_Z80.Emulator
 
         #region IPortProvider
 
-        public int InB(int _Addr, int _Hi)
+        public int InB(int addr, int hi)
         {
             return 0;
         }
 
-        public void OutB(int _Addr, int _Value, int _State)
+        public void OutB(int addr, int value, int state)
         {
-            switch (_Addr)
+            switch (addr)
             {
                 case 5:
-                    BgColor = ValueToColor(_Value);
+                    BgColor = ValueToColor(value);
                     break;
 
                 case 6:
-                    FgColor = ValueToColor(_Value);
+                    FgColor = ValueToColor(value);
                     break;
 
                 case 7:
-                    RamActive = (_Value & 1) > 0;
-                    Mode = (_Value & 2) > 0 ? GraMode.Graphics : GraMode.Text;
+                    RamActive = (value & 1) > 0;
+                    Mode = (value & 2) > 0 ? GraMode.Graphics : GraMode.Text;
                     break;
             }
         }
