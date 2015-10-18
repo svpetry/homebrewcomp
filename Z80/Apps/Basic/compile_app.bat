@@ -15,7 +15,7 @@ call compile basic_helpers.c
 call compile vars.c
 call compile ftoa.c
 
-sdcc -mz80 "-Wl -b _CODE2 = 0x8000" --no-std-crt0 --code-loc 0x1290 --code-size 0x5370 --data-loc 0x6800 crt0.rel basic.rel io.rel utils.rel bios_text.rel bios_file.rel malloc.rel utils_b0.rel mybasic.rel basic_helpers.rel vars.rel ftoa.rel
+sdcc -mz80 "-Wl -b _CODE2 = 0x8000" --no-std-crt0 --code-loc 0x1288 --code-size 0x5778 --data-loc 0x6A00 crt0.rel basic.rel io.rel utils.rel bios_text.rel bios_file.rel malloc.rel utils_b0.rel mybasic.rel basic_helpers.rel vars.rel ftoa.rel
 
 ren crt0.ihx basic.ihx
 

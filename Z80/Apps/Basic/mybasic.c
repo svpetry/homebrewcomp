@@ -4,6 +4,7 @@
 
 #include "../Lib/defs.h"
 #include "../Lib/bios_text.h"
+#include "../Lib/bios_file.h"
 #include "../Lib/utils.h"
 #include "../Lib/malloc.h"
 #include "../Lib/io.h"
@@ -21,39 +22,34 @@ void load_program(char *file_name) {
 	char val[MAX_NUMSTR_LEN + 1], *s;
 	byte l;
 	int lbl, last_lbl = 0;
-	char s1[8];
+	dword size;
+	char fname[16];
 	
-//#ifdef _DEBUG
-//#define READ_CHAR getc(fp)
-//#define FILE_OK !feof(fp)
-//	FILE *fp;
-//
-//	fp = fopen(file_name, "rb");
-//	if (!fp)
-//		exit(1);
-//#else // _DEBUG
-#define READ_CHAR io_read(163); param1l--
-#define FILE_OK param1l > 0
-	strcpy(sparam, file_name);
+#ifdef _DEBUG
+#define READ_CHAR getc(fp)
+#define FILE_OK !feof(fp)
+	FILE *fp;
 
-	io_write(160, 20); // open file for reading
-	while (busy);
+	fp = fopen(file_name, "rb");
+	if (!fp)
+		exit(1);
+#else // _DEBUG
+#define READ_CHAR io_read(163); size--
+#define FILE_OK size > 0
 
-	if (!out_paramb) {
-		strcat(sparam, ".bas");
-		io_write(160, 20); // open file for reading
-		while (busy);
-	}
-
-	if (!out_paramb) {
-		puts("File not found! Press key to continue.");
-		getchar();
-		quit_app();
+	if (!fopen(file_name, FM_READ, &size)) {
+		strcpy(fname, file_name);
+		strcat(fname, ".bas");
+		if (!fopen(fname, FM_READ, &size)) {
+			puts("File not found! Press key to continue.");
+			getchar();
+			quit_app();
+		}
 	}
 	puts("Loading...");
 
 	SELECT_BANK1;
-//#endif // _DEBUG
+#endif // _DEBUG
 	i = 0;
 	ip = (char *)prog;
 
@@ -112,25 +108,20 @@ void load_program(char *file_name) {
 				i++;
 			}
 		} // if (*ip != '\r') {
-	} // while (param1l > 0 && i < MAX_PROG_FILE_SIZE)
+	} // while (FILE_OK && i < MAX_PROG_FILE_SIZE) {
 
 	*ip = 0; // null terminate the program
-//#ifdef _DEBUG
-//	fclose(fp);
-//#else // _DEBUG
+#ifdef _DEBUG
+	fclose(fp);
+#else // _DEBUG
 	SELECT_BANK0;
-//#endif // _DEBUG
-
-	itoa(label_count, s1);
-	puts("label_count:");
-	puts(s1);
+#endif // _DEBUG
 
 	if (i == MAX_PROG_FILE_SIZE) {
 		puts("File too large! Press key to continue.");
 		getchar();
 		quit_app();
 	}
-
 }
 /******************************************************************************/
 void error(byte errno) {
@@ -152,7 +143,7 @@ void error(byte errno) {
 } // void error(byte errno)
 /******************************************************************************/
 void next_line() {
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("next_line()");
 #endif
 	token_back = 0;
@@ -173,7 +164,7 @@ void set_strvar(char *varname, char *value, int vd1, int vd2, int vd3) {
 	struct s_strdvar *sdvar;
 	char **s;
 
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("set_strvar()");
 #endif
 
@@ -237,7 +228,7 @@ void set_numvar(char *varname, struct s_num *value, int vd1, int vd2, int vd3) {
 	struct s_numdvar *dvar;
 	int i;
 
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("set_numvar()");
 #endif
 
@@ -274,15 +265,23 @@ void set_numvar(char *varname, struct s_num *value, int vd1, int vd2, int vd3) {
 /******************************************************************************/
 void get_next_token() {
 	int i;
+#ifdef DBG_INFO
+	char s[8];
+#endif
 //	char nums[MAX_NUMSTR_LEN];
 //	char *s;
 //	char *src;
 
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("get_next_token()");
 #endif
 
 	if (token_back) {
+#ifdef DBG_INFO
+		puts_nlb("token_back: ");
+		itoa(token, s);
+		puts(s);
+#endif
 		token_back = 0;
 		return;
 	}
@@ -292,7 +291,7 @@ void get_next_token() {
 		ip++;
 
 	if (!(*ip)) {
-	#ifdef DEBUG
+	#ifdef DBG_INFO
 		puts("	T_EOP");
 	#endif
 		SELECT_BANK0;
@@ -317,7 +316,7 @@ void get_next_token() {
 		token_type = TT_VALUE;
 		if (i == MAX_TOKEN_LEN )
 			error(E_TOKEN_TOO_LONG);
-	#ifdef DEBUG
+	#ifdef DBG_INFO
 		puts_nlb("T_INTVAL, T_FLOATVAL: ");
 		puts(token_str);
 	#endif
@@ -336,7 +335,7 @@ void get_next_token() {
 		token_type = TT_VALUE;
 		if (i == MAX_TOKEN_LEN )
 			error(E_TOKEN_TOO_LONG);
-	#ifdef DEBUG
+	#ifdef DBG_INFO
 		puts_nlb("T_STRVAL: ");
 		puts(token_str);
 	#endif
@@ -349,7 +348,7 @@ void get_next_token() {
 			token_str[i++] = tolower(*(ip++));
 		} while ((isletter(*ip) || isnum(*ip) || *ip == '$') && i < MAX_TOKEN_LEN);
 		token_str[i] = 0;
-	#ifdef DEBUG
+	#ifdef DBG_INFO
 		puts_nlb("token_str: ");
 		puts(token_str);
 	#endif
@@ -362,7 +361,7 @@ void get_next_token() {
 		if (token) {
 			// command
 			token_type = TT_COMMAND;
-		#ifdef DEBUG
+		#ifdef DBG_INFO
 			puts("TT_COMMAND");
 		#endif
 			return;
@@ -371,7 +370,7 @@ void get_next_token() {
 		token = find_str_func(token_str);
 		if (token) {
 			// string function
-		#ifdef DEBUG
+		#ifdef DBG_INFO
 			puts("TT_STRFUNC");
 		#endif
 			token_type = TT_STRFUNC;
@@ -381,7 +380,7 @@ void get_next_token() {
 		token = find_num_func(token_str);
 		if (token) {
 			// numeric function
-		#ifdef DEBUG
+		#ifdef DBG_INFO
 			puts("TT_NUMFUNC");
 		#endif
 			token_type = TT_NUMFUNC;
@@ -390,7 +389,7 @@ void get_next_token() {
 
 		if (!strcmp(token_str, "and")) {
 			// logic and
-		#ifdef DEBUG
+		#ifdef DBG_INFO
 			puts("T_AND");
 		#endif
 			token_type = TT_LOGIC_OP;
@@ -400,7 +399,7 @@ void get_next_token() {
 
 		if (!strcmp(token_str, "or")) {
 			// logic or
-		#ifdef DEBUG
+		#ifdef DBG_INFO
 			puts("T_OR");
 		#endif
 			token_type = TT_LOGIC_OP;
@@ -411,14 +410,14 @@ void get_next_token() {
 		// variable
 		token_type = TT_VARIABLE;
 		if (token_str[i - 1] == '$') {
-		#ifdef DEBUG
+		#ifdef DBG_INFO
 			puts("T_STRVAR");
 		#endif
 			token = T_STRVAR;
 			if (i > MAX_VAR_NAME_LEN + 1)
 				error(E_VARNAME_TOO_LONG);
 		} else {
-		#ifdef DEBUG
+		#ifdef DBG_INFO
 			puts("T_NUMVAR");
 		#endif
 			token = T_NUMVAR;
@@ -435,7 +434,7 @@ void get_next_token() {
 		// end of line
 		token_str[0] = '\n';
 		token_str[1] = 0;
-	#ifdef DEBUG
+	#ifdef DBG_INFO
 		puts("T_LINEEND");
 	#endif
 		token_type = TT_SPECIAL;
@@ -446,7 +445,7 @@ void get_next_token() {
 		// colon
 		token_str[0] = ':';
 		token_str[1] = 0;
-	#ifdef DEBUG
+	#ifdef DBG_INFO
 		puts("T_COLON");
 	#endif
 		token_type = TT_SPECIAL;
@@ -458,7 +457,7 @@ void get_next_token() {
 		token_str[0] = *ip;
 		token_str[1] = 0;
 		SELECT_BANK0;
-	#ifdef DEBUG
+	#ifdef DBG_INFO
 		puts("T_SPECIAL");
 	#endif
 		token_type = TT_SPECIAL;
@@ -475,7 +474,7 @@ void get_numvar(char *varname, struct s_num *result) {
 	struct s_numdvar *dvar;
 	byte i;
 
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("get_numvar()");
 #endif
 
@@ -528,7 +527,7 @@ void get_strvar(char *varname, char *result, int *l) {
 	struct s_strdvar *sdvar;
 	char **s;
 
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("get_strvar()");
 #endif
 
@@ -581,14 +580,14 @@ void get_strvar(char *varname, char *result, int *l) {
 } // void get_strvar(char *name, char *result, int *l)
 /******************************************************************************/
 void put_back() {
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("put_back()");
 #endif
 	token_back = 1;
 }
 /******************************************************************************/
 void put_back_undo() {
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("put_back_undo()");
 #endif
 	token_back = 0;
@@ -600,7 +599,7 @@ void assign_numvar() {
 	struct s_num value;
 	int vd1, vd2, vd3;
 
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("assign_numvar()");
 #endif
 
@@ -629,7 +628,7 @@ void assign_strvar() {
 	char varname[MAX_VAR_NAME_LEN + 1];
 	int vd1, vd2, vd3;
 
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("assign_strvar()");
 #endif
 
@@ -657,7 +656,7 @@ void assign_strvar() {
 void start_basic() {
 	byte i;
 
-	init_vars();
+	hidecursor();
 
 	SELECT_BANK2;
 	malloc_reset(HEAP_START, HEAP_SIZE);
@@ -676,6 +675,10 @@ void start_basic() {
 
 	get_next_token();
 	while (token != T_EOP && token != T_END && token != T_STOP) {
+
+		// abort execution on ESC
+		if (io_read(128) == 27) 
+			return;
 
 		while ((token == T_LINEEND || token == T_COLON) && token != T_EOP && token != T_END && token != T_STOP)
 			get_next_token();
@@ -711,7 +714,7 @@ void start_basic() {
 				break;
 
 			case T_GOTO:
-            	exec_goto();
+				exec_goto();
 				break;
 
 			case T_IF:
@@ -759,11 +762,11 @@ void start_basic() {
 				break;
 
 			case T_CLS:
-			//#ifdef _DEBUG
-   //         	system("cls");
-			//#else
+			#ifdef _DEBUG
+            	system("cls");
+			#else
 				clrscr();
-			//#endif
+			#endif
 				break;
 
 			case T_GOSUB:

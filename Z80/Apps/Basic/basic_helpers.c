@@ -3,15 +3,16 @@
 #include <math.h>
 #include <ctype.h>
 
-//#ifdef _DEBUG
-//#include <conio.h>
-//#endif // _DEBUG
+#ifdef _DEBUG
+#include <conio.h>
+#endif // _DEBUG
 
 #include "basic_helpers.h"
 #include "../Lib/defs.h"
 #include "../Lib/bios_text.h"
 #include "../Lib/io.h"
 #include "../Lib/utils.h"
+#include "bdefs.h"
 #include "utils_b0.h"
 #include "mybasic.h"
 #include "ftoa.h"
@@ -248,6 +249,7 @@ void exec_input() {
 
 	putchar('?');
 	putchar(' ');
+	showcursor();
 	l = 0;
 	while (l < MAX_STRING_LEN && (c = getchar()) != '\n') {
 		if (c == 8) { // Backspace
@@ -264,6 +266,7 @@ void exec_input() {
 	}
 	input[l] = 0;
 	putchar('\n');
+	hidecursor();
 
 	s = input;
 
@@ -354,10 +357,17 @@ void exec_if() {
 } // void exec_if()
 /******************************************************************************/
 void exec_goto() {
+#ifdef DBG_INFO
+	puts("exec_goto()");
+#endif
 	parse_expression(1);
 	if (expr_res.type != VT_INT)
 		error(E_INTEXP);
 	ip = get_label(expr_res.ival);
+	token_back = 0;
+#ifdef DBG_INFO
+	puts("goto: set ip");
+#endif
 } // void exec_goto()
 /******************************************************************************/
 void exec_for() {
@@ -931,18 +941,18 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression(1);
 			if (expr_res.type == VT_FLOAT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = sin(expr_res.fval);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = sin(expr_res.fval);
+			#else
 				(*result).fval = sinf(expr_res.fval);
-			//#endif
+			#endif
 			} else if (expr_res.type == VT_INT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = sin(expr_res.ival);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = sin(expr_res.ival);
+			#else
 				x = expr_res.ival;
 				(*result).fval = sinf(x);
-			//#endif
+			#endif
 			} else
 				error(E_SYNTAX);
 			break;
@@ -951,18 +961,18 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression(1);
 			if (expr_res.type == VT_FLOAT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = cos(expr_res.fval);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = cos(expr_res.fval);
+			#else
 				(*result).fval = cosf(expr_res.fval);
-			//#endif
+			#endif
 			} else if (expr_res.type == VT_INT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = cos(expr_res.ival);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = cos(expr_res.ival);
+			#else
 				x = expr_res.ival;
 				(*result).fval = cosf(x);
-			//#endif
+			#endif
 			} else
 				error(E_SYNTAX);
 			break;
@@ -982,19 +992,19 @@ void eval_numfunc(struct s_num *result) {
 		case T_SQR:
 			parse_expression(1);
 			if (expr_res.type == VT_FLOAT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = sqrt(expr_res.fval);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = sqrt(expr_res.fval);
+			#else
 				(*result).fval = sqrtf(expr_res.fval);
-			//#endif
+			#endif
 			} else if (expr_res.type == VT_INT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = sqrt(expr_res.ival);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = sqrt(expr_res.ival);
+			#else
 				x = expr_res.ival;
 				x = sqrtf(x);
 				(*result).fval = x;
-			//#endif
+			#endif
 			} else
 				error(E_SYNTAX);
 			(*result).isint = 0;
@@ -1013,18 +1023,18 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression(1);
 			if (expr_res.type == VT_FLOAT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = tan(expr_res.fval);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = tan(expr_res.fval);
+			#else
 				(*result).fval = tanf(expr_res.fval);
-			//#endif
+			#endif
 			} else if (expr_res.type == VT_INT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = tan(expr_res.ival);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = tan(expr_res.ival);
+			#else
             	x = expr_res.ival;
 				(*result).fval = tanf(x);
-			//#endif
+			#endif
 			} else
 				error(E_SYNTAX);
 			break;
@@ -1033,18 +1043,18 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression(1);
 			if (expr_res.type == VT_FLOAT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = log(expr_res.fval);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = log(expr_res.fval);
+			#else
 				(*result).fval = logf(expr_res.fval);
-			//#endif
+			#endif
 			} else if (expr_res.type == VT_INT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = log(expr_res.ival);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = log(expr_res.ival);
+			#else
 				x = expr_res.ival;
 				(*result).fval = logf(x);
-			//#endif
+			#endif
 			} else
 				error(E_SYNTAX);
 			break;
@@ -1093,18 +1103,18 @@ void eval_numfunc(struct s_num *result) {
 			(*result).isint = 0;
 			parse_expression(1);
 			if (expr_res.type == VT_FLOAT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = exp(expr_res.fval);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = exp(expr_res.fval);
+			#else
 				(*result).fval = expf(expr_res.fval);
-			//#endif
+			#endif
 			} else if (expr_res.type == VT_INT) {
-			//#ifdef _DEBUG
-			//	(*result).fval = exp(expr_res.ival);
-			//#else
+			#ifdef _DEBUG
+				(*result).fval = exp(expr_res.ival);
+			#else
 				x = expr_res.ival;
 				(*result).fval = expf(x);
-			//#endif
+			#endif
 			} else
 				error(E_SYNTAX);
 		break;
@@ -1130,6 +1140,10 @@ void parse_num_3(struct s_num *a, byte eval_bool) {
 	byte neg = 0;
 	char varname[MAX_VAR_NAME_LEN + 1];
 
+#ifdef DBG_INFO
+	puts("parse_num_3()");
+#endif
+		
 	get_next_token();
 	if (token_str[0] == '(') {
 		parse_num_expr(a, eval_bool);
@@ -1169,6 +1183,10 @@ void parse_num_2(struct s_num *a, byte eval_bool) {
 	struct s_num b;
 	char op;
 
+#ifdef DBG_INFO
+	puts("parse_num_2()");
+#endif 
+		
 	parse_num_3(a, eval_bool);
 
 	get_next_token();
@@ -1200,17 +1218,17 @@ void parse_num_2(struct s_num *a, byte eval_bool) {
             }
 		} else if (op == '^') {
 			// power
-		//#ifdef _DEBUG
-		//	if (a->isint)
-		//		a->ival = pow(a->ival, b.ival);
-		//	else
-		//		a->fval = pow(a->fval, b.fval);
-		//#else
+		#ifdef _DEBUG
+			if (a->isint)
+				a->ival = pow(a->ival, b.ival);
+			else
+				a->fval = pow(a->fval, b.fval);
+		#else
 			if (a->isint)
 				a->ival = powi(a->ival, b.ival);
 			else
 				a->fval = powf(a->fval, b.fval);
-		//#endif
+		#endif
 		}
 		get_next_token();
 	}
@@ -1221,6 +1239,10 @@ void parse_num_1(struct s_num *a, byte eval_bool) {
 	struct s_num b;
 	char op;
 
+#ifdef DBG_INFO
+	puts("parse_num_1()");
+#endif 
+		
 	parse_num_2(a, eval_bool);
 
 	get_next_token();
@@ -1247,6 +1269,10 @@ void parse_num_1(struct s_num *a, byte eval_bool) {
 void parse_num_expr(struct s_num *a, byte eval_bool) {
 	struct s_num b;
 	char op;
+
+#ifdef DBG_INFO
+	puts("parse_num_expr()");
+#endif 
 
 	parse_num_1(a, eval_bool);
 
@@ -1323,6 +1349,10 @@ void parse_str_expr() {
 	char *res;
 	char *s;
 	char varname[MAX_VAR_NAME_LEN + 1];
+
+#ifdef DBG_INFO
+	puts("parse_str_expr()");
+#endif
 
 	res = result;
 	while (1) {
@@ -1520,7 +1550,6 @@ byte eval_bool_expr() {
 /******************************************************************************/
 char *get_label(int lbl) {
 	int pos, len, new_pos, label;
-	char s[8];
 
 	pos = 0;
 	len = label_count;
@@ -1532,13 +1561,9 @@ char *get_label(int lbl) {
 		label = labels[new_pos].label;
 		if (label < lbl)
 			pos = new_pos + 1;
-		else if (label == lbl) {
+		else if (label == lbl)
 			return labels[new_pos].pos;
-		}
 	} while (len > 0);
-
-	itoa(label_count, s);
-	puts(s);
 
 	error(E_LBL_NOT_FOUND);
 	return 0;
@@ -1595,7 +1620,7 @@ void read_dimensions() {
 struct s_num *find_numvar(char *varname) {
 	int i;
 
-#ifdef DEBUG
+#ifdef DBG_INFO
 	puts("find_numvar()");
 #endif
 

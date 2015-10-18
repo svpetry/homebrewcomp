@@ -3,6 +3,8 @@
 
 #include "../Lib/defs.h"
 
+#undef _DEBUG
+
 #define MAX_STRING_VARS		40
 #define MAX_NUM_VARS		40
 #define MAX_STRING_DVARS	20
