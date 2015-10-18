@@ -306,8 +306,8 @@ main() {
 		rst 0x0010
 	__endasm;
 
-//	if (*((byte *)0x2000) == 0xdd)
-//		selftest();
+	if (*((byte *)0x2000) == 0xdd)
+		selftest();
 
 
 	bios_cmd = 0x01; // clear screen
