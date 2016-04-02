@@ -227,28 +227,35 @@ void isr(void) __interrupt {
 		// load and start program
 		case 0x28:
 			DISABLE_VRAM;
+
+			strcpy((char *)USER_PROGRAM_ADDRESS, "   ");
+
 			strcpy(sparam, (char *)bios_p1);
 			param1w = USER_PROGRAM_ADDRESS;
-			//io_write(160, 25);
-			__asm
-				ld	a, #25
-				out	(#160), a
-			__endasm;
+
+			io_write(160, 25);
+
+			//__asm
+			//	ld	a, #25
+			//	out	(#160), a
+			//__endasm;
 
 			while (busy);
-			//bios_result_code = io_read(161);
-			__asm
-				ld	bc, #161
-				in	a, (c)
-				ld	iy, #_bios_result_code
-				ld	0 (iy), a
-			__endasm;
+
+			bios_result_code = io_read(161);
+			//__asm
+			//	ld	bc, #161
+			//	in	a, (c)
+			//	ld	iy, #_bios_result_code
+			//	ld	0 (iy), a
+			//__endasm;
 
 			if (bios_result_code == 1) {
+
 				// enable VRAM and jump to program start address
 				__asm
 					ld	a, #1
-					out	(#7), a
+					out(#7), a
 					jp	USER_PROGRAM_ADDRESS
 				__endasm;
 			}
@@ -308,8 +315,7 @@ main() {
 
 	if (*((byte *)0x2000) == 0xdd)
 		selftest();
-
-
+	
 	bios_cmd = 0x01; // clear screen
 	__asm
 		rst 0x0010
@@ -323,14 +329,13 @@ main() {
 	
 	while (1) {
 
-		for (i = 0; i < 3; i++) {
+		//for (i = 0; i < 3; i++) {
 			bios_p1 = (word)command_file;
 			bios_cmd = 0x28; // load and start program
 			__asm
 				rst 0x0010
 			__endasm;
-			delay_ms(500);
-		}
+		//}
 
 		bios_p1 = (word)error_msg;
 		bios_cmd = 0x05; // write text

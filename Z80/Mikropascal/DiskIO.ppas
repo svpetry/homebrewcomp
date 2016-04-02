@@ -308,24 +308,27 @@ end; // WriteSector
 procedure LoadFile(var fname: string[13]; addr: word);
 var
   fsize: longint;
+  data: byte;
   addr_lo, addr_hi: byte;
   
 begin
+
   if Mmc_Fat_Assign(fname, 0) = 1 then
   begin
+
     Mmc_Fat_Reset(fsize);
 
-    addr_lo := Lo(addr);
-    addr_hi := Hi(addr);
-
-    // activate DMA
+    // activate DMA / request bus
     LATA.2 := 0;
     while PORTA.3 = 0 do
       nop;
 
-    LATA.0 := 0; // write to address bus
     TRISD := 0; // address bus = output
     TRISB := 0; // data bus = output
+    LATA.0 := 0; // write to address bus
+
+    addr_lo := Lo(addr);
+    addr_hi := Hi(addr);
 
     LATA.1 := 1;
     PORTD := addr_hi;
@@ -333,8 +336,6 @@ begin
 
     while fsize > 0 do
     begin
-      Mmc_Fat_Read(PORTB);
-
       if addr_lo = 0 then
       begin
         LATA.1 := 1;
@@ -342,6 +343,9 @@ begin
         LATA.1 := 0;
       end;
       PORTD := addr_lo;
+
+      Mmc_Fat_Read(data);
+      PORTB := data;
 
       // write byte to memory
       LATE.1 := 0;
@@ -354,9 +358,11 @@ begin
       dec(fsize);
     end; // while fsize > 0 do
 
-    TRISD := 255;
-    TRISB := 255;
+    TRISD := 255; // address bus = input
+    TRISB := 255; // data bus = input
     LATA.0 := 1; // read from address bus
+
+    Delay_10us;
 
     // deactivate DMA
     LATA.2 := 1;

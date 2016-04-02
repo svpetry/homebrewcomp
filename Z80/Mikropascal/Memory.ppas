@@ -4,7 +4,7 @@ uses
   Keyboard;
 
 const
-  BIOS_STR_ADDR_LO = $60;
+  BIOS_STR_ADDR_LO = $80;
   BIOS_STR_ADDR_HI = $00;
   BIOS_STR_SIZE = $20;
   BIOS_PARAM1_ADDR_LO = $51;

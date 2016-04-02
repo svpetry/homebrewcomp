@@ -336,7 +336,10 @@ begin
 
     // read disk status
     161: begin
-      data := disk_status;
+      if disk_status = 0 then
+        data := 1
+      else
+        data := 0;
     end;
     
     // read byte from file

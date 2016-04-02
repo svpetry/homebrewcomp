@@ -59,6 +59,7 @@ begin
     end;
     PORTD := addr_lo;
 
+    // write byte to memory
     LATE.1 := 0;
     LATE.1 := 1;
 

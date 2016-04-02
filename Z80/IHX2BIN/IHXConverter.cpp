@@ -55,7 +55,7 @@ void CIhxConverter::SaveToFile(const String _FileName, const int _Offset) {
 
 	ofstream output_file;
 	output_file.open(_FileName.c_str(), ios::out | ios::binary);
-	output_file.write(FData + _Offset, data_len + 1 - _Offset);
+	output_file.write(FData + _Offset, data_len + 2 - _Offset);
 	output_file.close();
 
 	cout << '\n' << IntToStr(data_len) << " total bytes written.\n";

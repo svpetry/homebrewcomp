@@ -33,7 +33,7 @@ main() {
 
 	clrscr();
 
-	puts("homebrewcomp OS 2.0   2010-2015\n\n");
+	puts("homebrewcomp OS 2.0   2010-2016\n\n");
 
 	cmdline();
 	return 0;

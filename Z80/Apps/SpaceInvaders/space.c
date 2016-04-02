@@ -1,13 +1,13 @@
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#include "io.h"
-#include "video.h"
 #include "space_main.h"
-#include "utils.h"
-#include "utils3d.h"
-#include "sound.h"
+#include "video.h"
+#include "../Lib/bios_text.h"
+#include "../Lib/utils.h"
+#include "../Lib/graphics.h"
+#include "../Lib/sound.h"
+#include "../Lib/io.h"
 
 /* code: 0x0290-0x9fff
  * data: 0xa000-0xf000
@@ -17,6 +17,8 @@
 /******************************************************************************/
 void init() {
 	int time;
+
+	hidecursor();
 
 	io_write(5, 0); // set background color
 	io_write(6, 53); // set foreground color
@@ -33,6 +35,7 @@ void main() {
 
 	init();
 
+	//ball_demo();
 	space();
 
 	send_sound_cmd("ST");
@@ -42,7 +45,6 @@ void main() {
 	io_write(7, 1);
 	delay_ms(100);
 
-	quit_app();
 	return;
 }
 /******************************************************************************/

@@ -1,4 +1,4 @@
-#include "utils3d.h"
+#include "sintable.h"
 
 const char sintable[384] = {
 	0,
@@ -44,12 +44,4 @@ const char sintable[384] = {
 	21, 18, 15, 12, 9, 6, 3
 };
 
-//int m1, m2, m3, m4, m5, m6, m7, m8, m9;
-
-/******************************************************************************/
-//void init_rotation(unsigned char ax, unsigned char ay, unsigned char az) {
-//
-//
-//
-//}
 /******************************************************************************/

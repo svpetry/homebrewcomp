@@ -11,6 +11,9 @@ p = vbuf + ((x) >> 1) + (((y) & 0b11111100) << 5); \
 p = vbuf + ((x) >> 1) + (((y) & 0b11111100) << 5); \
 *p = *p & ~((((x) & 1) + 1) << (((y) & 3) << 1));
 
+#define V_SETCHAR_BUF(col, row, c) *((char *)vbuf + ((row) << 7) + col) = c
+#define V_GETCHAR_BUF(col, row) *((char *)vbuf + ((row) << 7) + col)
+
 extern char vbuf[0x0c80];
 
 void setpixel(byte x, byte y);

@@ -172,7 +172,7 @@ void check_ram(void) {
 /******************************************************************************/
 void check_timer(void) {
 	byte i;
-	word count;
+	long count;
 	char *text_pos;
 
 	text_pos = (char *)VIDEO_RAM + 4 * 0x80 + 9;
@@ -188,9 +188,9 @@ void check_timer(void) {
 		rst 0x0010
 	__endasm;
 
-	count = 60000;
+	count = 200000;
 	for (i = 0; i < 8 && count > 0; i++) {
-		while (cur_blink_count != i && count > 0);
+		while (cur_blink_count != i && count > 0)
 			count--;
 	}
 
@@ -271,21 +271,25 @@ void selftest(void) {
 
 	check_vram();
 
-	p = "   homebrewcomp Z80 BIOS   V1.0   2015                                          ";
+	p = "   homebrewcomp Z80 BIOS   V1.1   2010-2016                                     ";
 	dest = (char *)VIDEO_RAM;
 	while (*p)
 		(*dest++) = (*p++) + 0x80;
 	
-	strcpy((char *)VIDEO_RAM + 2 * 0x80, "    CPU: Zilog Z84C0020PEC");
+	delay_ms(500);
+
+	strcpy((char *)(VIDEO_RAM + 2 * 0x80), "    CPU: Zilog Z84C0020PEC");
+
+	delay_ms(500);
 
 	check_ram();
 
 	check_timer();
 
-	check_keyboard();
+	//check_keyboard();
 
 	play_sound();
 
-	delay_ms(2000);
+	delay_ms(1000);
 }
 /******************************************************************************/

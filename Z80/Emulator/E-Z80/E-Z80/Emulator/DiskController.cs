@@ -115,7 +115,7 @@ namespace E_Z80.Emulator
         public void Load(byte[] data, int addr)
         {
             for (var hIdx = 0; hIdx < data.Length; hIdx++)
-                _memory.Poke(addr + hIdx, data[hIdx]);
+                _memory.Poke(addr++, data[hIdx]);
         }
 
         public byte[] ReadBuffer(int size)

@@ -26,23 +26,24 @@ SimDebug=0
 [ProjectFiles]
 Count=0
 [OtherFiles]
-Count=6
-Value0=C:\Users\Sven\Google Drive\Z80\Z80\Mikropascal\Z80_Controller.ppas
-Value1=C:\Users\Sven\Google Drive\Z80\Z80\Mikropascal\MainBios.ppas
-Value2=C:\Users\Sven\Google Drive\Z80\Z80\Mikropascal\DiskIO.ppas
-Value3=C:\Users\Sven\Google Drive\Z80\Z80\Mikropascal\Fat16Dir.ppas
-Value4=C:\Users\Sven\Google Drive\Z80\Z80\Mikropascal\Memory.ppas
+Count=5
+Value0=C:\Users\Sven\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\Z80_Controller.ppas
+Value1=C:\Users\Sven\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\Boot.ppas
+Value2=C:\Users\Sven\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\DiskIO.ppas
+Value3=C:\Users\Sven\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\MainBios.ppas
+Value4=C:\Users\Sven\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\Memory.ppas
 Value5=C:\Users\Sven\Google Drive\Z80\Z80\Mikropascal\Keyboard.ppas
 Value6=C:\Users\Sven\Google Drive\Z80\Mikropascal\Boot.ppas
 Value7=X:\Z80\Mikropascal\Boot.ppas
 Value8=X:\Z80\Mikropascal\Boot.ppas
 [TabIndex]
-Value=1
+Value=2
 [SearchPath]
-Count=4
+Count=5
 Value0=C:\Program Files (x86)\Mikroelektronika\mikroPascal\Defs\
 Value1=C:\Program Files (x86)\Mikroelektronika\mikroPascal\Uses\p18\
-Value2=C:\Users\Sven\Google Drive\Z80\Z80\Mikropascal\
-Value3=C:\Users\Sven\Google Drive\Z80\Mikropascal\
+Value2=C:\Users\Sven\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\
+Value3=C:\Users\Sven\Google Drive\Z80\Z80\Mikropascal\
+Value4=C:\Users\Sven\Google Drive\Z80\Mikropascal\
 [EEPROMinfo]
 isused=0
