@@ -51,7 +51,7 @@ begin
     Result := Result shr shift_right;
 end;
 (******************************************************************************)
-procedure SidWrite_i(_addr: byte; _value: byte);
+procedure SidWrite_i(_addr: byte; _value: byte); // to be called from interrupt routine
 begin
   LATA := (_addr and 31) + 32 + (LATA and %01000000);
   LATC := _value;
@@ -69,7 +69,7 @@ begin
   LATA.5 := 1;
 end;
 (******************************************************************************)
-procedure SidWrite(_addr: byte; _value: byte);
+procedure SidWrite(_addr: byte; _value: byte); // to be called from outside of interrupt routine
 begin
   LATA := (_addr and 31) + 32 + (LATA and %01000000);
   LATC := _value;

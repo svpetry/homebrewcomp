@@ -22,18 +22,19 @@ SimDebug=1
 [ProjectFiles]
 Count=0
 [OtherFiles]
-Count=1
-Value0=X:\Z80\Mikropascal\Z80_Sound.ppas
-Value1=X:\Z80\Mikropascal\Initializer.ppas
+Count=2
+Value0=C:\Users\svpet\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\Z80_Sound.ppas
+Value1=C:\Users\svpet\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\SoundUtils.ppas
 [TabIndex]
-Value=0
+Value=1
 [SearchPath]
-Count=3
-Value0=X:\PortableApps\mikroPascal8\Defs\
-Value1=X:\PortableApps\mikroPascal8\Uses\p18\
-Value2=X:\Z80\Mikropascal\
-Value3=C:\Program Files\mikroPascal8\Defs\
-Value4=C:\Program Files\mikroPascal8\Uses\p18\
-Value5=D:\Z80\Mikropascal\
+Count=7
+Value0=C:\Program Files (x86)\Mikroelektronika\mikroPascal\Defs\
+Value1=C:\Program Files (x86)\Mikroelektronika\mikroPascal\Uses\p18\
+Value2=C:\Users\svpet\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\
+Value3=C:\Users\Sven\Google Drive\Programming\homebrewcomp\Z80\Mikropascal\
+Value4=X:\PortableApps\mikroPascal8\Defs\
+Value5=X:\PortableApps\mikroPascal8\Uses\p18\
+Value6=X:\Z80\Mikropascal\
 [EEPROMinfo]
 isused=0
