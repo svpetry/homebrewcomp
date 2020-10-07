@@ -27,30 +27,30 @@ namespace E_Z80.Emulator
         {
             get
             {
-                var hStr = "";
-                for (var hIdx = 0; hIdx < 0x20; hIdx++)
+                var str = "";
+                for (var idx = 0; idx < 0x20; idx++)
                 {
-                    var hChar = (byte)_memory.Peek(AddrSparam + hIdx);
-                    if (hChar == 0)
+                    var chr = (byte)_memory.Peek(AddrSparam + idx);
+                    if (chr == 0)
                         break;
-                    hStr += (char)hChar;
+                    str += (char)chr;
                 }
 
-                return hStr;
+                return str;
             }
 
             set
             {
-                var hStr = value;
-                if (hStr.Length > 0x1f)
-                    hStr = hStr.Substring(0, 0x1f);
-                var hIdx = 0;
-                foreach (var hChar in hStr)
+                var str = value;
+                if (str.Length > 0x1f)
+                    str = str.Substring(0, 0x1f);
+                var idx = 0;
+                foreach (var chr in str)
                 {
-                    _memory.Poke(AddrSparam + hIdx, hChar);
-                    hIdx++;
+                    _memory.Poke(AddrSparam + idx, chr);
+                    idx++;
                 }
-                _memory.Poke(AddrSparam + hIdx, 0);
+                _memory.Poke(AddrSparam + idx, 0);
             }
         }
 
@@ -114,16 +114,16 @@ namespace E_Z80.Emulator
 
         public void Load(byte[] data, int addr)
         {
-            for (var hIdx = 0; hIdx < data.Length; hIdx++)
-                _memory.Poke(addr++, data[hIdx]);
+            for (var idx = 0; idx < data.Length; idx++)
+                _memory.Poke(addr++, data[idx]);
         }
 
         public byte[] ReadBuffer(int size)
         {
-            var hResult = new byte[size];
-            for (var hIdx = 0; hIdx < size; hIdx++)
-                hResult[hIdx] = (byte)_memory.Peek(AddrBuffer + hIdx);
-            return hResult;
+            var result = new byte[size];
+            for (var idx = 0; idx < size; idx++)
+                result[idx] = (byte)_memory.Peek(AddrBuffer + idx);
+            return result;
         }
 
         public void WriteByteToBuffer(int offset, byte data)
@@ -178,11 +178,11 @@ namespace E_Z80.Emulator
 
         public void LoadFileIntoMemory(string fileName, int address)
         {
-            var hFileName = Path.Combine(_dirName, fileName);
-            if (File.Exists(hFileName))
+            var filePath = Path.Combine(_dirName, fileName);
+            if (File.Exists(filePath))
             {
-                var hBytes = File.ReadAllBytes(hFileName);
-                _memAccess.Load(hBytes, address);
+                var bytes = File.ReadAllBytes(filePath);
+                _memAccess.Load(bytes, address);
 
                 ResetStatus();
             }
@@ -199,11 +199,11 @@ namespace E_Z80.Emulator
 
         private void ReadFile()
         {
-            var hFileName = Path.Combine(_dirName, _memAccess.Sparam);
-            if (File.Exists(hFileName))
+            var filePath = Path.Combine(_dirName, _memAccess.Sparam);
+            if (File.Exists(filePath))
             {
                 _filePos = 0;
-                _fileContent = File.ReadAllBytes(hFileName);
+                _fileContent = File.ReadAllBytes(filePath);
                 _memAccess.Param1L = (uint)_fileContent.Length;
                 _memAccess.Outparam = 1;
                 _status = 1;
@@ -219,23 +219,23 @@ namespace E_Z80.Emulator
 
         private void WriteNewFile()
         {
-            var hFileName = Path.Combine(_dirName, _memAccess.Sparam);
+            var filePath = Path.Combine(_dirName, _memAccess.Sparam);
 
             // overwrite existing file
-            if (File.Exists(hFileName))
-                File.Delete(hFileName);
+            if (File.Exists(filePath))
+                File.Delete(filePath);
 
-            _saveFileName = hFileName;
+            _saveFileName = filePath;
             _status = 1;
             _accessMode = AccessMode.CreateNew;
         }
 
         private void AppendFile()
         {
-            var hFileName = Path.Combine(_dirName, _memAccess.Sparam);
-            if (File.Exists(hFileName))
+            var filePath = Path.Combine(_dirName, _memAccess.Sparam);
+            if (File.Exists(filePath))
             {
-                _saveFileName = hFileName;
+                _saveFileName = filePath;
                 _status = 1;
                 _accessMode = AccessMode.Append;
             }
@@ -259,8 +259,8 @@ namespace E_Z80.Emulator
             {
                 if (_accessMode == AccessMode.Read)
                 {
-                    for (var hIdx = 0; hIdx < 512 && _filePos < _fileContent.Length; hIdx++)
-                        _memAccess.WriteByteToBuffer(hIdx, _fileContent[_filePos++]);
+                    for (var idx = 0; idx < 512 && _filePos < _fileContent.Length; idx++)
+                        _memAccess.WriteByteToBuffer(idx, _fileContent[_filePos++]);
                     _status = 1;
                 }
                 else
@@ -278,13 +278,13 @@ namespace E_Z80.Emulator
             {
                 if (_saveFileName != "" && (_accessMode == AccessMode.Append || _accessMode == AccessMode.CreateNew))
                 {
-                    int hSize = (int)_memAccess.Param1L;
+                    int size = (int)_memAccess.Param1L;
                     if (_accessMode == AccessMode.CreateNew)
-                        File.WriteAllBytes(_saveFileName, _memAccess.ReadBuffer(hSize));
+                        File.WriteAllBytes(_saveFileName, _memAccess.ReadBuffer(size));
                     else
                     {
                         FileStream hFileStream = File.Open(_saveFileName, FileMode.Append);
-                        hFileStream.Write(_memAccess.ReadBuffer(hSize), 0, hSize);
+                        hFileStream.Write(_memAccess.ReadBuffer(size), 0, size);
                     }
                     _status = 1;
                 }
@@ -300,21 +300,21 @@ namespace E_Z80.Emulator
         private void SetDirInfo(string fileName)
         {
             _memAccess.Sparam = fileName.ToUpper();
-            var hFileInfo = new FileInfo(Path.Combine(_dirName, fileName));
-            _memAccess.Param1L = (uint)hFileInfo.Length;
+            var fileInfo = new FileInfo(Path.Combine(_dirName, fileName));
+            _memAccess.Param1L = (uint)fileInfo.Length;
             
-            var hAttributes = 0;
-            if (hFileInfo.Attributes.HasFlag(FileAttributes.ReadOnly))
-                hAttributes += 1;
-            if (hFileInfo.Attributes.HasFlag(FileAttributes.Hidden))
-                hAttributes += 2;
-            if (hFileInfo.Attributes.HasFlag(FileAttributes.System))
-                hAttributes += 4;
-            if (hFileInfo.Attributes.HasFlag(FileAttributes.Directory))
-                hAttributes += 16;
-            if (hFileInfo.Attributes.HasFlag(FileAttributes.Archive))
-                hAttributes += 32;
-            _memAccess.Outparam = hAttributes;
+            var attributes = 0;
+            if (fileInfo.Attributes.HasFlag(FileAttributes.ReadOnly))
+                attributes += 1;
+            if (fileInfo.Attributes.HasFlag(FileAttributes.Hidden))
+                attributes += 2;
+            if (fileInfo.Attributes.HasFlag(FileAttributes.System))
+                attributes += 4;
+            if (fileInfo.Attributes.HasFlag(FileAttributes.Directory))
+                attributes += 16;
+            if (fileInfo.Attributes.HasFlag(FileAttributes.Archive))
+                attributes += 32;
+            _memAccess.Outparam = attributes;
         }
 
         #region IPortProvider
@@ -394,9 +394,9 @@ namespace E_Z80.Emulator
                         break;
 
                     case 26: // read volume name
-                        var hSegments = _dirName.Split(Path.DirectorySeparatorChar);
-                        if (hSegments.Length > 1)
-                            _memAccess.Sparam = hSegments[hSegments.Length - 2].ToUpper();
+                        var segments = _dirName.Split(Path.DirectorySeparatorChar);
+                        if (segments.Length > 1)
+                            _memAccess.Sparam = segments[segments.Length - 2].ToUpper();
                         else
                             _memAccess.Sparam = "";
                         ResetStatus();
@@ -407,10 +407,10 @@ namespace E_Z80.Emulator
                     //    break;
 
                     case 28: // delete file (outparam: 1=file deleted)
-                        var hFileName = Path.Combine(_dirName, _memAccess.Sparam);
-                        if (File.Exists(hFileName))
+                        var fileName = Path.Combine(_dirName, _memAccess.Sparam);
+                        if (File.Exists(fileName))
                         {
-                            File.Delete(hFileName);
+                            File.Delete(fileName);
                             _memAccess.Outparam = 1;
                         }
                         else

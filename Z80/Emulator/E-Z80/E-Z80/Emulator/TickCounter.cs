@@ -11,7 +11,7 @@ namespace E_Z80.Emulator
 
         public TickCounter(CancellationToken token)
         {
-            var hTask = new Task(
+            var task = new Task(
                 () =>
                 {
                     while (!token.IsCancellationRequested)
@@ -20,7 +20,7 @@ namespace E_Z80.Emulator
                         Thread.Sleep(100);
                     }
                 });
-            hTask.Start();
+            task.Start();
         }
 
         #region IPortProvider

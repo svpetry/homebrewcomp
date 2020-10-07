@@ -108,32 +108,32 @@ namespace E_Z80.Emulator
 
                 _diskController.LoadFileIntoMemory(DiskController.BiosFile, 0);
 
-                var hFrameCount = 0;
-                var hTotalSleep = 0;
-                var hStopwatch = new Stopwatch();
+                var frameCount = 0;
+                var totalSleep = 0;
+                var stopWatch = new Stopwatch();
 
                 while (!_doReset)
                 {
-                    hStopwatch.Start();
+                    stopWatch.Start();
                     _cpu.Exec(FrameDurationMs * CyclesPerMs);
-                    hStopwatch.Stop();
+                    stopWatch.Stop();
 
-                    var hSleepMs = 0;
-                    if (OriginalSpeed && hStopwatch.ElapsedMilliseconds < FrameDurationMs)
+                    var sleepMs = 0;
+                    if (OriginalSpeed && stopWatch.ElapsedMilliseconds < FrameDurationMs)
                     {
-                        hSleepMs = FrameDurationMs - (int)hStopwatch.ElapsedMilliseconds;
-                        Thread.Sleep(hSleepMs);
+                        sleepMs = FrameDurationMs - (int)stopWatch.ElapsedMilliseconds;
+                        Thread.Sleep(sleepMs);
                     }
 
-                    hTotalSleep += hSleepMs;
-                    if (++hFrameCount == LoadMeasureFrameCount)
+                    totalSleep += sleepMs;
+                    if (++frameCount == LoadMeasureFrameCount)
                     {
-                        LoadFactor = 1.0 - (double)hTotalSleep / (hFrameCount * FrameDurationMs);
-                        hTotalSleep = 0;
-                        hFrameCount = 0;
+                        LoadFactor = 1.0 - (double)totalSleep / (frameCount * FrameDurationMs);
+                        totalSleep = 0;
+                        frameCount = 0;
                     }
 
-                    hStopwatch.Reset();
+                    stopWatch.Reset();
 
 
                     if (_interruptIrq)

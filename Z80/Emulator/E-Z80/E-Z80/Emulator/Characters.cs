@@ -7,7 +7,7 @@ namespace E_Z80.Emulator
         public const int CharWidth = 8;
         public const int CharHeight = 16;
 
-        private static readonly byte[,] FCharacters = new byte[,] //[128, CharWidth * CharHeight] 
+        private static readonly byte[,] _characters = new byte[,] //[128, CharWidth * CharHeight] 
         {{
             0,0,0,0,0,0,0,0,
             0,0,0,0,0,0,0,0,
@@ -2188,28 +2188,28 @@ namespace E_Z80.Emulator
 
         public static byte[] GetChar(byte charCode, Color fgColor, Color bgColor)
         {
-            var hResult = new byte[CharWidth * CharHeight * 4];
-            var hResultIdx = 0;
-            var hCharCode = charCode & 0x7f;
-            var hInvert = charCode > 127;
+            var result = new byte[CharWidth * CharHeight * 4];
+            var resultIdx = 0;
+            var chrCode = charCode & 0x7f;
+            var invert = charCode > 127;
 
-            for (int hIdx = 0; hIdx < CharWidth * CharHeight; hIdx++)
+            for (int idx = 0; idx < CharWidth * CharHeight; idx++)
             {
-                if (FCharacters[hCharCode, hIdx] == (hInvert ? 0 : 1))
+                if (_characters[chrCode, idx] == (invert ? 0 : 1))
                 {
-                    hResult[hResultIdx] = fgColor.B;
-                    hResult[hResultIdx + 1] = fgColor.G;
-                    hResult[hResultIdx + 2] = fgColor.R;
+                    result[resultIdx] = fgColor.B;
+                    result[resultIdx + 1] = fgColor.G;
+                    result[resultIdx + 2] = fgColor.R;
                 }
                 else
                 {
-                    hResult[hResultIdx] = bgColor.B;
-                    hResult[hResultIdx + 1] = bgColor.G;
-                    hResult[hResultIdx + 2] = bgColor.R;
+                    result[resultIdx] = bgColor.B;
+                    result[resultIdx + 1] = bgColor.G;
+                    result[resultIdx + 2] = bgColor.R;
                 }
-                hResultIdx += 4;
+                resultIdx += 4;
             }
-            return hResult;
+            return result;
         }
     }
 }

@@ -152,65 +152,65 @@ namespace E_Z80.Emulator
         {
             if (col >= ColCount || row >= RowCount) return null;
 
-            var hRect = new Int32Rect(col * Characters.CharWidth, row * Characters.CharHeight, Characters.CharWidth, Characters.CharHeight);
-            var hStride = hRect.Width * _bytesPerPixel;
+            var rect = new Int32Rect(col * Characters.CharWidth, row * Characters.CharHeight, Characters.CharWidth, Characters.CharHeight);
+            var stride = rect.Width * _bytesPerPixel;
 
-            byte[] hPixels;
+            byte[] pixels;
 
-            var hChar = _videoRam[row * RowSize + col];
+            var chr = _videoRam[row * RowSize + col];
             if (_mode == GraMode.Text)
-                hPixels = Characters.GetChar(hChar, _fgColor, _bgColor);
+                pixels = Characters.GetChar(chr, _fgColor, _bgColor);
             else
             {
-                hPixels = new byte[hStride * Characters.CharHeight];
-                for (var hIdx = 0; hIdx < Characters.CharWidth * Characters.CharHeight; hIdx++)
+                pixels = new byte[stride * Characters.CharHeight];
+                for (var idx = 0; idx < Characters.CharWidth * Characters.CharHeight; idx++)
                 {
-                    var hPixelIdx = hIdx * _bytesPerPixel;
-                    var hRow = hIdx / (4 * Characters.CharWidth);
-                    var hCol = (hIdx % Characters.CharWidth) / 4;
-                    var hBitPos = hRow * 2 + hCol;
-                    if ((hChar & (1 << hBitPos)) > 0)
+                    var pixelIdx = idx * _bytesPerPixel;
+                    var localRow = idx / (4 * Characters.CharWidth);
+                    var localCol = (idx % Characters.CharWidth) / 4;
+                    var bitPos = localRow * 2 + localCol;
+                    if ((chr & (1 << bitPos)) > 0)
                     {
-                        hPixels[hPixelIdx] = _fgColor.B;
-                        hPixels[hPixelIdx + 1] = _fgColor.G;
-                        hPixels[hPixelIdx + 2] = _fgColor.R;
+                        pixels[pixelIdx] = _fgColor.B;
+                        pixels[pixelIdx + 1] = _fgColor.G;
+                        pixels[pixelIdx + 2] = _fgColor.R;
                     }
                     else
                     {
-                        hPixels[hPixelIdx] = _bgColor.B;
-                        hPixels[hPixelIdx + 1] = _bgColor.G;
-                        hPixels[hPixelIdx + 2] = _bgColor.R;
+                        pixels[pixelIdx] = _bgColor.B;
+                        pixels[pixelIdx + 1] = _bgColor.G;
+                        pixels[pixelIdx + 2] = _bgColor.R;
                     }
                 }
             }
-            return new WritePixelsInfo { Pixels = hPixels, Rect = hRect, Stride = hStride };
+            return new WritePixelsInfo { Pixels = pixels, Rect = rect, Stride = stride };
         }
 
         //public void PutChar(int _Col, int _Row, byte _Char)
         //{
-        //    var hCharIdx = _Row * cRowSize + _Col;
-        //    _videoRam[hCharIdx] = _Char;
+        //    var charIdx = _Row * cRowSize + _Col;
+        //    _videoRam[charIdx] = _Char;
 
-        //    if (FAllInvalid) return;
+        //    if (_allInvalid) return;
 
-        //    lock (FInvalidCharPositions)
+        //    lock (_invalidCharPositions)
         //    {
-        //        if (!FAllInvalid)
+        //        if (!_allInvalid)
         //        {
-        //            if (FInvalidCharPositions.Count >= cInvalidLimit)
+        //            if (_invalidCharPositions.Count >= cInvalidLimit)
         //            {
-        //                FAllInvalid = true;
-        //                FInvalidCharPositions.Clear();
+        //                _allInvalid = true;
+        //                _invalidCharPositions.Clear();
         //            }
         //            else
-        //                FInvalidCharPositions.Add(hCharIdx);
+        //                _invalidCharPositions.Add(hCharIdx);
         //        }
         //    }
         //}
 
         public void UpdateScreen()
         {
-            WritePixelsInfo[] hWritePixelsInfos;
+            WritePixelsInfo[] writePixelsInfos;
 
             Monitor.Enter(_invalidCharPositions);
             if (_allInvalid)
@@ -219,43 +219,43 @@ namespace E_Z80.Emulator
                 _invalidCharPositions.Clear();
                 Monitor.Exit(_invalidCharPositions);
 
-                hWritePixelsInfos = new WritePixelsInfo[RowCount * ColCount];
+                writePixelsInfos = new WritePixelsInfo[RowCount * ColCount];
                 Parallel.For(
                     0,
                     RowCount,
                     row =>
                     {
-                        for (var hCol = 0; hCol < ColCount; hCol++)
+                        for (var col = 0; col < ColCount; col++)
                         {
-                            var hWritePixelsInfo = PrepareDrawChar(hCol, row);
-                            if (hWritePixelsInfo != null)
-                                hWritePixelsInfos[row * ColCount + hCol] = hWritePixelsInfo;
+                            var info = PrepareDrawChar(col, row);
+                            if (info != null)
+                                writePixelsInfos[row * ColCount + col] = info;
                         }
                     });
             }
             else
             {
-                var hCharIndices = _invalidCharPositions.ToArray();
+                var charIndices = _invalidCharPositions.ToArray();
                 _invalidCharPositions.Clear();
                 Monitor.Exit(_invalidCharPositions);
 
-                hWritePixelsInfos = new WritePixelsInfo[hCharIndices.Length];
+                writePixelsInfos = new WritePixelsInfo[charIndices.Length];
 
                 Parallel.For(
                     0,
-                    hCharIndices.Length,
+                    charIndices.Length,
                     idx =>
                     {
-                        var hCharIdx = hCharIndices[idx];
-                        var hWritePixelsInfo = PrepareDrawChar(hCharIdx % RowSize, hCharIdx / RowSize);
-                        if (hWritePixelsInfo != null)
-                            hWritePixelsInfos[idx] = hWritePixelsInfo;
+                        var charIdx = charIndices[idx];
+                        var info = PrepareDrawChar(charIdx % RowSize, charIdx / RowSize);
+                        if (info != null)
+                            writePixelsInfos[idx] = info;
                     });
 
             }
 
-            foreach (var hWritePixelsInfo in hWritePixelsInfos.Where(pixelInfo => pixelInfo != null))
-                _screen.WritePixels(hWritePixelsInfo.Rect, hWritePixelsInfo.Pixels, hWritePixelsInfo.Stride, 0);
+            foreach (var info in writePixelsInfos.Where(pixelInfo => pixelInfo != null))
+                _screen.WritePixels(info.Rect, info.Pixels, info.Stride, 0);
         }
 
         #region IMemRangeProvider
@@ -270,10 +270,10 @@ namespace E_Z80.Emulator
         {
             if (!RamActive) return false;
 
-            var hCharIdx = addr - VRamStart;
-            if (_videoRam[hCharIdx] != value)
+            var charIdx = addr - VRamStart;
+            if (_videoRam[charIdx] != value)
             {
-                _videoRam[hCharIdx] = value;
+                _videoRam[charIdx] = value;
 
                 if (_allInvalid) return true;
 
@@ -287,7 +287,7 @@ namespace E_Z80.Emulator
                             _invalidCharPositions.Clear();
                         }
                         else
-                            _invalidCharPositions.Add(hCharIdx);
+                            _invalidCharPositions.Add(charIdx);
                     }
                 }
             }

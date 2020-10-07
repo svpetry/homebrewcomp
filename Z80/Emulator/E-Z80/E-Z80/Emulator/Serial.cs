@@ -43,38 +43,38 @@ namespace E_Z80.Emulator
             {
                 _serialPort?.Dispose();
 
-                int hBaudRate = 0;
+                int baudRate = 0;
                 switch (value)
                 {
                     case 1:
-                        hBaudRate = 1200;
+                        baudRate = 1200;
                         break;
                     case 2:
-                        hBaudRate = 2400;
+                        baudRate = 2400;
                         break;
                     case 3:
-                        hBaudRate = 4800;
+                        baudRate = 4800;
                         break;
                     case 4:
-                        hBaudRate = 9600;
+                        baudRate = 9600;
                         break;
                     case 5:
-                        hBaudRate = 19200;
+                        baudRate = 19200;
                         break;
                     case 6:
-                        hBaudRate = 38400;
+                        baudRate = 38400;
                         break;
                     case 7:
-                        hBaudRate = 57600;
+                        baudRate = 57600;
                         break;
                     case 8:
-                        hBaudRate = 115200;
+                        baudRate = 115200;
                         break;
                 }
-                var hPortNames = SerialPort.GetPortNames();
-                if (hBaudRate != 0 && hPortNames.Length > 0)
+                var portNames = SerialPort.GetPortNames();
+                if (baudRate != 0 && portNames.Length > 0)
                 {
-                    _serialPort = new SerialPort(hPortNames[0], hBaudRate);
+                    _serialPort = new SerialPort(portNames[0], baudRate);
                     _serialPort.Open();
                 }
             }
@@ -88,16 +88,16 @@ namespace E_Z80.Emulator
             {
                 if (_serialPort == null) return;
 
-                byte hValue;
-                var hData = new List<byte>();
-                var hIdx = 0;
+                byte val;
+                var data = new List<byte>();
+                var idx = 0;
                 do
                 {
-                    hValue = (byte)_memory.Peek(AddrBuffer + hIdx++);
-                    hData.Add(hValue);
-                } while (hValue != 10 && hIdx < 512);
+                    val = (byte)_memory.Peek(AddrBuffer + idx++);
+                    data.Add(val);
+                } while (val != 10 && idx < 512);
 
-                _serialPort.Write(hData.ToArray(), 0, hData.Count);
+                _serialPort.Write(data.ToArray(), 0, data.Count);
             }
         }
 

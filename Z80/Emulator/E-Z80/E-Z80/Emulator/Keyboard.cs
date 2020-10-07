@@ -20,8 +20,8 @@ namespace E_Z80.Emulator
                     ScanCodeQueue.Clear();
                     if (KeyQueue.Count > 0)
                     {
-                        var hKey = KeyQueue.Dequeue();
-                        return hKey;
+                        var key = KeyQueue.Dequeue();
+                        return key;
                     }
                     return 255;
                 }
@@ -33,8 +33,8 @@ namespace E_Z80.Emulator
                     KeyQueue.Clear();
                     if (ScanCodeQueue.Count > 0)
                     {
-                        var hKey = ScanCodeQueue.Dequeue();
-                        return hKey;
+                        var key = ScanCodeQueue.Dequeue();
+                        return key;
                     }
                     return 0;
                 }
@@ -53,12 +53,12 @@ namespace E_Z80.Emulator
             AddNewKey((byte)key);
         }
 
-        public void AddScanCodes(byte [] code)
+        public void AddScanCodes(byte [] codes)
         {
             lock (_lockObj)
             {
-                foreach (var hCode in code)
-                    ScanCodeQueue.Enqueue(hCode);
+                foreach (var code in codes)
+                    ScanCodeQueue.Enqueue(code);
             }
         }
 
@@ -68,10 +68,10 @@ namespace E_Z80.Emulator
             {
                 lock (_lockObj)
                 {
-                    var hKey = key;
-                    if (hKey == 13)
-                        hKey = 10;
-                    KeyQueue.Enqueue(hKey);
+                    var lKey = key;
+                    if (lKey == 13)
+                        lKey = 10;
+                    KeyQueue.Enqueue(lKey);
                 }
             }
         }

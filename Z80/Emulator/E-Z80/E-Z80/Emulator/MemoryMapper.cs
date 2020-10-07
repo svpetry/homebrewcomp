@@ -27,23 +27,23 @@ namespace E_Z80.Emulator
 
         public int Peek(int addr)
         {
-            for (var hIdx = 0; hIdx < _readMappings.Count; hIdx++)
+            for (var idx = 0; idx < _readMappings.Count; idx++)
             {
-                var hMapping = _readMappings[hIdx];
-                byte hResult;
-                if (hMapping.AddrLo <= addr && hMapping.AddrHi >= addr && hMapping.Provider.Peek(addr, out hResult))
-                    return hResult;
+                var mapping = _readMappings[idx];
+                byte result;
+                if (mapping.AddrLo <= addr && mapping.AddrHi >= addr && mapping.Provider.Peek(addr, out result))
+                    return result;
             }
             return 0;
         }
 
         public void Poke(int addr, int value)
         {
-            for (var hIdx = 0; hIdx < _writeMappings.Count; hIdx++)
+            for (var idx = 0; idx < _writeMappings.Count; idx++)
             {
-                var hMapping = _writeMappings[hIdx];
-                if (hMapping.AddrLo <= addr && hMapping.AddrHi >= addr &&
-                    hMapping.Provider.Poke(addr, (byte) (value & 0xff)))
+                var mapping = _writeMappings[idx];
+                if (mapping.AddrLo <= addr && mapping.AddrHi >= addr &&
+                    mapping.Provider.Poke(addr, (byte) (value & 0xff)))
                     return;
             }
         }
@@ -65,12 +65,12 @@ namespace E_Z80.Emulator
 
         public void FinishRegistration()
         {
-            foreach (var hMapping in _memoryMappings)
+            foreach (var mapping in _memoryMappings)
             {
-                if (hMapping.SupportRead)
-                    _readMappings.Add(hMapping);
-                if (hMapping.SupportWrite)
-                    _writeMappings.Add(hMapping);
+                if (mapping.SupportRead)
+                    _readMappings.Add(mapping);
+                if (mapping.SupportWrite)
+                    _writeMappings.Add(mapping);
             } 
         }
     }

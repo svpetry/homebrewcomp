@@ -21,14 +21,14 @@ namespace E_Z80.Emulator
 
         public int InB(int addr, int hi)
         {
-            var hProvider = EnumMappings(addr).FirstOrDefault();
-            return hProvider?.InB(addr, hi) ?? 0;
+            var provider = EnumMappings(addr).FirstOrDefault();
+            return provider?.InB(addr, hi) ?? 0;
         }
 
         public void OutB(int addr, int value, int state)
         {
-            foreach (var hProvider in EnumMappings(addr))
-                hProvider.OutB(addr, value, state);
+            foreach (var provider in EnumMappings(addr))
+                provider.OutB(addr, value, state);
         }
 
         public void Register(int portLo, int portHi, IPortProvider provider)
